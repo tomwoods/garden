@@ -788,6 +788,9 @@ export const PlantDetailView: React.FC = () => {
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Buds</span>
+            {buds.length === 0 && (
+              <span className="text-xs text-gray-400 italic flex-1 mx-3">Potentialities or Interests</span>
+            )}
             <button
               onClick={() => handleOpenBranchesModal('bud')}
               className="p-1 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
@@ -795,9 +798,7 @@ export const PlantDetailView: React.FC = () => {
               <Plus className="w-3.5 h-3.5 text-amber-600" />
             </button>
           </div>
-          {buds.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No buds noted yet</p>
-          ) : (
+          {buds.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {buds.map(bud => (
                 <div
@@ -825,51 +826,13 @@ export const PlantDetailView: React.FC = () => {
           )}
         </div>
 
-        {/* CAPABILITIES STRIP */}
+        {/* NOTCHINGS */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Capabilities</span>
-            <button
-              onClick={() => handleOpenBranchesModal('capability')}
-              className="p-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5 text-emerald-600" />
-            </button>
-          </div>
-          {capabilities.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No capabilities recorded yet</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {capabilities.map(cap => (
-                <div
-                  key={cap.id}
-                  className="group flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium"
-                >
-                  <span>{cap.text}</span>
-                  <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
-                    <button
-                      onClick={() => handleOpenBranchesModal('capability', cap)}
-                      className="text-emerald-600 hover:text-emerald-800 transition-colors"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteBranchItem('capability', cap)}
-                      className="text-emerald-600 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* NOTCHINGS */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Notching</span>
+            {notchings.length === 0 && (
+              <span className="text-xs text-gray-400 italic flex-1 mx-3">Studies to develop capacity</span>
+            )}
             <button
               onClick={() => handleOpenBranchesModal('notching')}
               className="p-1 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
@@ -877,9 +840,7 @@ export const PlantDetailView: React.FC = () => {
               <Plus className="w-3.5 h-3.5 text-amber-700" />
             </button>
           </div>
-          {notchings.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No study sessions recorded yet</p>
-          ) : (
+          {notchings.length > 0 && (
             <div className="space-y-2">
               {notchings.slice(0, 1).map(n => (
                 <div key={n.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
@@ -917,6 +878,48 @@ export const PlantDetailView: React.FC = () => {
                   See more ({notchings.length - 1} more)
                 </button>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* CAPABILITIES STRIP */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Capabilities</span>
+            {capabilities.length === 0 && (
+              <span className="text-xs text-gray-400 italic flex-1 mx-3">Proven or developed capabilities</span>
+            )}
+            <button
+              onClick={() => handleOpenBranchesModal('capability')}
+              className="p-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-600" />
+            </button>
+          </div>
+          {capabilities.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {capabilities.map(cap => (
+                <div
+                  key={cap.id}
+                  className="group flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium"
+                >
+                  <span>{cap.text}</span>
+                  <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                    <button
+                      onClick={() => handleOpenBranchesModal('capability', cap)}
+                      className="text-emerald-600 hover:text-emerald-800 transition-colors"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBranchItem('capability', cap)}
+                      className="text-emerald-600 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
