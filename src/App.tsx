@@ -266,7 +266,7 @@ function App() {
     try {
       console.log('Syncing with server after garden key restore...');
 
-      const downloadResult = await SupabaseService.downloadBackup(userData.userId);
+      const downloadResult = await SupabaseService.downloadBackup(userData.userId, userData.signingPrivateKey);
 
       if (downloadResult.success && downloadResult.encryptedBackup) {
         console.log('Found server backup, restoring to local database...');

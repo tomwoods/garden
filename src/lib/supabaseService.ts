@@ -5,7 +5,6 @@
 
 import { supabase } from './supabase';
 import { signData, importSigningKey } from './signatureService';
-import { importCryptoKey } from './cryptoService';
 
 export interface BackupSyncResult {
   success: boolean;
@@ -128,46 +127,52 @@ export class SupabaseService {
   }
 
   /**
-   * Download encrypted backup from Supabase
+   * Download encrypted backup from Supabase via signed Edge Function request
    */
-  static async downloadBackup(userId: string): Promise<{
+  static async downloadBackup(userId: string, signingPrivateKey: string): Promise<{
     success: boolean;
     encryptedBackup?: string;
     lastModified?: string;
     error?: string;
   }> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('encrypted_backup, last_modified')
-        .eq('id', userId)
-        .single();
+      const timestamp = Date.now();
+      const message = `backup:${userId}:${timestamp}`;
+      const privateKey = await importSigningKey(signingPrivateKey, 'pkcs8', ['sign']);
+      const signature = await signData(message, privateKey);
 
-      if (error) {
-        console.error('Failed to download backup:', error);
-        return {
-          success: false,
-          error: error.message
-        };
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-backup`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ userId, signature, timestamp }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: result.error };
       }
 
-      if (!data.encrypted_backup) {
-        return {
-          success: false,
-          error: 'No backup found for this user'
-        };
+      if (!result.encryptedBackup) {
+        return { success: false, error: 'No backup found for this user' };
       }
 
       return {
         success: true,
-        encryptedBackup: data.encrypted_backup,
-        lastModified: data.last_modified
+        encryptedBackup: result.encryptedBackup,
+        lastModified: result.lastModified,
       };
     } catch (error) {
       console.error('Backup download error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -250,19 +255,31 @@ export class SupabaseService {
   }
 
   /**
-   * Check if user exists in Supabase
+   * Check if user exists in Supabase by attempting to register.
+   * Returns true if the user is already registered (409 conflict), false if not found.
+   * Uses register-user response to avoid a separate lookup.
    */
   static async checkUserExists(userId: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .single();
-
-      return !error && !!data;
-    } catch (error) {
-      console.error('Error checking user existence:', error);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            userId,
+            encryptionPublicKey: '__check__',
+            signingPublicKey: '__check__',
+            checkOnly: true,
+          }),
+        }
+      );
+      // 409 = already exists, any 2xx = newly inserted (shouldn't happen with checkOnly)
+      return response.status === 409;
+    } catch {
       return false;
     }
   }

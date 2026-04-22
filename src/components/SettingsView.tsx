@@ -117,7 +117,7 @@ export const SettingsView: React.FC = () => {
       // Try to sync with Supabase first to get latest data
       try {
         console.log('Syncing with Supabase before export...');
-        const downloadResult = await SupabaseService.downloadBackup(userData.userId);
+        const downloadResult = await SupabaseService.downloadBackup(userData.userId, userData.signingPrivateKey);
         
         if (downloadResult.success && downloadResult.encryptedBackup) {
           // Import private key for decryption

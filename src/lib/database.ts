@@ -185,7 +185,7 @@ export class DatabaseService {
       await new Promise<void>((resolve, reject) => {
         alasql(`USE ${this.dbName}`, [], (res: any) => {
           if (res === 1 || res === 0) {
-            console.log('Using localStorage database');var lala = alasql;console.log(lala);
+            console.log('Using localStorage database');
             resolve();
           } else {
             console.error('Failed to use localStorage database:', res);
@@ -319,12 +319,6 @@ export class DatabaseService {
 
     this.initialized = true;
     console.log('Database initialization complete');
-    
-    // Debug mode: expose alasql to global scope in development
-    if (import.meta.env.DEV) {
-      (window as any).alasql = alasql;
-      console.log('🐛 Debug mode: alasql is now available in the global scope');
-    }
   }
 
   /**

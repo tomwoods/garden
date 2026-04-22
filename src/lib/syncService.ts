@@ -124,7 +124,7 @@ export async function syncOnAppLoad(
   try {
     setSyncState('syncing');
 
-    const downloadResult = await SupabaseService.downloadBackup(user.userId);
+    const downloadResult = await SupabaseService.downloadBackup(user.userId, user.signingPrivateKey);
 
     if (!downloadResult.success || !downloadResult.lastModified) {
       setSyncState(getPendingChanges() ? 'dirty' : 'idle');
