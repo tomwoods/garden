@@ -68,13 +68,16 @@ The user taps the `+` button in `GardenView`. A modal appears asking for the per
 1. User taps `+` in `GardenView`.
 2. `AddPlantModal` opens.
 3. User fills in: name (required), description (optional), email/phone (optional), care frequency (default: every 2 weeks).
-4. On submit, `DatabaseService.addPlant(plantData)`:
+4. Optional: User taps the age field to open `AgePicker`. The entered age and a `timestamp_age_poll` are stored in `additional_info.age_info`. The effective age is computed dynamically at read time using elapsed time so it stays current without re-entry.
+5. Optional: User taps the location field to open `LocationPicker`. Lat/lng are stored in `additional_info.location`. The location is viewable later via `MapOverlay` (Google Maps embed).
+6. Optional: User taps the camera icon to open `PlantImageCapture`. Images pass through face detection (`faceDetection.ts`) — faces cause rejection. Accepted images may be cropped in `CropModal`, then compressed to ≤720px before being saved locally and queued for encrypted upload.
+7. On submit, `DatabaseService.addPlant(plantData)`:
    - Assigns a UUID.
    - Calculates `next_scheduled_care = now + (frequency * unit_ms)`.
    - Inserts into `plants` AlaSQL table.
    - Fires `plant-care-updated` custom event to schedule a browser notification.
-5. `GardenView` re-fetches all plants and re-renders.
-6. If the user is registered with Supabase, a background sync uploads an encrypted backup.
+8. `GardenView` re-fetches all plants and re-renders.
+9. If the user is registered with Supabase, a background sync uploads an encrypted backup.
 
 ### Care Urgency Calculation
 On render, each plant is assessed for care urgency:
@@ -177,36 +180,55 @@ From a plant's card or detail view, the user schedules a reminder for a future c
 ## 7. Plant Images
 
 ### User Experience
-From a plant's detail view, the user taps the images icon. A gallery opens where they can add photos. Photos must not contain faces.
+From a plant's detail view, the user taps the images icon. A gallery opens where they can add a photo. Photos must not contain faces. Images are encrypted before leaving the device and stored as encrypted blobs in Supabase — no CDN URL is ever issued.
 
-### Flow
+### Upload Flow
 1. User taps the image icon in `PlantDetailView`.
-2. `PlantImageCapture` opens.
-3. User selects one or more images from their device.
-4. For each image:
-   a. `detectFace(file)` — rejects with an error toast if a face is detected.
-   b. `compressImage(file)` — resizes to ≤720px and compresses to JPEG.
-   c. The compressed image is read as a data URL.
-   d. Saved locally via `DatabaseService.saveImageLocally()`.
-5. `uploadService.queueUpload(plantId, plantName, images)` adds images to the upload queue.
-6. The upload service processes the queue:
-   a. Computes SHA-256 hash of each file.
-   b. Signs the hash with the user's secp256k1 private key (timestamp included to prevent replay).
-   c. Uploads to the `uploadthing-route` Edge Function as multipart form data.
-   d. The Edge Function verifies the signature, checks quota, inserts into `plant_images`, and returns the CDN URL.
-   e. The URL and key are saved locally via `DatabaseService.saveUploadedImageUrl()`.
+2. `PlantImageCapture` opens. User selects an image from their device.
+3. `faceDetection.ts` — heuristic skin-tone clustering checks for faces. Rejects with a toast if a face is detected.
+4. `CropModal` opens (optional crop step). User confirms crop.
+5. `imageProcessing.ts` — resizes to ≤720px max dimension (large) and 100px (thumbnail), both JPEG at 0.85 quality.
+6. Both data URLs are saved locally: `plant_image_{plantId}` (large) and `plant_image_{plantId}_small` (thumbnail) in localStorage.
+7. `uploadService.queueUpload(plantId, plantName, images)` adds the job to the async upload queue.
+8. Upload queue processes the job:
+   a. Generates a UUID `imageId`.
+   b. Encrypts both data URLs client-side using AES-GCM (`cryptoService.encryptImageData()`).
+   c. Builds a RSA-PSS signature over `imageId + ":" + timestamp` using `signatureService`.
+   d. POSTs `{ plantId, imageId, encryptedLarge, encryptedSmall, signature, timestamp }` to the `upload-plant-image` Edge Function with `Authorization: Bearer {userId}`.
+   e. Edge Function verifies the signature, checks quota (max 100 rows per user), and upserts into `plant_images`. Updating an existing plant's image does not consume additional quota.
+   f. On success, `additional_info.image_id` on the plant record is updated to `imageId` — this is the cross-device sync signal.
+
+### Display Flow (existing device)
+- `PlantDetailView` reads the locally-cached data URL from `plant_image_{plantId}_small` and renders it as a thumbnail.
+- `PlantImageViewer` fetches the large version on demand: first checks `plant_image_{plantId}` in localStorage; if missing, calls `imageSync.fetchLargeImage()`.
+
+### Cross-Device Sync Flow (new device after restore)
+1. After restoring from cloud backup, `syncMissingImages()` in `imageSync.ts` scans all plants.
+2. For each plant whose `additional_info.image_id` is set but whose local cache is absent:
+   a. Signs `"fetch:" + plantId + ":" + timestamp` with RSA-PSS.
+   b. Calls `get-plant-image` Edge Function to retrieve the encrypted blob.
+   c. Decrypts locally with `cryptoService.decryptImageData()`.
+   d. Caches the result in localStorage under the standard keys.
 
 ### Quota System
-- Maximum 100 images per user.
+- Maximum 100 images per user (one per plant).
 - `uploadService.getQuotaInfo()` returns `{ used, limit, remaining }`.
-- `ImageQuotaModal` warns the user when approaching the limit.
-- The `users.image_count` column is incremented server-side on each upload and decremented on deletion.
+- `ImageQuotaModal` warns when quota is reached.
+- Replacing an existing plant's image does not consume additional quota.
+
+### Deletion Flow
+1. User taps the delete button in `PlantImageViewer`.
+2. `uploadService.deleteImageFromServer(plantId)` is called.
+3. Signs `"delete:" + plantId + ":" + timestamp` with RSA-PSS.
+4. POSTs to `delete-plant-image` Edge Function which removes the row from `plant_images`.
+5. Local cache keys are removed from localStorage.
+6. `additional_info.image_id` is cleared on the plant record.
 
 ### Edge Cases
 - **Face detected:** Toast shown. Image is not saved or uploaded.
-- **Upload fails (network):** Image remains in the local queue and is retried with exponential backoff.
-- **Quota exceeded:** Upload is blocked. User must delete existing images before uploading new ones.
-- **User deletes an image:** The delete-image Edge Function verifies a new secp256k1 signature over `(delete:uploadthingKey:timestamp)`, removes the file from storage, deletes the `plant_images` record, and decrements `image_count`.
+- **Upload fails (network):** Item remains in the async queue and is retried up to 3 times.
+- **Quota exceeded:** Upload is blocked. User must delete the existing image before uploading a new one.
+- **Sync on restore does not auto-trigger:** A manual or on-focus sync pass is required after key restore to pull missing images. (Known debt — see ROADMAP.md.)
 
 ---
 
@@ -333,3 +355,72 @@ When connectivity is restored:
 ### Edge Cases
 - **PWA already installed:** The install prompt is not shown.
 - **User dismisses the prompt:** It does not reappear for the session.
+
+---
+
+## 14. Branches — Buds, Notching, and Capabilities
+
+### User Experience
+From a plant's detail view, the Branches card appears at the bottom. It has three sub-sections: Buds, Notching, and Capabilities. Each section header is a full-width tap target (mobile-friendly). Tapping it opens the form for that type.
+
+### Adding a Bud
+1. User taps anywhere on the "Buds" row in the Branches card.
+2. `BranchesModal` opens in `bud` mode.
+3. User enters a short text label (e.g., "teaching", "music").
+4. On submit, `DatabaseService.addBud({ plant_id, text })` inserts into `buds`.
+5. The card re-renders showing the new bud as an amber pill.
+
+### Adding a Notching
+1. User taps anywhere on the "Notching" row.
+2. `BranchesModal` opens in `notching` mode.
+3. User selects the Ruhi book, start unit/section, end unit/section, and optionally adds a progress description.
+4. `sections_studied` is computed from the range.
+5. On submit, `DatabaseService.addNotching(...)` inserts into `notchings`.
+6. The most recent notching is shown in the card; older entries are accessible via "See more."
+
+### Bulk Notching
+From `GardenView`, the user can log the same notching session for multiple plants at once via `BulkNotchingModal`. The same book/range/description is applied to all selected plants in a single operation.
+
+### Adding a Capability
+1. User taps anywhere on the "Capabilities" row.
+2. `BranchesModal` opens in `capability` mode.
+3. User types a capability label, with suggestions from the shared `autocomplete_values` table (`proven_capacity` type). Selecting or submitting a new value upserts it back to the shared table.
+4. On submit, `DatabaseService.addCapability({ plant_id, text })` inserts into `capabilities`.
+5. Capabilities appear as emerald pills in the card.
+
+### Edge Cases
+- **Edit / delete buds and capabilities:** Chips show edit/delete controls on hover (desktop) or via long-press (mobile patterns via `group-hover`).
+- **Edit a notching:** The form pre-populates all fields. On submit, `DatabaseService.updateNotching(...)` replaces the record.
+- **Delete a notching:** Confirmation modal, then `DatabaseService.deleteNotching(id)`.
+
+---
+
+## 15. Harvest Report
+
+### User Experience
+From `SlidingMenu`, the user taps "Harvest" to open `HarvestBriefView`. They can set a date range, preview metrics, and download a privacy-safe report as a JSON file.
+
+### Flow
+1. User opens `SlidingMenu` → "Harvest."
+2. `HarvestBriefView` renders a quick summary (total plants, total activities, date range).
+3. User optionally adjusts the date range.
+4. User taps "Preview" → `HarvestPreviewModal` opens with key metrics:
+   - Plant count and age distribution (adult / voting youth / youth / junior youth / child).
+   - Activity breakdown (tendings, waterings, sunlight, fruits, prunings).
+   - Care index (on-track vs. overdue).
+5. User taps "Download" → `harvestService.generatePersonalHarvest()` is called.
+   - All plant IDs and activity IDs are replaced with salted SHA-256 hashes.
+   - Real names, emails, phones, and descriptions are never included.
+   - Age groups are derived from `age_info` in `additional_info`; plants without age info default to `adult`.
+   - Result is `HarvestReport` (schema version 1).
+6. `downloadHarvestReport(report)` triggers a browser download as `harvest-{date}.json`.
+
+### Privacy Guarantees
+- No real names, contact info, or UUIDs appear in the exported file.
+- All IDs are SHA-256 hashes salted with the user's own UUID (salting is deterministic per user but opaque to outside observers).
+- The file format is defined and versioned (`schema_version: 1`).
+
+### Edge Cases
+- **No plants in range:** Report generates with empty arrays. Preview shows zeros.
+- **Plant has no age_info:** Defaults to `adult` age group.
+- **Offline:** Harvest report generation is fully local. No network required.

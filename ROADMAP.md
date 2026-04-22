@@ -31,9 +31,14 @@
 - [DONE] Plant search in garden view
 - [DONE] Additional custom fields per plant (JSON `additional_info`)
 
+### Plants (Souls) — Extended Fields
+- [DONE] Age picker — record person's age at time of entry; effective age computed dynamically (`AgePicker`, stored in `additional_info.age_info`)
+- [DONE] Location picker — optional lat/lng stored in `additional_info.location`; viewable on an in-app map (`LocationPicker`, `MapOverlay`)
+- [DONE] Image attachment — one photo per plant; face detection gates upload; crop tool available (`PlantImageCapture`, `CropModal`)
+
 ### Activities (Acts of Care)
 - [DONE] Tending (quality time) — type selection + summary
-- [DONE] Watering (sharing writings) — source + progress
+- [DONE] Watering (sharing writings) — source + progress; learning source autocomplete backed by `autocomplete_values`
 - [DONE] Sunlight (prayer) — topic
 - [DONE] Fruit (service) — description
 - [DONE] Pruning (difficult conversation) — difficulty + description
@@ -43,6 +48,14 @@
 - [DONE] Additional custom fields per activity (JSON `additional_info`)
 - [DONE] Activity timeline on plant detail view (merged and sorted)
 - [DONE] Bulk activity logging (Tending and Watering across multiple plants)
+- [DONE] Bulk Notching — log a Ruhi study session for multiple plants at once (`BulkNotchingModal`)
+
+### Branches (Capacity Development)
+- [DONE] Buds — record potential interests and gifts per person (`buds` table)
+- [DONE] Notchings — track systematic Ruhi curriculum study sessions per person (`notchings` table; book, unit/section range, sections studied, progress description)
+- [DONE] Capabilities — record proven developed capacities per person (`capabilities` table)
+- [DONE] Branches card in `PlantDetailView` with full-row tap targets for mobile usability
+- [DONE] Community autocomplete for proven capacities backed by shared `autocomplete_values` table
 
 ### Plots (Groups)
 - [DONE] Create, rename, delete plots
@@ -56,6 +69,16 @@
 - [DONE] Periodic sync fallback for missed notifications (24-hour interval)
 - [DONE] Notification deep-link to plant detail view
 - [DONE] Notification permission prompt in Settings
+
+### Sowing Season
+- [DONE] `sowingSeasonService.ts` — four annual 14-day sowing windows (Spring, Early Summer, Autumn, Winter); computes state (dormant / approaching / active) and days remaining
+- [DONE] `SowingSeasonBanner` — contextual banner in `GardenView` during active and approaching windows
+
+### Shared Autocomplete
+- [DONE] `autocomplete_values` table in Supabase — stores community learning sources and proven capacities (no personal data)
+- [DONE] `AutocompleteInput` component — ranked dropdown with 24-hour local cache, keyboard navigation
+- [DONE] `LearningSourceInput` — autocomplete for Watering activities, upserts on submit
+- [DONE] Proven capacity autocomplete in Branches / Capabilities form
 
 ### PWA
 - [DONE] Full offline support (assets + local database)
@@ -81,9 +104,11 @@
 - [DONE] `upload-plant-image` Edge Function — RSA-PSS signature verification, upsert with quota check
 - [DONE] `get-plant-image` Edge Function — RSA-PSS signature verification, returns encrypted blob by size
 - [DONE] `delete-plant-image` Edge Function — RSA-PSS signature verification, removes plant image row
-- [IN PROGRESS] Image sync from server to local (`imageSync.ts`) — fetch encrypted blob, decrypt client-side, cache in localStorage
-- [IN PROGRESS] Image display in `PlantDetailView` — show local cached image or fetch from server on demand
-- [PLANNED] Image upload queue with offline retry (service worker integration)
+- [DONE] Image sync from server to local (`imageSync.ts`) — fetch encrypted blob, decrypt client-side, cache in localStorage
+- [DONE] Image display in `PlantDetailView` — show local cached image or fetch from server on demand (`PlantImageViewer`)
+- [DONE] Image upload queue with retry logic (`uploadService.ts` — async queue, max 3 retries)
+- [DONE] Image crop tool before save (`CropModal`)
+- [DONE] Signature scheme unified to RSA-PSS for all Edge Function calls (images and backups use the same key pair)
 
 ### Multi-Device Sync
 - [DONE] Encrypted backup stored in Supabase after each write
@@ -112,14 +137,30 @@ Implementation steps:
 - [PLANNED] Activity merge on shared plant — conflict resolution strategy TBD
 - [PLANNED] Revoke share flow
 
-### Anonymized Activity Reports
-A user can generate a PDF report of their care activity over a specified time period. The report is anonymized — it does not contain real names or identifying information. Plant names are replaced with placeholder identifiers unless the user explicitly opts to include names.
+### Anonymized Harvest Reports
+A user can generate a JSON report of their care activity over a specified time period. All identifying information is replaced with salted SHA-256 hashes — no real names, emails, or plant IDs appear in the exported file.
 
-- [PLANNED] Date range selector
+- [DONE] `harvestService.ts` — generates `HarvestReport` with hashed IDs, age groups, and activity counts
+- [DONE] `HarvestPreviewModal` — shows summary metrics before download
+- [DONE] `HarvestBriefView` / `HarvestBriefDocument` — inline report view
+- [DONE] Date range and optional plant filter
+- [DONE] Age categorization: adult / voting youth / youth / junior youth / child (computed from `age_info`)
+- [DONE] Download as `harvest-{date}.json`
+- [PLANNED] PDF generation (client-side, using browser print)
 - [PLANNED] Activity type filter (include/exclude specific types)
-- [PLANNED] Anonymization options (replace names, include/exclude contact info)
-- [PLANNED] PDF generation (client-side, using browser print or a lightweight PDF library)
-- [PLANNED] Report covers: total activities by type, plants tended, frequency trends, care gaps
+
+### Collective Pulse Analytics
+An aggregated, client-side analytical layer that processes one or more `HarvestReport` objects to produce high-level garden health metrics. No data leaves the device.
+
+- [DONE] `collectivePulseService.ts` — computes `CollectivePulse` from reports
+- [DONE] `CareIndex` — ratio of plants on-track vs. overdue (`CareIndexBar`)
+- [DONE] `GardenBalance` — breakdown of activity types as a radar chart (`FlowerRadarChart`)
+- [DONE] `LifecycleVelocity` — seeds / shoots / mature distribution (`LifecycleVelocityDisplay`)
+- [DONE] `Momentum` — growing / steady / slowing classification per plant (`MomentumSummary`)
+- [DONE] `WeeklyPattern` + `MonthlyTrend` — care rhythm over time (`CommunityRhythmChart`)
+- [DONE] `HarvestRatio` — fruit per soul, fruit per tending
+- [DONE] `PruningPulse` — pruning count and monthly distribution
+- [DONE] Sowing window overlap analysis (`sowingSeasonService.ts`)
 
 ### Multilingual Support
 The app will support English, Spanish, and French as the first three languages.

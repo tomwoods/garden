@@ -6,7 +6,7 @@ Garden uses two data layers:
 1. **Local (AlaSQL + localStorage)** — primary store; the authoritative source of truth; fully offline.
 2. **Remote (Supabase Postgres)** — secondary store; holds only encrypted backups, public keys, and image metadata.
 
-No plaintext user data (plant names, activity notes, contact info) is ever stored in Supabase. The only exception is image metadata (URL, hash, size), which contains no personal content.
+No plaintext user data (plant names, activity notes, contact info) is ever stored in Supabase. The `autocomplete_values` table stores shared, anonymized text strings (learning sources, proven capacities) contributed voluntarily by users — these contain no names or identifiers.
 
 ---
 
@@ -33,7 +33,7 @@ Represents a person (soul) in the user's garden.
 | `next_scheduled_care` | NUMBER | NOT NULL | Unix ms timestamp when next care is due |
 | `last_cared_for` | NUMBER | NOT NULL | Unix ms timestamp of last care event (Tending or Watering) |
 | `description` | STRING | nullable | Free-text description of the person |
-| `additional_info` | STRING | nullable | JSON string for custom key/value metadata |
+| `additional_info` | STRING | nullable | JSON string for custom key/value metadata. Also carries `image_id` (UUID) when the plant has an uploaded image, used as the cross-device sync signal |
 
 **TypeScript Interface:**
 ```typescript
@@ -49,7 +49,7 @@ interface Plant {
   care_frequency_unit: 'days' | 'weeks';
   next_scheduled_care: number;
   last_cared_for: number;
-  additional_info?: string;
+  additional_info?: string; // JSON — may contain { image_id, age_info, location }
 }
 ```
 
@@ -315,6 +315,91 @@ interface PlotWithMembers extends Plot {
 
 ---
 
+### 1.11 `buds`
+
+A Bud — a potential interest, gift, or quality identified in the person. Represents dormant capacity not yet developed.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | STRING | PRIMARY KEY | UUID v4 |
+| `plant_id` | STRING | NOT NULL | References `plants.id` |
+| `text` | STRING | NOT NULL | Label for the bud (e.g., "teaching", "music") |
+| `created_at` | NUMBER | NOT NULL | Unix ms timestamp |
+
+**TypeScript Interface:**
+```typescript
+interface Bud {
+  id: string;
+  plant_id: string;
+  text: string;
+  created_at: number;
+}
+```
+
+---
+
+### 1.12 `notchings`
+
+A Notching record — a systematic study session using the Ruhi Institute curriculum. Tracks which book, units, and sections were studied and how many sections were covered.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | STRING | PRIMARY KEY | UUID v4 |
+| `plant_id` | STRING | NOT NULL | References `plants.id` |
+| `datetime` | NUMBER | NOT NULL | Unix ms timestamp of the study session |
+| `book` | STRING | NOT NULL | Book identifier (e.g., `ruhi_1`, `ruhi_3`) |
+| `start_unit` | NUMBER | NOT NULL | Starting unit number |
+| `start_section` | NUMBER | NOT NULL | Starting section number within the start unit |
+| `end_unit` | NUMBER | NOT NULL | Ending unit number |
+| `end_section` | NUMBER | NOT NULL | Ending section number within the end unit |
+| `sections_studied` | NUMBER | NOT NULL | Computed count of sections covered |
+| `progress_description` | STRING | nullable | Free-text reflection on the session |
+| `additional_info` | STRING | nullable | JSON string for custom metadata |
+
+**TypeScript Interface:**
+```typescript
+interface Notching {
+  id: string;
+  plant_id: string;
+  datetime: number;
+  book: string;
+  start_unit: number;
+  start_section: number;
+  end_unit: number;
+  end_section: number;
+  sections_studied: number;
+  progress_description?: string;
+  additional_info?: string;
+}
+```
+
+**Display format:** `{book.replace('ruhi_', 'Ruhi Book ')} — U{start_unit}S{start_section} to U{end_unit}S{end_section}`
+
+---
+
+### 1.13 `capabilities`
+
+A Capability — a developed or proven capacity for service, confirmed through action.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | STRING | PRIMARY KEY | UUID v4 |
+| `plant_id` | STRING | NOT NULL | References `plants.id` |
+| `text` | STRING | NOT NULL | Label for the capability (e.g., "tutoring", "children's class") |
+| `created_at` | NUMBER | NOT NULL | Unix ms timestamp |
+
+**TypeScript Interface:**
+```typescript
+interface Capability {
+  id: string;
+  plant_id: string;
+  text: string;
+  created_at: number;
+}
+```
+
+---
+
 ## 2. localStorage Key Map
 
 Beyond the AlaSQL `GardenDB` tables (stored under the `GardenDB` localStorage prefix by AlaSQL), these additional keys are used:
@@ -329,6 +414,8 @@ Beyond the AlaSQL `GardenDB` tables (stored under the `GardenDB` localStorage pr
 | `key-backup-dismissed` | `'true'` | User has downloaded key file |
 | `plant_image_{plantId}` | JSON string | `{ plantId, dataUrl, timestamp, imageId }` — local cached image (large version, base64 data URL) |
 | `plant_image_{plantId}_small` | JSON string | `{ plantId, dataUrl, timestamp, imageId }` — local cached thumbnail (100px, base64 data URL) |
+| `has_pending_local_changes` | `'true'` | Set on any write; cleared after successful cloud backup sync |
+| `autocomplete_cache_{type}` | JSON string | `{ values: [...], fetchedAt: number }` — 24-hour local cache of top autocomplete suggestions for a given type |
 
 **User Object Structure (garden-key.json):**
 ```typescript
@@ -338,6 +425,25 @@ interface User {
   privateKey: string;       // RSA-OAEP private key, Base64 PKCS8
   signingPublicKey: string; // RSA-PSS public key, Base64 SPKI
   signingPrivateKey: string;// RSA-PSS private key, Base64 PKCS8
+}
+```
+
+**`additional_info` sub-fields on `plants`:**
+
+`plants.additional_info` is a JSON string. Recognized sub-fields written by the app:
+
+```typescript
+interface PlantAdditionalInfo {
+  image_id?: string;       // UUID of the plant's uploaded image — used by imageSync to detect missing local cache
+  age_info?: {             // Written by AgePicker
+    age: number;
+    timestamp_age_poll: number;  // Unix ms when the age was recorded; used to compute current effective age
+    is_over_21: boolean;
+  };
+  location?: {             // Written by LocationPicker
+    lat: number;
+    lng: number;
+  };
 }
 ```
 
@@ -379,7 +485,40 @@ CREATE TABLE IF NOT EXISTS users (
 
 ---
 
-### 3.2 `shared_plants` Table
+### 3.2 `autocomplete_values` Table
+
+Stores community-shared autocomplete suggestions for learning sources and proven capacities. Contains no names, identifiers, or private data — only short text strings contributed voluntarily.
+
+```sql
+CREATE TABLE IF NOT EXISTS autocomplete_values (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  text text NOT NULL,
+  count integer DEFAULT 1,
+  type text NOT NULL,           -- 'learning_source' | 'proven_capacity'
+  language text DEFAULT 'en_US',
+  last_updated_by uuid,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | uuid | Row UUID |
+| `text` | text | The autocomplete string (e.g., "Ruhi Book 1", "tutoring") |
+| `count` | integer | Number of users who have used this value |
+| `type` | text | Category: `learning_source` or `proven_capacity` |
+| `language` | text | Locale of the value; currently always `en_US` |
+| `last_updated_by` | uuid | UUID of the last user who incremented the count; prevents a single user from inflating counts |
+
+**Access pattern:** `supabaseService.fetchTop200AutocompleteValues(type)` returns the top 200 entries ordered by count. `upsertAutocompleteValue(text, userId, type)` inserts or increments.
+
+**RLS Policies:**
+- `SELECT`: public (any user can read suggestions).
+- `INSERT`/`UPDATE`: authenticated users (via the Supabase anon key from the client).
+
+---
+
+### 3.4 `shared_plants` Table
 
 For the planned plant sharing feature. Holds encrypted plant data accessible to authorized users.
 
@@ -407,7 +546,7 @@ CREATE TABLE IF NOT EXISTS shared_plants (
 
 ---
 
-### 3.3 `plant_images` Table
+### 3.5 `plant_images` Table
 
 Stores E2EE encrypted image data directly in Postgres. No plaintext image content, no CDN URLs. Each plant has at most one image record (one row per `user_id + plant_id`), holding two encrypted blobs: a full-resolution version (720px) and a thumbnail (100px).
 
@@ -468,6 +607,9 @@ interface BackupObject {
   scheduled_events: ScheduledEvent[];
   plots: Plot[];
   plot_memberships: PlotMembership[];
+  buds: Bud[];
+  notchings: Notching[];
+  capabilities: Capability[];
   backup_timestamp: number;
   schema_version?: number; // To be added — currently absent
 }
@@ -757,13 +899,17 @@ plants ──┬── tendings         (1:many)
          ├── fruits            (1:many)
          ├── prunings          (1:many)
          ├── scheduled_events  (1:many)
+         ├── buds              (1:many)
+         ├── notchings         (1:many)
+         ├── capabilities      (1:many)
          └── companions        (many:many self-join via plant_a_id / plant_b_id)
 
 plots ───── plot_memberships ── plants    (many:many)
 
-users (Supabase) ── plant_images (Supabase)  (1:many)
-users (Supabase) ── encrypted_backup         (1:1, JSON blob)
-users (Supabase) ── shared_plants            (many:many via authorized_users JSONB)
+users (Supabase) ── plant_images (Supabase)      (1:many, max 100 per user)
+users (Supabase) ── encrypted_backup             (1:1, JSON blob in users.encrypted_backup)
+users (Supabase) ── shared_plants                (many:many via authorized_users JSONB)
+autocomplete_values (Supabase)                   (shared/global, not user-scoped)
 ```
 
 ---

@@ -86,19 +86,16 @@ This file records the significant architectural and product decisions made durin
 **Options considered:**
 - RSA-PSS (same as backup)
 - Ed25519 via Web Crypto (not universally available)
-- secp256k1 via `@noble/curves` (chosen)
+- secp256k1 via `@noble/curves` (chosen at the time)
 
-**Decision:** secp256k1 via `@noble/curves`.
+**Decision:** secp256k1 via `@noble/curves`. *(This decision was later superseded — see Decision 12.)*
 
-**Reasons:**
-- `@noble/curves` is already in the dependency tree (it supports multiple curves including secp256k1).
-- secp256k1 signatures are compact, fast to verify server-side in Deno, and widely understood.
-- Ed25519 is not available in all browser Web Crypto implementations at the time of development.
-- Image upload signatures use a different mechanism than backup signatures to provide defense in depth: an attacker who obtains the user's RSA keys cannot use them to forge image upload requests, and vice versa.
+**Original reasons:**
+- `@noble/curves` is already in the dependency tree.
+- secp256k1 signatures are compact and fast to verify server-side in Deno.
+- Ed25519 is not available in all browser Web Crypto implementations.
 
-**Trade-offs:**
-- Managing two signature schemes adds cognitive overhead. This is mitigated by clear separation: `signatureService.ts` = RSA-PSS for backups, `uploadService.ts` uses secp256k1 for images.
-- `@noble/curves` adds a small bundle cost, but it is already required, so the marginal cost is zero.
+**Why it was replaced:** Managing two signature schemes (secp256k1 for images, RSA-PSS for backups) added cognitive overhead with no security benefit. Decision 12 unified all signing under RSA-PSS using the existing key pair from `signatureService.ts`. The `@noble/curves` dependency remains in the codebase but is no longer on the server-critical auth path.
 
 ---
 
@@ -253,3 +250,75 @@ When any schema change is made:
 **Example:** User has plants for "Maria" and "Luis." They are siblings. The user adds a Companion record: Maria → "siblings" → Luis. This helps the user remember context when tending either plant.
 
 **The plant sharing feature (Phase 3) is entirely separate.** It allows two Garden users to co-view and co-log activities for a plant, but it is not related to the Companion activity type.
+
+---
+
+## Decision 13: Branches — Buds, Notchings, and Capabilities as First-Class Tables
+
+**Date:** Phase 2 / Phase 3 boundary
+
+**Context:** Users wanted to track capacity development alongside the spiritual relationship activities. The existing `additional_info` JSON field could theoretically hold this data, but that approach would make querying, editing, and syncing fragile.
+
+**Decision:** Three dedicated AlaSQL tables: `buds`, `notchings`, `capabilities`.
+
+**Reasons:**
+- Each type has a distinct, structured schema. `notchings` in particular requires multiple numeric fields (book, start/end unit/section, sections studied). Stuffing this into JSON would make queries and edits complicated and error-prone.
+- Separating the tables keeps backup/restore clean: each array is independently handled in `restoreBackupFromObject()` with graceful fallback for old backups that predate the feature.
+- The three types map to a clear progression: Buds (potential) → Notchings (active study) → Capabilities (confirmed capacity). Keeping them separate preserves this semantic distinction in the data model.
+- CRUD operations are consistent with all other activity tables, enabling the same edit/delete patterns in the UI.
+
+**Trade-offs:**
+- Three new tables add modest complexity to `DatabaseService.init()` and the backup object. Accepted as worthwhile for data clarity.
+- Notching is specific to the Ruhi Institute curriculum. The `book` field accepts any string, so the table is not strictly coupled to Ruhi, but the UI currently presents Ruhi book options.
+
+---
+
+## Decision 14: Harvest Reports — SHA-256 Hashed Identifiers for Privacy
+
+**Date:** Phase 2 / Phase 3 boundary
+
+**Context:** Users wanted to share care activity summaries (e.g., for community reporting) without exposing names or personal details. A simple count export would lose the longitudinal structure needed for analytics.
+
+**Options considered:**
+- Export raw counts only (no per-plant structure)
+- Export with pseudonymous sequential IDs (1, 2, 3...)
+- Export with salted SHA-256 hashes (chosen)
+- Omit export entirely
+
+**Decision:** All plant and activity IDs in `HarvestReport` are SHA-256 hashes of `userId + id`. Activities retain their timestamps and activity types; all text fields (names, notes, topics) are excluded.
+
+**Reasons:**
+- Hashed IDs allow cross-report analytics (the same plant's ID hashes to the same value across reports from the same user) without leaking the real ID.
+- Salting with `userId` ensures that two users with different gardens cannot be correlated even if they share the same plant name.
+- Excluding all text fields makes the report safe to share without any review: there is nothing in the file that can identify a person.
+- `@noble/hashes` is already a dependency (used by the image signing path), so no new package is required.
+
+**Trade-offs:**
+- Recipients cannot reconstruct the garden from a report — intentional. This is a reporting format, not a backup format.
+- Age group derivation requires `age_info` to be present in `additional_info`. Plants without age info default to `adult` — this is a slight overcount of adults in aggregate reports.
+
+**Collective Pulse (`collectivePulseService.ts`):** A second layer built on top of `HarvestReport` objects. Aggregates one or more reports into high-level metrics (care index, momentum, garden balance, lifecycle velocity, harvest ratio, pruning pulse, weekly/monthly rhythms) entirely client-side. No data ever leaves the device for this computation.
+
+---
+
+## Decision 15: Sowing Season Windows Are Hard-Coded
+
+**Date:** Phase 2 / Phase 3 boundary
+
+**Context:** The app needed a way to surface contextually appropriate moments for starting new relationships (adding plants). The sowing metaphor maps naturally to specific seasonal windows.
+
+**Options considered:**
+- User-configurable sowing windows (any date range)
+- Hard-coded fixed windows aligned to the Bahá'í administrative calendar (chosen)
+- No sowing season feature
+
+**Decision:** Four fixed 14-day sowing windows per year: Spring (Mar 21), Early Summer (Jun 21), Autumn (Sep 21), Winter (Dec 21).
+
+**Reasons:**
+- The dates correspond to the start of the Bahá'í administrative periods, which have specific cultural significance for the user base. They are not arbitrary.
+- Hard-coding eliminates configuration complexity and keeps the feature simple and reliable. Users do not need to set up windows — they just appear at the right time.
+- A 14-day duration is long enough to be practically useful but short enough to feel like a real seasonal moment, not a permanent state.
+- The `SowingSeasonBanner` only appears when a window is active or approaching (within 14 days). It is invisible during the dormant periods, keeping the UI uncluttered.
+
+**Trade-offs:**
+- Users from different traditions for whom these dates have no significance will see the banner at times that may feel arbitrary. Accepted — the app is designed for a specific community.
