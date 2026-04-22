@@ -672,7 +672,7 @@ export const PlantDetailView: React.FC = () => {
     const displayItems = type === 'companion' ? items.slice(0, 10) : items.slice(0, 1);
 
     return (
-      <div key={type} className="bg-white rounded-xl border border-gray-100 p-6">
+      <div key={type} className={`bg-white rounded-xl border border-gray-100 p-6${type === 'sunlight' ? ' md:col-span-2' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 ${config.bgColor} rounded-full flex items-center justify-center`}>
@@ -1096,7 +1096,8 @@ export const PlantDetailView: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-6">
         <div className="grid gap-6 md:grid-cols-2">
-          {(['tending', 'watering', 'sunlight'] as const).map(type => renderActivitySection(type))}
+          {renderActivitySection('sunlight')}
+          {(['tending', 'watering'] as const).map(type => renderActivitySection(type))}
           {renderBranchesCard()}
           {(['fruit', 'pruning', 'companion'] as const).map(type => renderActivitySection(type))}
         </div>
