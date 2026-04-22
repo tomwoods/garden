@@ -786,18 +786,18 @@ export const PlantDetailView: React.FC = () => {
 
         {/* BUDS STRIP */}
         <div className="mb-4 mt-4">
-          <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => handleOpenBranchesModal('bud')}
+            className="w-full flex items-center justify-between mb-2 -mx-1 px-1 py-1 rounded-lg hover:bg-amber-50 active:bg-amber-100 transition-colors"
+          >
             <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Buds</span>
             {buds.length === 0 && (
-              <span className="text-xs text-gray-400 italic flex-1 mx-3">Potentialities or Interests</span>
+              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">Potentialities or Interests</span>
             )}
-            <button
-              onClick={() => handleOpenBranchesModal('bud')}
-              className="p-1 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
-            >
+            <span className="p-1 bg-amber-50 rounded-lg">
               <Plus className="w-3.5 h-3.5 text-amber-600" />
-            </button>
-          </div>
+            </span>
+          </button>
           {buds.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {buds.map(bud => (
@@ -828,18 +828,18 @@ export const PlantDetailView: React.FC = () => {
 
         {/* NOTCHINGS */}
         <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => handleOpenBranchesModal('notching')}
+            className="w-full flex items-center justify-between mb-2 -mx-1 px-1 py-1 rounded-lg hover:bg-amber-50 active:bg-amber-100 transition-colors"
+          >
             <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Notching</span>
             {notchings.length === 0 && (
-              <span className="text-xs text-gray-400 italic flex-1 mx-3">Studies to develop capacity</span>
+              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">Studies to develop capacity</span>
             )}
-            <button
-              onClick={() => handleOpenBranchesModal('notching')}
-              className="p-1 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
-            >
+            <span className="p-1 bg-amber-50 rounded-lg">
               <Plus className="w-3.5 h-3.5 text-amber-700" />
-            </button>
-          </div>
+            </span>
+          </button>
           {notchings.length > 0 && (
             <div className="space-y-2">
               {notchings.slice(0, 1).map(n => (
@@ -884,18 +884,18 @@ export const PlantDetailView: React.FC = () => {
 
         {/* CAPABILITIES STRIP */}
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => handleOpenBranchesModal('capability')}
+            className="w-full flex items-center justify-between mb-2 -mx-1 px-1 py-1 rounded-lg hover:bg-emerald-50 active:bg-emerald-100 transition-colors"
+          >
             <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Capabilities</span>
             {capabilities.length === 0 && (
-              <span className="text-xs text-gray-400 italic flex-1 mx-3">Proven or developed capabilities</span>
+              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">Proven or developed capabilities</span>
             )}
-            <button
-              onClick={() => handleOpenBranchesModal('capability')}
-              className="p-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
-            >
+            <span className="p-1 bg-emerald-50 rounded-lg">
               <Plus className="w-3.5 h-3.5 text-emerald-600" />
-            </button>
-          </div>
+            </span>
+          </button>
           {capabilities.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {capabilities.map(cap => (
