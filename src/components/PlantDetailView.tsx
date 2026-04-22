@@ -780,7 +780,7 @@ export const PlantDetailView: React.FC = () => {
 
         {!hasAny && (
           <p className="text-gray-500 text-sm italic leading-relaxed">
-            Every soul carries unseen potential. Note buds of capacity, track growth through study, and celebrate the capacities being rendered in service.
+            If we sow the seed, a mighty tree appears from it. The virtues of the seed are revealed in the tree; it puts forth branches, leaves, blossoms, and produces fruits. All these virtues were hidden and potential in the seed. Use Notches to track progress in the systematic effort to enhance capacity for service.
           </p>
         )}
 
