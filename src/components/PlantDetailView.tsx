@@ -785,7 +785,7 @@ export const PlantDetailView: React.FC = () => {
         )}
 
         {/* BUDS STRIP */}
-        <div className="mb-4">
+        <div className="mb-4 mt-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Buds</span>
             {buds.length === 0 && (
