@@ -4,6 +4,7 @@ import { ArrowLeft, CreditCard as Edit, Users, Trash2, Plus } from 'lucide-react
 import { AddEditPlotModal } from './AddEditPlotModal';
 import { ManageMembersModal } from './ManageMembersModal';
 import { BulkActivityModal } from './BulkActivityModal';
+import { BulkNotchingModal } from './BulkNotchingModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { DatabaseService, type PlotWithMembers, type Plant } from '../lib/database';
@@ -24,6 +25,7 @@ export const PlotDetailView: React.FC = () => {
     isOpen: false,
     type: 'tending'
   });
+  const [bulkNotchingModal, setBulkNotchingModal] = useState(false);
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     onConfirm: () => void;
@@ -141,6 +143,20 @@ export const PlotDetailView: React.FC = () => {
     } catch (err) {
       console.error('Failed to log bulk activity:', err);
       error('Failed to log activity', 'Please try again');
+    }
+  };
+
+  const handleBulkNotchingSubmit = async (notchingData: any, selectedPlantIds: string[]) => {
+    if (!plot) return;
+    try {
+      const timestamp = notchingData.datetime || Date.now();
+      for (const plantId of selectedPlantIds) {
+        await DatabaseService.addNotching({ plant_id: plantId, ...notchingData, datetime: timestamp });
+      }
+      success('Notching logged', `Study session recorded for ${selectedPlantIds.length} plants`);
+    } catch (err) {
+      console.error('Failed to log bulk notching:', err);
+      error('Failed to log notching', 'Please try again');
     }
   };
 
@@ -326,6 +342,23 @@ export const PlotDetailView: React.FC = () => {
                     <div className="text-sm opacity-80">Log service by plot members</div>
                   </div>
                 </button>
+
+                <button
+                  onClick={() => {
+                    if (!plot || plot.members.length === 0) {
+                      error('No members', 'Add plants to this plot before logging activities');
+                      return;
+                    }
+                    setBulkNotchingModal(true);
+                  }}
+                  className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
+                >
+                  <span className="text-2xl">📖</span>
+                  <div className="text-left">
+                    <div className="font-medium">Notching</div>
+                    <div className="text-sm opacity-80">Log Ruhi study session</div>
+                  </div>
+                </button>
               </div>
             </div>
           )}
@@ -356,6 +389,14 @@ export const PlotDetailView: React.FC = () => {
         plants={plot.members}
         activityType={bulkActivityModal.type}
         onSubmit={handleBulkActivitySubmit}
+      />
+
+      <BulkNotchingModal
+        isOpen={bulkNotchingModal}
+        onClose={() => setBulkNotchingModal(false)}
+        plotName={plot.name}
+        plants={plot.members}
+        onSubmit={handleBulkNotchingSubmit}
       />
 
       <ConfirmationModal

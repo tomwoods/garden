@@ -173,14 +173,17 @@ export class SupabaseService {
   }
 
   /**
-   * Fetch the top 200 most-used learning sources for autocomplete suggestions.
+   * Fetch the top 200 most-used autocomplete values of a given type.
    * Returns an empty array on any failure (network down, timeout, etc.).
    */
-  static async fetchTop200LearningSources(): Promise<Array<{ id: string; text: string; count: number }>> {
+  static async fetchTop200AutocompleteValues(
+    type: string
+  ): Promise<Array<{ id: string; text: string; count: number }>> {
     try {
       const { data, error } = await supabase
-        .from('learning_sources')
+        .from('autocomplete_values')
         .select('id, text, count')
+        .eq('type', type)
         .order('count', { ascending: false })
         .limit(200);
 
@@ -191,36 +194,59 @@ export class SupabaseService {
     }
   }
 
+  /** Convenience wrapper for learning source autocomplete. */
+  static async fetchTop200LearningSources(): Promise<Array<{ id: string; text: string; count: number }>> {
+    return this.fetchTop200AutocompleteValues('learning_source');
+  }
+
+  /** Convenience wrapper for proven capacity autocomplete. */
+  static async fetchTop200ProvenCapacities(): Promise<Array<{ id: string; text: string; count: number }>> {
+    return this.fetchTop200AutocompleteValues('proven_capacity');
+  }
+
   /**
-   * Upsert a learning source — insert if new, increment count if it exists
+   * Upsert an autocomplete value — insert if new, increment count if it exists
    * and was last updated by a different user. Fire-and-forget; never throws.
    */
-  static async upsertLearningSource(text: string, userId: string): Promise<void> {
+  static async upsertAutocompleteValue(text: string, userId: string, type: string): Promise<void> {
     try {
       const trimmed = text.trim();
       if (!trimmed) return;
 
       const { data: existing } = await supabase
-        .from('learning_sources')
+        .from('autocomplete_values')
         .select('id, count, last_updated_by')
         .eq('text', trimmed)
+        .eq('type', type)
         .maybeSingle();
 
       if (!existing) {
-        await supabase.from('learning_sources').insert({
+        await supabase.from('autocomplete_values').insert({
           text: trimmed,
           count: 1,
-          last_updated_by: userId
+          last_updated_by: userId,
+          type,
+          language: 'en_US'
         });
       } else if (existing.last_updated_by !== userId) {
         await supabase
-          .from('learning_sources')
+          .from('autocomplete_values')
           .update({ count: existing.count + 1, last_updated_by: userId })
           .eq('id', existing.id);
       }
     } catch {
-      // Silently swallow — this feature must never block a watering save
+      // Silently swallow — this must never block a save operation
     }
+  }
+
+  /** Convenience wrapper — upsert a learning source. */
+  static async upsertLearningSource(text: string, userId: string): Promise<void> {
+    return this.upsertAutocompleteValue(text, userId, 'learning_source');
+  }
+
+  /** Convenience wrapper — upsert a proven capacity. */
+  static async upsertProvenCapacity(text: string, userId: string): Promise<void> {
+    return this.upsertAutocompleteValue(text, userId, 'proven_capacity');
   }
 
   /**

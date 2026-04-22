@@ -6,8 +6,9 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import isToday from 'dayjs/plugin/isToday';
 import isTomorrow from 'dayjs/plugin/isTomorrow';
 import isYesterday from 'dayjs/plugin/isYesterday';
-import { DatabaseService, type Plant, type Tending, type Watering, type Sunlight, type Fruit, type Pruning, type Companion } from '../lib/database';
+import { DatabaseService, type Plant, type Tending, type Watering, type Sunlight, type Fruit, type Pruning, type Companion, type Bud, type Notching, type Capability } from '../lib/database';
 import { ActivityModal } from './ActivityModal';
+import { BranchesModal, type BranchesSubType } from './BranchesModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { PlantImageViewer } from './PlantImageViewer';
@@ -64,6 +65,16 @@ export const PlantDetailView: React.FC = () => {
     pruning: [],
     companion: []
   });
+  const [branchesData, setBranchesData] = useState<{
+    buds: Bud[];
+    notchings: Notching[];
+    capabilities: Capability[];
+  }>({ buds: [], notchings: [], capabilities: [] });
+  const [branchesModal, setBranchesModal] = useState<{
+    isOpen: boolean;
+    subType: BranchesSubType;
+    editingItem?: any;
+  }>({ isOpen: false, subType: 'bud' });
   const [allPlants, setAllPlants] = useState<Plant[]>([]);
   const [plantImages, setPlantImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -207,7 +218,7 @@ export const PlantDetailView: React.FC = () => {
     
     setIsLoading(true);
     try {
-      const [plantData, allPlantsData, tendings, waterings, sunlight, fruits, prunings, companions, scheduledEvents] = await Promise.all([
+      const [plantData, allPlantsData, tendings, waterings, sunlight, fruits, prunings, companions, scheduledEvents, buds, notchings, capabilities] = await Promise.all([
         DatabaseService.getPlant(plantId),
         DatabaseService.getAllPlants(),
         DatabaseService.getTendingsForPlant(plantId),
@@ -216,7 +227,10 @@ export const PlantDetailView: React.FC = () => {
         DatabaseService.getFruitsForPlant(plantId),
         DatabaseService.getPruningsForPlant(plantId),
         DatabaseService.getCompanionsForPlant(plantId),
-        DatabaseService.getScheduledEventsForPlant(plantId)
+        DatabaseService.getScheduledEventsForPlant(plantId),
+        DatabaseService.getBudsForPlant(plantId),
+        DatabaseService.getNotchingsForPlant(plantId),
+        DatabaseService.getCapabilitiesForPlant(plantId)
       ]);
 
       if (!plantData) {
@@ -236,6 +250,7 @@ export const PlantDetailView: React.FC = () => {
         pruning: prunings,
         companion: companions
       });
+      setBranchesData({ buds, notchings, capabilities });
     } catch (error) {
       console.error('Failed to load plant data:', error);
       navigate('/');
@@ -558,6 +573,39 @@ export const PlantDetailView: React.FC = () => {
     });
   };
 
+  const handleOpenBranchesModal = (subType: BranchesSubType, editingItem?: any) => {
+    setBranchesModal({ isOpen: true, subType, editingItem });
+  };
+
+  const handleBranchesSubmit = async (subType: BranchesSubType, data: any) => {
+    if (!plantId) return;
+    if (branchesModal.editingItem) {
+      if (subType === 'bud') await DatabaseService.updateBud(branchesModal.editingItem.id, { text: data.text });
+      else if (subType === 'notching') await DatabaseService.updateNotching(branchesModal.editingItem.id, data);
+      else if (subType === 'capability') await DatabaseService.updateCapability(branchesModal.editingItem.id, { text: data.text });
+    } else {
+      if (subType === 'bud') await DatabaseService.addBud({ plant_id: plantId, text: data.text, created_at: Date.now() });
+      else if (subType === 'notching') await DatabaseService.addNotching({ plant_id: plantId, ...data });
+      else if (subType === 'capability') await DatabaseService.addCapability({ plant_id: plantId, text: data.text, created_at: Date.now() });
+    }
+    await loadPlantData();
+  };
+
+  const handleDeleteBranchItem = (subType: BranchesSubType, item: any) => {
+    const labels: Record<BranchesSubType, string> = { bud: 'Bud', notching: 'Notching', capability: 'Capability' };
+    setConfirmationModal({
+      isOpen: true,
+      title: `Delete ${labels[subType]}`,
+      message: `Are you sure you want to delete this ${labels[subType].toLowerCase()}? This action cannot be undone.`,
+      onConfirm: async () => {
+        if (subType === 'bud') await DatabaseService.deleteBud(item.id);
+        else if (subType === 'notching') await DatabaseService.deleteNotching(item.id);
+        else if (subType === 'capability') await DatabaseService.deleteCapability(item.id);
+        await loadPlantData();
+      }
+    });
+  };
+
   const handleDeleteActivity = (type: string, item: any) => {
     setConfirmationModal({
       isOpen: true,
@@ -709,6 +757,169 @@ export const PlantDetailView: React.FC = () => {
             )}
           </div>
         )}
+      </div>
+    );
+  };
+
+  const renderBranchesCard = () => {
+    const { buds, notchings, capabilities } = branchesData;
+    const hasAny = buds.length > 0 || notchings.length > 0 || capabilities.length > 0;
+    const showMoreNotchings = notchings.length > 1;
+
+    return (
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
+        {/* Card Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
+              <span className="text-xl">🌿</span>
+            </div>
+            <h3 className="text-lg font-semibold text-amber-700">Branches</h3>
+          </div>
+        </div>
+
+        {!hasAny && (
+          <p className="text-gray-500 text-sm italic leading-relaxed">
+            Every soul carries unseen potential. Note buds of capacity, track growth through study, and celebrate the capacities being rendered in service.
+          </p>
+        )}
+
+        {/* BUDS STRIP */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Buds</span>
+            <button
+              onClick={() => handleOpenBranchesModal('bud')}
+              className="p-1 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-amber-600" />
+            </button>
+          </div>
+          {buds.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">No buds noted yet</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {buds.map(bud => (
+                <div
+                  key={bud.id}
+                  className="group flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium"
+                >
+                  <span>{bud.text}</span>
+                  <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                    <button
+                      onClick={() => handleOpenBranchesModal('bud', bud)}
+                      className="text-amber-600 hover:text-amber-800 transition-colors"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBranchItem('bud', bud)}
+                      className="text-amber-600 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* CAPABILITIES STRIP */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Capabilities</span>
+            <button
+              onClick={() => handleOpenBranchesModal('capability')}
+              className="p-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-600" />
+            </button>
+          </div>
+          {capabilities.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">No capabilities recorded yet</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {capabilities.map(cap => (
+                <div
+                  key={cap.id}
+                  className="group flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium"
+                >
+                  <span>{cap.text}</span>
+                  <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                    <button
+                      onClick={() => handleOpenBranchesModal('capability', cap)}
+                      className="text-emerald-600 hover:text-emerald-800 transition-colors"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBranchItem('capability', cap)}
+                      className="text-emerald-600 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* NOTCHINGS */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Notching</span>
+            <button
+              onClick={() => handleOpenBranchesModal('notching')}
+              className="p-1 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-amber-700" />
+            </button>
+          </div>
+          {notchings.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">No study sessions recorded yet</p>
+          ) : (
+            <div className="space-y-2">
+              {notchings.slice(0, 1).map(n => (
+                <div key={n.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 mb-0.5">{formatRelativeTime(n.datetime)}</div>
+                    <div className="text-sm font-medium text-gray-800">
+                      {n.book.replace('ruhi_', 'Ruhi Book ').replace(/_/g, ' ')} &mdash; U{n.start_unit}S{n.start_section} to U{n.end_unit}S{n.end_section}
+                    </div>
+                    <div className="text-xs text-amber-600 mt-0.5">about {n.sections_studied} {n.sections_studied === 1 ? 'section' : 'sections'}</div>
+                    {n.progress_description && (
+                      <div className="text-xs text-gray-500 mt-1 line-clamp-2">{n.progress_description}</div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 ml-2">
+                    <button
+                      onClick={() => handleOpenBranchesModal('notching', n)}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBranchItem('notching', n)}
+                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {showMoreNotchings && (
+                <button
+                  onClick={() => handleSeeMore('notching')}
+                  className="w-full py-2 text-amber-700 hover:opacity-80 text-sm font-medium transition-colors"
+                >
+                  See more ({notchings.length - 1} more)
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -882,9 +1093,9 @@ export const PlantDetailView: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-6">
         <div className="grid gap-6 md:grid-cols-2">
-          {(['tending', 'watering', 'sunlight', 'fruit', 'pruning', 'companion'] as const).map(type => 
-            renderActivitySection(type)
-          )}
+          {(['tending', 'watering', 'sunlight'] as const).map(type => renderActivitySection(type))}
+          {renderBranchesCard()}
+          {(['fruit', 'pruning', 'companion'] as const).map(type => renderActivitySection(type))}
         </div>
       </main>
 
@@ -898,6 +1109,16 @@ export const PlantDetailView: React.FC = () => {
         editingItem={activityModal.editingItem}
         allPlants={allPlants}
         onSubmit={handleActivitySubmit}
+      />
+
+      <BranchesModal
+        isOpen={branchesModal.isOpen}
+        onClose={() => setBranchesModal(prev => ({ ...prev, isOpen: false }))}
+        subType={branchesModal.subType}
+        plantName={plant.name}
+        plantId={plant.id}
+        editingItem={branchesModal.editingItem}
+        onSubmit={handleBranchesSubmit}
       />
 
       <ConfirmationModal

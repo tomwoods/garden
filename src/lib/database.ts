@@ -93,6 +93,34 @@ export interface PlotMembership {
   plant_id: string;
 }
 
+export interface Bud {
+  id: string;
+  plant_id: string;
+  text: string;
+  created_at: number;
+}
+
+export interface Notching {
+  id: string;
+  plant_id: string;
+  datetime: number;
+  book: string;
+  start_unit: number;
+  start_section: number;
+  end_unit: number;
+  end_section: number;
+  sections_studied: number;
+  progress_description?: string;
+  additional_info?: string;
+}
+
+export interface Capability {
+  id: string;
+  plant_id: string;
+  text: string;
+  created_at: number;
+}
+
 export interface PlotWithMembers extends Plot {
   members: Plant[];
 }
@@ -259,6 +287,34 @@ export class DatabaseService {
       id STRING PRIMARY KEY,
       plot_id STRING NOT NULL,
       plant_id STRING NOT NULL
+    `);
+
+    await this.createTable('buds', `
+      id STRING PRIMARY KEY,
+      plant_id STRING NOT NULL,
+      text STRING NOT NULL,
+      created_at NUMBER NOT NULL
+    `);
+
+    await this.createTable('notchings', `
+      id STRING PRIMARY KEY,
+      plant_id STRING NOT NULL,
+      datetime NUMBER NOT NULL,
+      book STRING NOT NULL,
+      start_unit NUMBER NOT NULL,
+      start_section NUMBER NOT NULL,
+      end_unit NUMBER NOT NULL,
+      end_section NUMBER NOT NULL,
+      sections_studied NUMBER NOT NULL,
+      progress_description STRING,
+      additional_info STRING
+    `);
+
+    await this.createTable('capabilities', `
+      id STRING PRIMARY KEY,
+      plant_id STRING NOT NULL,
+      text STRING NOT NULL,
+      created_at NUMBER NOT NULL
     `);
 
     this.initialized = true;
@@ -434,7 +490,10 @@ export class DatabaseService {
     alasql('DELETE FROM fruits WHERE plant_id = ?', [plantId]);
     alasql('DELETE FROM prunings WHERE plant_id = ?', [plantId]);
     alasql('DELETE FROM scheduled_events WHERE plant_id = ?', [plantId]);
-    
+    alasql('DELETE FROM buds WHERE plant_id = ?', [plantId]);
+    alasql('DELETE FROM notchings WHERE plant_id = ?', [plantId]);
+    alasql('DELETE FROM capabilities WHERE plant_id = ?', [plantId]);
+
     await this.saveToStorage();
   }
 
@@ -960,7 +1019,10 @@ export class DatabaseService {
       alasql('DELETE FROM scheduled_events');
       alasql('DELETE FROM plots');
       alasql('DELETE FROM plot_memberships');
-      
+      alasql('DELETE FROM buds');
+      alasql('DELETE FROM notchings');
+      alasql('DELETE FROM capabilities');
+
       await this.saveToStorage();
       clearPendingChanges();
       console.log('All database data cleared');
@@ -968,6 +1030,94 @@ export class DatabaseService {
       console.error('Failed to clear database data:', error);
       throw error;
     }
+  }
+
+  // Bud operations
+  static async addBud(bud: Omit<Bud, 'id'>): Promise<Bud> {
+    const newBud: Bud = { id: uuidv4(), ...bud };
+    alasql('INSERT INTO buds VALUES (?, ?, ?, ?)', [
+      newBud.id, newBud.plant_id, newBud.text, newBud.created_at
+    ]);
+    await this.saveToStorage();
+    return newBud;
+  }
+
+  static async getBudsForPlant(plantId: string): Promise<Bud[]> {
+    return alasql('SELECT * FROM buds WHERE plant_id = ? ORDER BY created_at ASC', [plantId]);
+  }
+
+  static async updateBud(id: string, updates: Partial<Omit<Bud, 'id' | 'plant_id' | 'created_at'>>): Promise<void> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    alasql(`UPDATE buds SET ${fields} WHERE id = ?`, [...values, id]);
+    await this.saveToStorage();
+  }
+
+  static async deleteBud(budId: string): Promise<void> {
+    alasql('DELETE FROM buds WHERE id = ?', [budId]);
+    await this.saveToStorage();
+  }
+
+  // Notching operations
+  static async addNotching(notching: Omit<Notching, 'id'>): Promise<Notching> {
+    const newNotching: Notching = { id: uuidv4(), ...notching };
+    alasql('INSERT INTO notchings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+      newNotching.id,
+      newNotching.plant_id,
+      newNotching.datetime,
+      newNotching.book,
+      newNotching.start_unit,
+      newNotching.start_section,
+      newNotching.end_unit,
+      newNotching.end_section,
+      newNotching.sections_studied,
+      newNotching.progress_description || null,
+      newNotching.additional_info || null
+    ]);
+    await this.saveToStorage();
+    return newNotching;
+  }
+
+  static async getNotchingsForPlant(plantId: string): Promise<Notching[]> {
+    return alasql('SELECT * FROM notchings WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
+  }
+
+  static async updateNotching(id: string, updates: Partial<Omit<Notching, 'id' | 'plant_id'>>): Promise<void> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    alasql(`UPDATE notchings SET ${fields} WHERE id = ?`, [...values, id]);
+    await this.saveToStorage();
+  }
+
+  static async deleteNotching(notchingId: string): Promise<void> {
+    alasql('DELETE FROM notchings WHERE id = ?', [notchingId]);
+    await this.saveToStorage();
+  }
+
+  // Capability operations
+  static async addCapability(capability: Omit<Capability, 'id'>): Promise<Capability> {
+    const newCapability: Capability = { id: uuidv4(), ...capability };
+    alasql('INSERT INTO capabilities VALUES (?, ?, ?, ?)', [
+      newCapability.id, newCapability.plant_id, newCapability.text, newCapability.created_at
+    ]);
+    await this.saveToStorage();
+    return newCapability;
+  }
+
+  static async getCapabilitiesForPlant(plantId: string): Promise<Capability[]> {
+    return alasql('SELECT * FROM capabilities WHERE plant_id = ? ORDER BY created_at ASC', [plantId]);
+  }
+
+  static async updateCapability(id: string, updates: Partial<Omit<Capability, 'id' | 'plant_id' | 'created_at'>>): Promise<void> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    alasql(`UPDATE capabilities SET ${fields} WHERE id = ?`, [...values, id]);
+    await this.saveToStorage();
+  }
+
+  static async deleteCapability(capabilityId: string): Promise<void> {
+    alasql('DELETE FROM capabilities WHERE id = ?', [capabilityId]);
+    await this.saveToStorage();
   }
 
   // Backup operations
@@ -983,6 +1133,9 @@ export class DatabaseService {
       scheduled_events: alasql('SELECT * FROM scheduled_events'),
       plots: alasql('SELECT * FROM plots'),
       plot_memberships: alasql('SELECT * FROM plot_memberships'),
+      buds: alasql('SELECT * FROM buds'),
+      notchings: alasql('SELECT * FROM notchings'),
+      capabilities: alasql('SELECT * FROM capabilities'),
       backup_timestamp: Date.now()
     };
   }
@@ -999,6 +1152,9 @@ export class DatabaseService {
     alasql('DELETE FROM scheduled_events');
     alasql('DELETE FROM plots');
     alasql('DELETE FROM plot_memberships');
+    alasql('DELETE FROM buds');
+    alasql('DELETE FROM notchings');
+    alasql('DELETE FROM capabilities');
 
     // Restore data
     if (backup.plants) {
@@ -1088,6 +1244,31 @@ export class DatabaseService {
       backup.plot_memberships.forEach((membership: PlotMembership) => {
         alasql('INSERT INTO plot_memberships VALUES (?, ?, ?)', [
           membership.id, membership.plot_id, membership.plant_id
+        ]);
+      });
+    }
+
+    if (backup.buds) {
+      backup.buds.forEach((bud: Bud) => {
+        alasql('INSERT INTO buds VALUES (?, ?, ?, ?)', [
+          bud.id, bud.plant_id, bud.text, bud.created_at
+        ]);
+      });
+    }
+
+    if (backup.notchings) {
+      backup.notchings.forEach((n: Notching) => {
+        alasql('INSERT INTO notchings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+          n.id, n.plant_id, n.datetime, n.book, n.start_unit, n.start_section,
+          n.end_unit, n.end_section, n.sections_studied, n.progress_description || null, n.additional_info || null
+        ]);
+      });
+    }
+
+    if (backup.capabilities) {
+      backup.capabilities.forEach((cap: Capability) => {
+        alasql('INSERT INTO capabilities VALUES (?, ?, ?, ?)', [
+          cap.id, cap.plant_id, cap.text, cap.created_at
         ]);
       });
     }

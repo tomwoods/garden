@@ -1,0 +1,271 @@
+import React, { useState } from 'react';
+import { X, Plus } from 'lucide-react';
+import { AdditionalInfoMenu } from './AdditionalInfoMenu';
+import { PlantSelectorChecklist } from './PlantSelectorChecklist';
+import type { Plant } from '../lib/database';
+
+const RUHI_BOOKS = [
+  { value: 'ruhi_1', label: 'Ruhi Book 1: Reflections on the Life of the Spirit', sectionsPerUnit: 12 },
+  { value: 'ruhi_2', label: 'Ruhi Book 2: Arising to Serve', sectionsPerUnit: 12 },
+  { value: 'ruhi_3', label: 'Ruhi Book 3: Teaching Children\'s Classes, Grade 1', sectionsPerUnit: 12 },
+  { value: 'ruhi_4', label: 'Ruhi Book 4: The Twin Manifestations', sectionsPerUnit: 12 },
+  { value: 'ruhi_5', label: 'Ruhi Book 5: Releasing the Powers of Junior Youth', sectionsPerUnit: 12 },
+  { value: 'ruhi_6', label: 'Ruhi Book 6: Teaching the Cause', sectionsPerUnit: 12 },
+  { value: 'ruhi_7', label: 'Ruhi Book 7: Walking Together on a Path of Service', sectionsPerUnit: 12 },
+  { value: 'ruhi_8', label: 'Ruhi Book 8: The Covenant of Bahá\'u\'lláh', sectionsPerUnit: 18 },
+  { value: 'ruhi_9', label: 'Ruhi Book 9: Gaining an Historical Perspective', sectionsPerUnit: 18 },
+  { value: 'ruhi_10', label: 'Ruhi Book 10: Building Vibrant Communities', sectionsPerUnit: 18 },
+];
+
+const UNITS_PER_BOOK = 3;
+
+function getSectionsPerUnit(bookValue: string): number {
+  return RUHI_BOOKS.find(b => b.value === bookValue)?.sectionsPerUnit ?? 12;
+}
+
+function computeSectionsStudied(book: string, su: number, ss: number, eu: number, es: number): number {
+  const spu = getSectionsPerUnit(book);
+  const start = (su - 1) * spu + ss;
+  const end = (eu - 1) * spu + es;
+  const diff = end - start;
+  return diff <= 0 ? 1 : diff + 1;
+}
+
+interface BulkNotchingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  plotName: string;
+  plants: Plant[];
+  onSubmit: (data: any, selectedPlantIds: string[]) => Promise<void>;
+}
+
+export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
+  isOpen,
+  onClose,
+  plotName,
+  plants,
+  onSubmit
+}) => {
+  const [book, setBook] = useState('ruhi_1');
+  const [startUnit, setStartUnit] = useState(1);
+  const [startSection, setStartSection] = useState(1);
+  const [endUnit, setEndUnit] = useState(1);
+  const [endSection, setEndSection] = useState(1);
+  const [progressDescription, setProgressDescription] = useState('');
+  const [showDateTimeField, setShowDateTimeField] = useState(false);
+  const [customDateTime, setCustomDateTime] = useState<number>(Date.now());
+  const [showDateTimeMenu, setShowDateTimeMenu] = useState(false);
+  const [selectedPlantIds, setSelectedPlantIds] = useState<Set<string>>(new Set(plants.map(p => p.id)));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setBook('ruhi_1');
+      setStartUnit(1); setStartSection(1);
+      setEndUnit(1); setEndSection(1);
+      setProgressDescription('');
+      setShowDateTimeField(false);
+      setCustomDateTime(Date.now());
+      setShowDateTimeMenu(false);
+      setSelectedPlantIds(new Set(plants.map(p => p.id)));
+    }
+  }, [isOpen, plants]);
+
+  const sectionsStudied = computeSectionsStudied(book, startUnit, startSection, endUnit, endSection);
+  const isComplete = book && startUnit > 0 && startSection > 0 && endUnit > 0 && endSection > 0 && selectedPlantIds.size > 0;
+
+  const handleStartChange = (field: 'unit' | 'section', value: number) => {
+    if (field === 'unit') {
+      setStartUnit(value);
+      if (endUnit < value) { setEndUnit(value); setEndSection(startSection); }
+    } else {
+      setStartSection(value);
+      if (endUnit === startUnit && endSection < value) setEndSection(value);
+    }
+  };
+
+  const handleBookChange = (v: string) => {
+    setBook(v);
+    setStartUnit(1); setStartSection(1);
+    setEndUnit(1); setEndSection(1);
+  };
+
+  const timestampToDateTimeLocal = (ts: number) => {
+    const d = new Date(ts);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isComplete) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        datetime: showDateTimeField ? customDateTime : Date.now(),
+        book,
+        start_unit: startUnit,
+        start_section: startSection,
+        end_unit: endUnit,
+        end_section: endSection,
+        sections_studied: sectionsStudied,
+        progress_description: progressDescription
+      }, Array.from(selectedPlantIds));
+      onClose();
+    } catch (err) {
+      console.error('Failed to save bulk notching:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100">
+              <span className="text-xl">📖</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Group Notching</h2>
+              <p className="text-sm text-gray-600">Log Ruhi study session for {plotName}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 relative">
+            <button
+              type="button"
+              onClick={() => setShowDateTimeMenu(!showDateTimeMenu)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            {showDateTimeMenu && (
+              <AdditionalInfoMenu
+                mode="datetime"
+                onSetDateTime={() => { setShowDateTimeField(true); setShowDateTimeMenu(false); }}
+                onClose={() => setShowDateTimeMenu(false)}
+              />
+            )}
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {showDateTimeField && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date & Time</label>
+              <input
+                type="datetime-local"
+                value={timestampToDateTimeLocal(customDateTime)}
+                onChange={e => setCustomDateTime(new Date(e.target.value).getTime())}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+              />
+            </div>
+          )}
+
+          {/* Session Start */}
+          <div className="bg-amber-50 rounded-xl p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-amber-800">Session Start</h3>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Book *</label>
+              <select
+                value={book}
+                onChange={e => handleBookChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm"
+              >
+                {RUHI_BOOKS.map(b => (
+                  <option key={b.value} value={b.value}>{b.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Unit *</label>
+                <input type="number" min={1} max={UNITS_PER_BOOK} value={startUnit}
+                  onChange={e => handleStartChange('unit', parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Section *</label>
+                <input type="number" min={1} max={getSectionsPerUnit(book)} value={startSection}
+                  onChange={e => handleStartChange('section', parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
+              </div>
+            </div>
+          </div>
+
+          {/* Session End */}
+          <div className="bg-amber-50 rounded-xl p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-amber-800">Session End</h3>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Book</label>
+              <select value={book} disabled
+                className="w-full px-3 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm text-gray-500 cursor-not-allowed">
+                {RUHI_BOOKS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Same book as session start</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Unit *</label>
+                <input type="number" min={startUnit} max={UNITS_PER_BOOK} value={endUnit}
+                  onChange={e => setEndUnit(parseInt(e.target.value) || startUnit)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Section *</label>
+                <input type="number" min={endUnit === startUnit ? startSection : 1} max={getSectionsPerUnit(book)} value={endSection}
+                  onChange={e => setEndSection(parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
+              </div>
+            </div>
+          </div>
+
+          {/* Summary */}
+          {isComplete && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
+              <span className="text-amber-700 text-sm font-medium">Total sections studied:</span>
+              <span className="text-amber-900 font-semibold text-sm">about {sectionsStudied} {sectionsStudied === 1 ? 'section' : 'sections'}</span>
+            </div>
+          )}
+
+          {/* Progress description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Progress description</label>
+            <textarea
+              value={progressDescription}
+              onChange={e => setProgressDescription(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none"
+              rows={3}
+              placeholder="What was studied or discussed during this session?"
+            />
+          </div>
+
+          {/* Plant selector */}
+          <PlantSelectorChecklist
+            plants={plants}
+            selectedPlantIds={selectedPlantIds}
+            onSelectionChange={setSelectedPlantIds}
+          />
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={!isComplete || isSubmitting}
+              className="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors">
+              {isSubmitting ? 'Saving...' : `Log for ${selectedPlantIds.size} plants`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

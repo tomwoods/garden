@@ -7,6 +7,7 @@ import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import { DatabaseService, type Plant, type Tending, type Watering, type Sunlight, type Fruit, type Pruning, type Companion } from '../lib/database';
 import { ActivityModal } from './ActivityModal';
+import { BranchesModal, type BranchesSubType } from './BranchesModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { useToast } from '../hooks/useToast';
@@ -15,7 +16,7 @@ dayjs.extend(relativeTime);
 dayjs.extend(isToday);
 dayjs.extend(isYesterday);
 
-type ActivityType = 'tending' | 'watering' | 'sunlight' | 'fruit' | 'pruning' | 'companion';
+type ActivityType = 'tending' | 'watering' | 'sunlight' | 'fruit' | 'pruning' | 'companion' | 'notching';
 
 export const ActivityListView: React.FC = () => {
   const { plantId, activityType } = useParams<{ plantId: string; activityType: ActivityType }>();
@@ -30,6 +31,10 @@ export const ActivityListView: React.FC = () => {
   }>({
     isOpen: false
   });
+  const [branchesModal, setBranchesModal] = useState<{
+    isOpen: boolean;
+    editingItem?: any;
+  }>({ isOpen: false });
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     onConfirm: () => void;
@@ -91,6 +96,8 @@ export const ActivityListView: React.FC = () => {
         return await DatabaseService.getPruningsForPlant(plantId);
       case 'companion':
         return await DatabaseService.getCompanionsForPlant(plantId);
+      case 'notching':
+        return await DatabaseService.getNotchingsForPlant(plantId);
       default:
         return [];
     }
@@ -145,6 +152,14 @@ export const ActivityListView: React.FC = () => {
         bgColor: 'bg-indigo-50',
         borderColor: 'border-indigo-200',
         buttonColor: 'bg-indigo-600 hover:bg-indigo-700'
+      },
+      notching: {
+        emoji: '📖',
+        title: 'Notching',
+        color: 'text-amber-700',
+        bgColor: 'bg-amber-50',
+        borderColor: 'border-amber-200',
+        buttonColor: 'bg-amber-600 hover:bg-amber-700'
       }
     };
     return configs[activityType as keyof typeof configs];
@@ -168,17 +183,19 @@ export const ActivityListView: React.FC = () => {
   };
 
   const handleAddActivity = () => {
-    setActivityModal({
-      isOpen: true,
-      editingItem: undefined
-    });
+    if (activityType === 'notching') {
+      setBranchesModal({ isOpen: true, editingItem: undefined });
+    } else {
+      setActivityModal({ isOpen: true, editingItem: undefined });
+    }
   };
 
   const handleEditActivity = (item: any) => {
-    setActivityModal({
-      isOpen: true,
-      editingItem: item
-    });
+    if (activityType === 'notching') {
+      setBranchesModal({ isOpen: true, editingItem: item });
+    } else {
+      setActivityModal({ isOpen: true, editingItem: item });
+    }
   };
 
   const handleDeleteActivity = (item: any) => {
@@ -208,8 +225,11 @@ export const ActivityListView: React.FC = () => {
             case 'companion':
               await DatabaseService.deleteCompanion(item.id);
               break;
+            case 'notching':
+              await DatabaseService.deleteNotching(item.id);
+              break;
           }
-          
+
           success('Activity deleted', `${config.title} activity has been removed`);
           await loadData();
         } catch (error) {
@@ -320,6 +340,23 @@ export const ActivityListView: React.FC = () => {
     }
   };
 
+  const handleBranchesSubmit = async (_subType: BranchesSubType, data: any) => {
+    if (!plantId) return;
+    try {
+      if (branchesModal.editingItem) {
+        await DatabaseService.updateNotching(branchesModal.editingItem.id, data);
+        success('Notching updated', 'Study session has been updated');
+      } else {
+        await DatabaseService.addNotching({ plant_id: plantId, ...data });
+        success('Notching recorded', 'Study session has been recorded');
+      }
+      await loadData();
+    } catch (err) {
+      console.error('Failed to save notching:', err);
+      error('Failed to save', 'Please try again');
+    }
+  };
+
   const renderActivityContent = (item: any) => {
     switch (activityType) {
       case 'tending':
@@ -387,7 +424,25 @@ export const ActivityListView: React.FC = () => {
             </span>
           </div>
         );
-      
+
+      case 'notching':
+        return (
+          <div>
+            <div className="font-medium text-gray-900 mb-1">
+              {item.book.replace('ruhi_', 'Ruhi Book ').replace(/_/g, ' ')}
+            </div>
+            <div className="text-sm text-gray-600 mb-1">
+              Unit {item.start_unit}, Section {item.start_section} &rarr; Unit {item.end_unit}, Section {item.end_section}
+            </div>
+            <div className="text-xs text-amber-600 font-medium mb-1">
+              about {item.sections_studied} {item.sections_studied === 1 ? 'section' : 'sections'} studied
+            </div>
+            {item.progress_description && (
+              <div className="text-gray-600 text-sm">{item.progress_description}</div>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }
@@ -530,16 +585,30 @@ export const ActivityListView: React.FC = () => {
       </main>
 
       {/* Modals */}
-      <ActivityModal
-        isOpen={activityModal.isOpen}
-        onClose={() => setActivityModal({ isOpen: false })}
-        plantName={plant.name}
-        plantId={plant.id}
-        activityType={activityType!}
-        editingItem={activityModal.editingItem}
-        allPlants={allPlants}
-        onSubmit={handleActivitySubmit}
-      />
+      {activityType !== 'notching' && (
+        <ActivityModal
+          isOpen={activityModal.isOpen}
+          onClose={() => setActivityModal({ isOpen: false })}
+          plantName={plant.name}
+          plantId={plant.id}
+          activityType={activityType as 'tending' | 'watering' | 'sunlight' | 'fruit' | 'pruning' | 'companion'}
+          editingItem={activityModal.editingItem}
+          allPlants={allPlants}
+          onSubmit={handleActivitySubmit}
+        />
+      )}
+
+      {activityType === 'notching' && plant && (
+        <BranchesModal
+          isOpen={branchesModal.isOpen}
+          onClose={() => setBranchesModal({ isOpen: false })}
+          subType="notching"
+          plantName={plant.name}
+          plantId={plant.id}
+          editingItem={branchesModal.editingItem}
+          onSubmit={handleBranchesSubmit}
+        />
+      )}
 
       <ConfirmationModal
         isOpen={confirmationModal.isOpen}
