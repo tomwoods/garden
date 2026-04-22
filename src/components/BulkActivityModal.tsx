@@ -1,0 +1,373 @@
+import React, { useState } from 'react';
+import { X, Plus } from 'lucide-react';
+import { PlantSelectorChecklist } from './PlantSelectorChecklist';
+import { AdditionalInfoMenu } from './AdditionalInfoMenu';
+import type { Plant } from '../lib/database';
+
+interface BulkActivityModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  plotName: string;
+  plants: Plant[];
+  activityType: 'tending' | 'watering' | 'sunlight' | 'fruit';
+  onSubmit: (data: any, selectedPlantIds: string[]) => Promise<void>;
+}
+
+export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
+  isOpen,
+  onClose,
+  plotName,
+  plants,
+  activityType,
+  onSubmit
+}) => {
+  const [formData, setFormData] = useState<any>({});
+  const [additionalInfo, setAdditionalInfo] = useState<any>({});
+  const [selectedPlantIds, setSelectedPlantIds] = useState<Set<string>>(new Set(plants.map(p => p.id)));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [showDateTimeField, setShowDateTimeField] = useState(false);
+  const [customDateTime, setCustomDateTime] = useState<number>(Date.now());
+  const [showDateTimeMenu, setShowDateTimeMenu] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      // Reset form data and select all plants by default
+      const defaultData: any = {
+        type: activityType === 'tending' ? 'conversation' : '',
+        summary: '',
+        source: '',
+        progress_description: '',
+        topic: '',
+        description: ''
+      };
+      setFormData(defaultData);
+      setAdditionalInfo({});
+      setSelectedPlantIds(new Set(plants.map(p => p.id)));
+      setShowCustomInput(false);
+      setShowDateTimeField(false);
+      setCustomDateTime(Date.now());
+      setShowDateTimeMenu(false);
+    }
+  }, [isOpen, activityType, plants]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedPlantIds.size === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const additionalInfoJson = Object.keys(additionalInfo).length > 0
+        ? JSON.stringify(additionalInfo)
+        : undefined;
+
+      const submitData = {
+        ...formData,
+        additional_info: additionalInfoJson,
+        datetime: showDateTimeField ? customDateTime : Date.now()
+      };
+
+      await onSubmit(submitData, Array.from(selectedPlantIds));
+      onClose();
+    } catch (error) {
+      console.error('Failed to save bulk activity:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (field: string, value: any) => {
+    if (field === 'type' && activityType === 'tending') {
+      if (value === 'other') {
+        setShowCustomInput(true);
+        setFormData((prev: any) => ({ ...prev, [field]: '' }));
+      } else {
+        setShowCustomInput(false);
+        setFormData((prev: any) => ({ ...prev, [field]: value }));
+      }
+    } else {
+      setFormData((prev: any) => ({ ...prev, [field]: value }));
+    }
+  };
+
+  // Convert timestamp to datetime-local format (YYYY-MM-DDTHH:mm)
+  const timestampToDateTimeLocal = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Convert datetime-local format to timestamp
+  const dateTimeLocalToTimestamp = (dateTimeLocal: string): number => {
+    return new Date(dateTimeLocal).getTime();
+  };
+
+  const handleSetDateTime = () => {
+    setShowDateTimeField(true);
+  };
+
+  if (!isOpen) return null;
+
+  const getActivityConfig = () => {
+    const configs = {
+      tending: { title: 'Group Tending', emoji: '🪴', description: 'Log group interaction or connection' },
+      watering: { title: 'Group Watering', emoji: '🚿', description: 'Record group learning or study' },
+      sunlight: { title: 'Group Sunlight', emoji: '☀️', description: 'Record group prayers' },
+      fruit: { title: 'Group Fruit', emoji: '🍎', description: 'Record group service or teaching' }
+    };
+    return configs[activityType];
+  };
+
+  const config = getActivityConfig();
+
+  const renderFormFields = () => {
+    const dateTimeField = showDateTimeField && (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Date & Time
+        </label>
+        <input
+          type="datetime-local"
+          value={timestampToDateTimeLocal(customDateTime)}
+          onChange={(e) => setCustomDateTime(dateTimeLocalToTimestamp(e.target.value))}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+        />
+      </div>
+    );
+
+    switch (activityType) {
+      case 'tending':
+        return (
+          <>
+            {dateTimeField}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type of interaction *
+              </label>
+              {!showCustomInput ? (
+                <select
+                  value={formData.type || 'conversation'}
+                  onChange={(e) => handleChange('type', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                  required
+                >
+                  <option value="conversation">Group conversation</option>
+                  <option value="coffee">Group coffee/tea</option>
+                  <option value="meal">Group meal</option>
+                  <option value="call">Group call</option>
+                  <option value="activity">Group activity</option>
+                  <option value="other">Other</option>
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={formData.type || ''}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, type: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                  placeholder="Enter custom interaction type"
+                  required
+                />
+              )}
+              {showCustomInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomInput(false);
+                    setFormData((prev: any) => ({ ...prev, type: 'conversation' }));
+                  }}
+                  className="mt-2 text-sm text-gray-600 hover:text-gray-800 underline"
+                >
+                  ← Back to options
+                </button>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Summary
+              </label>
+              <textarea
+                value={formData.summary || ''}
+                onChange={(e) => handleChange('summary', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
+                rows={3}
+                placeholder="What did you talk about or do together?"
+              />
+            </div>
+          </>
+        );
+
+      case 'watering':
+        return (
+          <>
+            {dateTimeField}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Source of learning *
+              </label>
+              <input
+                type="text"
+                value={formData.source || ''}
+                onChange={(e) => handleChange('source', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Book, article, course, group study..."
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Progress description
+              </label>
+              <textarea
+                value={formData.progress_description || ''}
+                onChange={(e) => handleChange('progress_description', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                rows={3}
+                placeholder="What did you learn or study together?"
+              />
+            </div>
+          </>
+        );
+
+      case 'sunlight':
+        return (
+          <>
+            {dateTimeField}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prayer topic *
+              </label>
+            <textarea
+              value={formData.topic || ''}
+              onChange={(e) => handleChange('topic', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-colors resize-none"
+              rows={3}
+              placeholder="What did you pray for regarding these souls?"
+              required
+            />
+            </div>
+          </>
+        );
+
+      case 'fruit':
+        return (
+          <>
+            {dateTimeField}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description of service or teaching *
+              </label>
+            <textarea
+              value={formData.description || ''}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors resize-none"
+              rows={3}
+              placeholder="Describe the group service or teaching activity..."
+              required
+            />
+            </div>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const isFormValid = () => {
+    if (selectedPlantIds.size === 0) return false;
+    
+    switch (activityType) {
+      case 'tending':
+        return formData.type;
+      case 'watering':
+        return formData.source;
+      case 'sunlight':
+        return formData.topic;
+      case 'fruit':
+        return formData.description;
+      default:
+        return false;
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-100">
+              <span className="text-xl">{config.emoji}</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {config.title}
+              </h2>
+              <p className="text-sm text-gray-600">
+                {config.description} for {plotName}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 relative">
+            <button
+              type="button"
+              onClick={() => setShowDateTimeMenu(!showDateTimeMenu)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            {showDateTimeMenu && (
+              <AdditionalInfoMenu
+                mode="datetime"
+                onSetDateTime={handleSetDateTime}
+                onClose={() => setShowDateTimeMenu(false)}
+              />
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {renderFormFields()}
+
+          {/* Plant Selection */}
+          <PlantSelectorChecklist
+            plants={plants}
+            selectedPlantIds={selectedPlantIds}
+            onSelectionChange={setSelectedPlantIds}
+          />
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!isFormValid() || isSubmitting}
+              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+            >
+              {isSubmitting ? 'Saving...' : `Log for ${selectedPlantIds.size} plants`}
+            </button>
+          </div>
+        </form>
+      </div>
+      </div>
+    </>
+  );
+};

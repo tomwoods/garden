@@ -1,0 +1,374 @@
+# PRD.md — Product Requirements Document
+
+## Overview
+
+Garden is a privacy-first Progressive Web App that helps individuals track and deepen their personal relationships through a spiritual garden metaphor. Each person in the user's life is represented as a plant. Acts of care — conversation, shared prayer, shared study, service, honest dialogue — are recorded as activities. The garden visualizes the health of each relationship based on how recently and consistently it has been tended.
+
+All data is encrypted client-side. The server holds only encrypted ciphertext. The app works fully offline. No user accounts, no passwords, no email required.
+
+---
+
+## Personas
+
+### Primary: The Devoted Friend
+A spiritually motivated person who maintains intentional relationships with family, friends, and community members. They pray for people, visit them, share readings or discussions with them, and care when they drift apart. They do not want a CRM — they want a companion tool that honors the weight of these relationships without reducing them to a contact list.
+
+**Needs:**
+- A private, offline-first journal of acts of care.
+- Visual signals when a relationship has gone quiet.
+- Reminders without nagging.
+- Absolute confidence that their data is not seen by anyone else.
+
+**Fears:**
+- Their garden being readable to a company, a server operator, or an attacker.
+- Gamification that trivializes the practice.
+- Data loss.
+
+---
+
+### Secondary (Future): The Pastoral Partner
+A spiritual companion — a mentor, a deacon, a prayer partner — who shares responsibility for nurturing a specific person with another Garden user. They need to see what their partner has logged for a shared plant, and to add their own care records.
+
+**Needs:**
+- Opt-in plant sharing with another user.
+- Ability to see the other party's care activities for the shared plant.
+- Privacy: shared plants are visible only to explicitly authorized users.
+
+---
+
+### Tertiary (Future): The Community Gardener
+A person who maintains many relationships across multiple communities — perhaps a community organizer, a religious teacher, or a pastoral worker. They need an overview of their entire garden at a glance, group organization via plots, and periodic reports for personal reflection.
+
+**Needs:**
+- Garden visualization for at-a-glance health overview.
+- Plots for group organization.
+- Anonymized activity reports for personal review.
+- Bulk activity logging.
+
+---
+
+## Feature Requirements
+
+### F1. Identity and Security
+
+**F1.1 Garden Key Creation**
+- The system generates two RSA key pairs (RSA-OAEP 2048-bit for encryption, RSA-PSS 2048-bit for signing) when the user creates their garden.
+- A unique UUID is assigned as the user ID.
+- Keys are stored in localStorage.
+- The user is prompted to download a `garden-key.json` file immediately after creation.
+- Acceptance: User can create a garden, download the key file, and restore from it on a different browser.
+
+**F1.2 Garden Key Restore**
+- The user uploads their `garden-key.json` file.
+- The system validates the file structure, restores keys to localStorage, and downloads the encrypted backup from Supabase.
+- The encrypted backup is decrypted client-side using the user's private key.
+- Acceptance: All plants and activities from before the restore are accessible after restore.
+
+**F1.3 Key Backup Prompt**
+- A banner appears in GardenView after first login and on every subsequent launch until the user downloads their key file.
+- The banner cannot be permanently dismissed without downloading the key.
+- Acceptance: User who has not downloaded the key always sees the prompt on launch.
+
+**F1.4 Passphrase Idle Lock (Planned)**
+- After a configurable idle period (default: 30 minutes), the local database is encrypted with a passphrase-derived key (PBKDF2-SHA256, 310,000 iterations).
+- The user must enter their passphrase to unlock.
+- The passphrase is never stored.
+- Acceptance: After idle timeout, the app shows a lock screen. Correct passphrase unlocks, wrong passphrase shows error.
+
+---
+
+### F2. Plants (Souls)
+
+**F2.1 Create Plant**
+- Required: name (string, max 100 chars).
+- Optional: description, email, phone.
+- Required: care frequency (integer + "days" or "weeks" unit, min 1, max 365 days / 52 weeks).
+- On creation: `next_scheduled_care` is set to `now + frequency`.
+- Acceptance: Plant appears in garden view sorted by care urgency.
+
+**F2.2 Edit Plant**
+- All fields editable.
+- Changing care frequency recalculates `next_scheduled_care` from `last_cared_for`.
+- Acceptance: Edited data persists across app reloads.
+
+**F2.3 Delete Plant**
+- Requires confirmation modal.
+- Cascades: deletes all tendings, waterings, sunlight, fruits, prunings, companions, and scheduled events for the plant.
+- Does not delete plot records — only removes the plant from plot memberships.
+- Acceptance: Deleted plant and all its data disappear from all views.
+
+**F2.4 Care Urgency Display**
+- Each plant card displays a visual state based on how long since the last Tending or Watering activity.
+- `healthy`: within 1× care frequency → green plant SVG.
+- `mild`: 1× to 3× care frequency → yellow/amber overlay.
+- `severe`: more than 3× → brown overlay.
+- Acceptance: A plant tended today shows healthy. A plant not tended in 3× its frequency shows severe.
+
+**F2.5 Growth Stage**
+- Plants age from the day they are created:
+  - 0–6 days: seed/sprout SVG.
+  - 7–89 days: shoot SVG.
+  - 90+ days: bush SVG.
+- Fruit overlay appears on the plant card if any Fruit activity has been recorded.
+- Acceptance: Plant visual matches age and activity history.
+
+**F2.6 Plant Search**
+- A search input in GardenView filters plants by name in real time.
+- Acceptance: Typing "mar" shows only plants whose names contain "mar" (case-insensitive).
+
+**F2.7 Additional Custom Fields**
+- Each plant can have arbitrary additional fields stored as JSON in `additional_info`.
+- The `AdditionalInfoMenu` component provides a UI for adding key/value pairs.
+- Acceptance: Custom fields survive backup/restore.
+
+---
+
+### F3. Activities (Acts of Care)
+
+**F3.1 Tending (Quality Time)**
+- Fields: type (predefined list + custom), summary (free text).
+- Predefined types: conversation, coffee, meal, call, message, activity.
+- Updates `last_cared_for` and `next_scheduled_care`.
+- Acceptance: After logging a Tending, the plant's care clock resets and its urgency state becomes healthy.
+
+**F3.2 Watering (Shared Study / Sacred Writings)**
+- Fields: source (free text, what was shared), progress description (free text).
+- Updates `last_cared_for` and `next_scheduled_care`.
+- Acceptance: Watering resets the care clock identically to Tending.
+
+**F3.3 Sunlight (Prayer)**
+- Fields: topic (what was prayed for).
+- Does NOT update the care clock.
+- Acceptance: Logging Sunlight does not change the plant's urgency state.
+
+**F3.4 Fruit (Selfless Service)**
+- Fields: description (what the person did).
+- Does NOT update the care clock.
+- Shows fruit overlay on plant card if at least one Fruit activity exists.
+- Acceptance: Plant card gains fruit overlay after first Fruit is logged.
+
+**F3.5 Pruning (Difficult Conversation)**
+- Fields: difficulty (easy / medium / hard), description.
+- Does NOT update the care clock.
+- Acceptance: Pruning appears in activity timeline without affecting urgency.
+
+**F3.6 Companion (Relationship Record)**
+- Fields: relationship descriptor (free text), linked plant (select from existing plants).
+- Stored bidirectionally — queried by `plant_a_id OR plant_b_id`.
+- Acceptance: A Companion record appears in the timelines of both linked plants.
+
+**F3.7 Custom Datetime**
+- All activity modals allow the user to set a custom date/time for backdating.
+- Defaults to current time.
+- Acceptance: An activity backdated to last week appears in the timeline at the correct position.
+
+**F3.8 Edit and Delete Activities**
+- All activity types support edit and delete.
+- Edit: opens the modal pre-populated with existing values.
+- Delete: requires confirmation.
+- Acceptance: Edited and deleted activities reflect immediately in the timeline.
+
+**F3.9 Bulk Activity Logging**
+- User selects multiple plants and logs the same Tending or Watering for all.
+- Each plant receives a separate activity record with its own UUID.
+- Care clocks updated for all selected plants.
+- Acceptance: After bulk log, all selected plants show healthy urgency.
+
+---
+
+### F4. Plots (Groups)
+
+**F4.1 Create and Manage Plots**
+- User creates named plots (e.g., "Family," "Prayer Group").
+- Optional description per plot.
+- Plants can belong to multiple plots.
+- Acceptance: A plant can appear in two different plots simultaneously.
+
+**F4.2 Plot Detail View**
+- Shows all member plants with their urgency states.
+- Quick access to each plant's detail view.
+- Acceptance: Plot detail accurately reflects current plant care states.
+
+**F4.3 Delete Plot**
+- Deletes plot and memberships only. Plants are unaffected.
+- Acceptance: Plants remain in the garden after their plot is deleted.
+
+---
+
+### F5. Scheduling and Notifications
+
+**F5.1 Scheduled Events**
+- User schedules a Tending or Watering event for a future date/time.
+- A browser notification fires at the scheduled time.
+- The event is stored in `scheduled_events`.
+- Acceptance: Notification fires on time when the browser is closed.
+
+**F5.2 Automatic Care Reminders**
+- When a care activity is logged, a notification is automatically scheduled for `next_scheduled_care`.
+- The notification tag is `plant-care-{plantId}` — only one active notification per plant.
+- Acceptance: Logging a Tending for a weekly-care plant schedules a notification for 7 days later.
+
+**F5.3 Notification Deep Link**
+- Tapping a notification opens the app and navigates to the plant's detail view.
+- URL: `/?plant={plantId}` → app redirects to `/plants/{plantId}`.
+- Acceptance: Tapping a notification opens the correct plant.
+
+**F5.4 Notification Permission**
+- Permission is requested only from the Settings screen, never at app launch.
+- If denied, the app operates normally without notifications.
+- Acceptance: Opening the app for the first time never shows a notification permission dialog.
+
+---
+
+### F6. Images
+
+**F6.1 Image Capture**
+- User selects images from their device (camera or file picker).
+- Supports multiple images per plant.
+- Acceptance: Multiple images can be added in one session.
+
+**F6.2 Face Detection**
+- Images containing faces are rejected before upload.
+- User sees a clear error message.
+- Acceptance: An obvious portrait photo is rejected. A photo of a book or landscape is accepted.
+
+**F6.3 Compression**
+- Images are compressed to ≤720px max dimension before storage/upload.
+- Acceptance: A 4000×3000px photo is stored at 720px on the longest side.
+
+**F6.4 Upload and Quota**
+- Images are uploaded to Supabase Storage via the Edge Function pipeline.
+- Maximum 100 images per user.
+- `ImageQuotaModal` warns at 80% usage and blocks at 100%.
+- Acceptance: User cannot upload image #101 until they delete one.
+
+**F6.5 E2EE for Images at Rest (Planned)**
+- Each image is encrypted client-side with a unique AES-GCM key before upload.
+- The AES key is encrypted with the user's RSA-OAEP public key and stored in `plant_images.encrypted_key`.
+- The server stores and serves only ciphertext. Decryption happens client-side on load.
+- Acceptance: The raw bytes stored in Supabase Storage are not a valid image file without decryption.
+
+---
+
+### F7. Cloud Backup
+
+**F7.1 Automatic Encrypted Backup**
+- After any write operation, the full local database is serialized, encrypted with the user's public key, signed with their private signing key, and uploaded to Supabase.
+- The server verifies the signature before accepting the backup.
+- Acceptance: After logging an activity, the Supabase `users.encrypted_backup` column is updated.
+
+**F7.2 Manual Export**
+- User can download the encrypted backup as a JSON file from Settings.
+- User can download their garden key file from Settings.
+- Acceptance: Downloaded files are valid JSON and can be used for restore.
+
+**F7.3 Import and Restore**
+- User can upload a backup JSON file in Settings.
+- The app decrypts it and restores the local database.
+- Acceptance: After import, all previously-exported data is accessible.
+
+---
+
+### F8. Anonymized Reports (Planned)
+
+**F8.1 Report Generation**
+- User selects a date range and activity types.
+- A PDF is generated client-side.
+- Plant names are replaced with placeholder identifiers by default (e.g., "Plant A," "Plant B").
+- User can opt to include real names.
+- Acceptance: Generated PDF includes activity counts by type, days between visits, and care trends — with no identifying information by default.
+
+---
+
+### F9. Plant Sharing (Planned)
+
+**F9.1 Share a Plant**
+- Owner chooses a plant and enters a recipient's Garden user ID.
+- The app retrieves the recipient's public key from Supabase.
+- The plant's data is encrypted with the recipient's public key and stored in `shared_plants`.
+- Acceptance: Recipient can download and decrypt the shared plant's data.
+
+**F9.2 Accept a Share**
+- Recipient is notified (or manually checks) and accepts the share.
+- The shared plant appears in their garden, clearly marked as shared.
+- Acceptance: Activities logged by either party appear in the shared plant's timeline.
+
+**F9.3 Revoke Share**
+- Owner removes the recipient from the plant's authorized users.
+- On next sync, the recipient's copy of the plant is marked revoked and becomes read-only.
+- Acceptance: Revoked recipient can no longer add new activities to the shared plant.
+
+---
+
+### F10. Multilingual Support (Planned)
+
+**F10.1 Supported Languages**
+- English (default), Spanish, French.
+
+**F10.2 Language Selection**
+- User selects language from Settings. Preference stored in localStorage.
+- All UI strings, labels, and activity type names are localized.
+- Dates and times formatted according to locale (using dayjs locale support).
+- Acceptance: Switching to Spanish shows all UI text in Spanish, with Spanish date formats.
+
+---
+
+### F11. Garden Visualization (Future)
+
+**F11.1 Visual Garden Map**
+- An interactive top-down view of the user's entire garden rendered with Phaser (or equivalent).
+- Each plant is represented as a sprite with visual state reflecting growth stage and care urgency.
+- Companion relationships shown as connecting lines.
+- Acceptance: A plant in severe urgency state appears visually wilted. A healthy plant is full and bright.
+
+**F11.2 Plant Navigation**
+- Tapping a plant in the visualization navigates to its detail view.
+- Acceptance: Tapping a plant opens PlantDetailView for that plant.
+
+**F11.3 Position Persistence**
+- Plant positions (x, y) in the visualization are saved to `plants.additional_info`.
+- Acceptance: After closing and reopening the app, plants are in the same positions.
+
+---
+
+## Non-Functional Requirements
+
+### NFR1. Privacy
+- No user-identifiable data (names, emails, activity content) is ever transmitted unencrypted to any server.
+- No third-party analytics, tracking, or telemetry of any kind.
+- The server may store only: user UUID, public keys, and an encrypted blob.
+
+### NFR2. Security
+- RSA-OAEP 2048-bit for data encryption.
+- RSA-PSS 2048-bit for backup signing.
+- secp256k1 for image upload authorization.
+- AES-GCM for symmetric data encryption.
+- SHA-256 for file integrity hashing.
+- All cryptographic operations use the browser's native Web Crypto API.
+- No cryptographic keys are transmitted over the network.
+
+### NFR3. Offline First
+- All core features (create, read, update, delete plants and activities) must work without internet access.
+- Cloud sync degrades gracefully when offline — no errors shown to the user, sync retried on reconnect.
+
+### NFR4. Performance
+- The garden view with 50 plants should render in under 200ms on a mid-range Android device.
+- Local database operations are synchronous and should not cause visible UI jank.
+- Image compression should complete in under 3 seconds for a typical 5MB photo.
+
+### NFR5. PWA Standards
+- Installable on Android (Chrome) and iOS (Safari).
+- Works standalone (no browser chrome after installation).
+- Service worker caches all static assets for offline use.
+- App update prompt shown when a new version is available.
+
+### NFR6. Accessibility
+- All interactive elements have visible focus states.
+- All icon-only buttons have `aria-label` attributes.
+- Color is never the only indicator of state (urgency states also use SVG overlays, not just color).
+- Touch targets are at least 44×44px on mobile.
+
+### NFR7. Data Integrity
+- Backup signature verification prevents unauthorized backup overwrites.
+- Image upload signature verification prevents unauthorized image uploads.
+- The garden key file is the only mechanism for identity recovery — the system must never silently create a new identity on behalf of an existing user.

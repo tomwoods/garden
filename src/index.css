@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Overlay styles for plant care urgency */
+
+/* Tending urgency - dirt overlay */
+.dirt-mild {
+  background-image: url('/dirt_overlay.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.08;
+}
+
+.dirt-severe {
+  background-image: url('/dirt_overlay.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+}
+
+/* Watering urgency - brown overlay */
+.brown-mild {
+  background-image: url('/brown_overlay.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.08;
+}
+
+.brown-severe {
+  background-image: url('/brown_overlay.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+}
+
+/* Sunlight urgency - yellow overlay */
+.yellow-mild {
+  background-image: url('/yellow_overlay.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.08;
+}
+
+.yellow-severe {
+  background-image: url('/yellow_overlay.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+}
+
+/* Slide-up animation for install prompt */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}

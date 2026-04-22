@@ -1,0 +1,39 @@
+# --- System & Build Artifacts ---
+dist/
+node_modules/
+.next/
+.swc/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.DS_Store
+
+# --- Static Assets & Media ---
+# We ignore these because Bolt cannot "edit" images/SVG paths meaningfully
+public/*.png
+public/*.jpg
+public/*.jpeg
+public/*.gif
+public/*.svg
+public/*.ico
+src/assets/
+
+# --- Environment & Secrets ---
+# Crucial for security; Bolt should not see your live production keys
+.env
+.env.local
+.env.*.local
+
+# --- Documentation & Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vercel/
+.turbo/
+
+# --- Supabase Specifics ---
+# Ignore old migrations to prevent Bolt from trying to re-run them
+supabase/migrations/2025*
+# Ignore the local docker/data folder if you use Supabase CLI
+supabase/.temp/

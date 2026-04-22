@@ -1,0 +1,378 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, CreditCard as Edit, Users, Trash2, Plus } from 'lucide-react';
+import { AddEditPlotModal } from './AddEditPlotModal';
+import { ManageMembersModal } from './ManageMembersModal';
+import { BulkActivityModal } from './BulkActivityModal';
+import { ConfirmationModal } from './ConfirmationModal';
+import { ToastContainer } from './ToastContainer';
+import { DatabaseService, type PlotWithMembers, type Plant } from '../lib/database';
+import { useToast } from '../hooks/useToast';
+
+export const PlotDetailView: React.FC = () => {
+  const { plotId } = useParams<{ plotId: string }>();
+  const navigate = useNavigate();
+  const [plot, setPlot] = useState<PlotWithMembers | null>(null);
+  const [allPlants, setAllPlants] = useState<Plant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [bulkActivityModal, setBulkActivityModal] = useState<{
+    isOpen: boolean;
+    type: 'tending' | 'watering' | 'sunlight' | 'fruit';
+  }>({
+    isOpen: false,
+    type: 'tending'
+  });
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    onConfirm: () => {},
+    title: '',
+    message: ''
+  });
+
+  const { toasts, success, error, removeToast } = useToast();
+
+  useEffect(() => {
+    if (plotId) {
+      loadPlotData();
+    }
+  }, [plotId]);
+
+  const loadPlotData = async () => {
+    if (!plotId) return;
+    
+    setIsLoading(true);
+    try {
+      const [plotData, allPlantsData] = await Promise.all([
+        DatabaseService.getPlotWithMembers(plotId),
+        DatabaseService.getAllPlants()
+      ]);
+
+      if (!plotData) {
+        navigate('/plots');
+        return;
+      }
+
+      setPlot(plotData);
+      setAllPlants(allPlantsData);
+    } catch (err) {
+      console.error('Failed to load plot data:', err);
+      navigate('/plots');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    navigate('/plots');
+  };
+
+  const handleEditPlot = async (plotData: { name: string; description?: string }) => {
+    if (!plot) return;
+    
+    try {
+      await DatabaseService.updatePlot(plot.id, plotData);
+      await loadPlotData();
+      success('Plot updated', `${plotData.name} has been updated`);
+    } catch (err) {
+      console.error('Failed to update plot:', err);
+      error('Failed to update plot', 'Please try again');
+    }
+  };
+
+  const handleDeletePlot = () => {
+    if (!plot) return;
+    
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Delete Plot',
+      message: `Are you sure you want to delete "${plot.name}"? This will remove the plot and all its memberships, but will not delete the individual plants. This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await DatabaseService.deletePlot(plot.id);
+          success('Plot deleted', `${plot.name} has been deleted`);
+          navigate('/plots');
+        } catch (err) {
+          console.error('Failed to delete plot:', err);
+          error('Failed to delete plot', 'Please try again');
+        }
+      }
+    });
+  };
+
+  const handleUpdateMembers = async (selectedPlantIds: string[]) => {
+    if (!plot) return;
+    
+    try {
+      await DatabaseService.updatePlotMemberships(plot.id, selectedPlantIds);
+      await loadPlotData();
+      success('Members updated', 'Plot membership has been updated');
+    } catch (err) {
+      console.error('Failed to update members:', err);
+      error('Failed to update members', 'Please try again');
+    }
+  };
+
+  const handleBulkActivity = (type: 'tending' | 'watering' | 'sunlight' | 'fruit') => {
+    if (!plot || plot.members.length === 0) {
+      error('No members', 'Add plants to this plot before logging activities');
+      return;
+    }
+    
+    setBulkActivityModal({
+      isOpen: true,
+      type
+    });
+  };
+
+  const handleBulkActivitySubmit = async (activityData: any, selectedPlantIds: string[]) => {
+    if (!plot) return;
+
+    try {
+      const timestamp = activityData.datetime || Date.now();
+      await DatabaseService.logBulkActivity(bulkActivityModal.type, activityData, selectedPlantIds, timestamp);
+      success('Activity logged', `${bulkActivityModal.type} logged for ${selectedPlantIds.length} plants`);
+    } catch (err) {
+      console.error('Failed to log bulk activity:', err);
+      error('Failed to log activity', 'Please try again');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 animate-spin">
+            <img src="/plots_icon.svg" alt="Loading plot" className="w-16 h-16" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
+          </div>
+          <p className="text-gray-600">Loading plot details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!plot) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Plot not found</p>
+          <button
+            onClick={handleBack}
+            className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium"
+          >
+            Return to Plots
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3 flex-1">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <img src="/plots_icon.svg" alt="Plot" className="w-6 h-6" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{plot.name}</h1>
+                <p className="text-sm text-gray-600">
+                  {plot.members.length} {plot.members.length === 1 ? 'member' : 'members'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <Edit className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleDeletePlot}
+                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        <div className="space-y-6">
+          {/* Plot Description */}
+          {plot.description && (
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+              <p className="text-gray-700 leading-relaxed">{plot.description}</p>
+            </div>
+          )}
+
+          {/* Members Section */}
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Members</h3>
+              <button
+                onClick={() => setShowMembersModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg font-medium transition-colors"
+              >
+                <img src="/plots_icon.svg" alt="Manage Members" className="w-4 h-4" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
+                Manage Members
+              </button>
+            </div>
+
+            {plot.members.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <img src="/plots_icon.svg" alt="No members" className="w-8 h-8" style={{ filter: 'invert(60%) sepia(10%) saturate(200%) hue-rotate(180deg) brightness(95%) contrast(85%)' }} />
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No members yet</h4>
+                <p className="text-gray-600 mb-4">Add plants to this plot to get started</p>
+                <button
+                  onClick={() => setShowMembersModal(true)}
+                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Plants
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {plot.members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/plants/${member.id}`)}
+                  >
+                    <span className="text-lg">🌱</span>
+                    <div>
+                      <div className="font-medium text-gray-900">{member.name}</div>
+                      {member.phone && (
+                        <div className="text-sm text-gray-600">{member.phone}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Group Activities Section */}
+          {plot.members.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Plot Activity</h3>
+              <p className="text-gray-600 mb-6">
+                Log activities for multiple plants at once. Each activity will be recorded individually for each selected plant.
+              </p>
+              
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                <button
+                  onClick={() => handleBulkActivity('tending')}
+                  className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-colors"
+                >
+                  <span className="text-2xl">🪴</span>
+                  <div className="text-left">
+                    <div className="font-medium">Tend</div>
+                    <div className="text-sm opacity-80">Log plot interactions</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handleBulkActivity('watering')}
+                  className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-colors"
+                >
+                  <span className="text-2xl">🚿</span>
+                  <div className="text-left">
+                    <div className="font-medium">Water</div>
+                    <div className="text-sm opacity-80">Log plot learning activities</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handleBulkActivity('sunlight')}
+                  className="flex items-center gap-3 p-4 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl transition-colors"
+                >
+                  <span className="text-2xl">☀️</span>
+                  <div className="text-left">
+                    <div className="font-medium">Sunlight</div>
+                    <div className="text-sm opacity-80">Log prayers for members of the plot</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handleBulkActivity('fruit')}
+                  className="flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl transition-colors"
+                >
+                  <span className="text-2xl">🍎</span>
+                  <div className="text-left">
+                    <div className="font-medium">Fruit</div>
+                    <div className="text-sm opacity-80">Log service by plot members</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Modals */}
+      <AddEditPlotModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        plot={plot}
+        onSave={handleEditPlot}
+      />
+
+      <ManageMembersModal
+        isOpen={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+        plotName={plot.name}
+        allPlants={allPlants}
+        currentMemberIds={plot.members.map(m => m.id)}
+        onSave={handleUpdateMembers}
+      />
+
+      <BulkActivityModal
+        isOpen={bulkActivityModal.isOpen}
+        onClose={() => setBulkActivityModal(prev => ({ ...prev, isOpen: false }))}
+        plotName={plot.name}
+        plants={plot.members}
+        activityType={bulkActivityModal.type}
+        onSubmit={handleBulkActivitySubmit}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onClose={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmationModal.onConfirm}
+        title={confirmationModal.title}
+        message={confirmationModal.message}
+        confirmText="Delete Plot"
+        cancelText="Keep Plot"
+        type="danger"
+      />
+
+      <ToastContainer
+        toasts={toasts}
+        onRemoveToast={removeToast}
+      />
+    </div>
+  );
+};
