@@ -1075,6 +1075,8 @@ export class DatabaseService {
       newNotching.additional_info || null
     ]);
     await this.saveToStorage();
+    this.updatePlantInteraction(newNotching.plant_id, newNotching.datetime);
+    this.updatePlantCare(newNotching.plant_id, newNotching.datetime);
     return newNotching;
   }
 
