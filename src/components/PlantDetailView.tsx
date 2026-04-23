@@ -888,7 +888,7 @@ export const PlantDetailView: React.FC = () => {
             onClick={() => handleOpenBranchesModal('capability')}
             className="w-full flex items-center justify-between mb-2 -mx-1 px-1 py-1 rounded-lg hover:bg-emerald-50 active:bg-emerald-100 transition-colors"
           >
-            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Capabilities</span>
+            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Flowers</span>
             {capabilities.length === 0 && (
               <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">Proven or developed capabilities</span>
             )}
