@@ -59,6 +59,12 @@ interface NotchingFormData {
   progress_description: string;
 }
 
+interface LastNotching {
+  book: string;
+  end_unit: number;
+  end_section: number;
+}
+
 interface BranchesModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -66,6 +72,7 @@ interface BranchesModalProps {
   plantName: string;
   plantId: string;
   editingItem?: any;
+  lastNotching?: LastNotching;
   onSubmit: (subType: BranchesSubType, data: any) => Promise<void>;
 }
 
@@ -75,6 +82,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
   subType,
   plantName,
   editingItem,
+  lastNotching,
   onSubmit
 }) => {
   const [budText, setBudText] = useState('');
@@ -127,19 +135,39 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
     } else {
       setBudText('');
       setCapabilityText('');
-      setNotchingData({
-        book: 'ruhi_1',
-        startUnit: 1,
-        startSection: 1,
-        endUnit: 1,
-        endSection: 1,
-        progress_description: ''
-      });
+
+      if (subType === 'notching' && lastNotching) {
+        const spu = getSectionsPerUnit(lastNotching.book);
+        let nextSection = lastNotching.end_section + 1;
+        let nextUnit = lastNotching.end_unit;
+        if (nextSection > spu) {
+          nextSection = 1;
+          nextUnit = Math.min(lastNotching.end_unit + 1, UNITS_PER_BOOK);
+        }
+        setNotchingData({
+          book: lastNotching.book,
+          startUnit: nextUnit,
+          startSection: nextSection,
+          endUnit: nextUnit,
+          endSection: nextSection,
+          progress_description: ''
+        });
+      } else {
+        setNotchingData({
+          book: 'ruhi_1',
+          startUnit: 1,
+          startSection: 1,
+          endUnit: 1,
+          endSection: 1,
+          progress_description: ''
+        });
+      }
+
       setShowDateTimeField(false);
       setCustomDateTime(Date.now());
       setShowDateTimeMenu(false);
     }
-  }, [isOpen, subType, editingItem]);
+  }, [isOpen, subType, editingItem, lastNotching]);
 
   const sectionsStudied = computeSectionsStudied(
     notchingData.book,

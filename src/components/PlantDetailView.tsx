@@ -1122,6 +1122,7 @@ export const PlantDetailView: React.FC = () => {
         plantName={plant.name}
         plantId={plant.id}
         editingItem={branchesModal.editingItem}
+        lastNotching={branchesData.notchings[0]}
         onSubmit={handleBranchesSubmit}
       />
 
