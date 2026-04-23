@@ -31,11 +31,18 @@ function computeSectionsStudied(book: string, su: number, ss: number, eu: number
   return diff <= 0 ? 1 : diff + 1;
 }
 
+interface LastNotching {
+  book: string;
+  end_unit: number;
+  end_section: number;
+}
+
 interface BulkNotchingModalProps {
   isOpen: boolean;
   onClose: () => void;
   plotName: string;
   plants: Plant[];
+  lastNotching?: LastNotching;
   onSubmit: (data: any, selectedPlantIds: string[]) => Promise<void>;
 }
 
@@ -44,6 +51,7 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
   onClose,
   plotName,
   plants,
+  lastNotching,
   onSubmit
 }) => {
   const [book, setBook] = useState('ruhi_1');
@@ -60,16 +68,29 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      setBook('ruhi_1');
-      setStartUnit(1); setStartSection(1);
-      setEndUnit(1); setEndSection(1);
+      if (lastNotching) {
+        const spu = getSectionsPerUnit(lastNotching.book);
+        let nextSection = lastNotching.end_section + 1;
+        let nextUnit = lastNotching.end_unit;
+        if (nextSection > spu) {
+          nextSection = 1;
+          nextUnit = Math.min(lastNotching.end_unit + 1, UNITS_PER_BOOK);
+        }
+        setBook(lastNotching.book);
+        setStartUnit(nextUnit); setStartSection(nextSection);
+        setEndUnit(nextUnit); setEndSection(nextSection);
+      } else {
+        setBook('ruhi_1');
+        setStartUnit(1); setStartSection(1);
+        setEndUnit(1); setEndSection(1);
+      }
       setProgressDescription('');
       setShowDateTimeField(false);
       setCustomDateTime(Date.now());
       setShowDateTimeMenu(false);
       setSelectedPlantIds(new Set(plants.map(p => p.id)));
     }
-  }, [isOpen, plants]);
+  }, [isOpen, plants, lastNotching]);
 
   const sectionsStudied = computeSectionsStudied(book, startUnit, startSection, endUnit, endSection);
   const isComplete = book && startUnit > 0 && startSection > 0 && endUnit > 0 && endSection > 0 && selectedPlantIds.size > 0;

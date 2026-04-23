@@ -26,6 +26,7 @@ export const PlotDetailView: React.FC = () => {
     type: 'tending'
   });
   const [bulkNotchingModal, setBulkNotchingModal] = useState(false);
+  const [lastPlotNotching, setLastPlotNotching] = useState<{ book: string; end_unit: number; end_section: number } | undefined>(undefined);
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     onConfirm: () => void;
@@ -344,11 +345,16 @@ export const PlotDetailView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!plot || plot.members.length === 0) {
                       error('No members', 'Add plants to this plot before logging activities');
                       return;
                     }
+                    const allNotchings = (await Promise.all(
+                      plot.members.map(m => DatabaseService.getNotchingsForPlant(m.id))
+                    )).flat();
+                    const mostRecent = allNotchings.sort((a, b) => b.datetime - a.datetime)[0];
+                    setLastPlotNotching(mostRecent ? { book: mostRecent.book, end_unit: mostRecent.end_unit, end_section: mostRecent.end_section } : undefined);
                     setBulkNotchingModal(true);
                   }}
                   className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
@@ -396,6 +402,7 @@ export const PlotDetailView: React.FC = () => {
         onClose={() => setBulkNotchingModal(false)}
         plotName={plot.name}
         plants={plot.members}
+        lastNotching={lastPlotNotching}
         onSubmit={handleBulkNotchingSubmit}
       />
 
