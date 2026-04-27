@@ -56,6 +56,7 @@ interface AutocompleteInputProps {
   placeholder?: string;
   accentColor?: string; // tailwind color name e.g. 'blue', 'emerald'
   required?: boolean;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
 export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
@@ -64,12 +65,14 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   values,
   placeholder = 'Start typing...',
   accentColor = 'blue',
-  required
+  required,
+  inputRef: externalInputRef
 }) => {
   const [suggestions, setSuggestions] = useState<Array<{ id: string; text: string; count: number }>>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const internalInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = externalInputRef ?? internalInputRef;
   const listRef = useRef<HTMLUListElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 

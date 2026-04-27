@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { LearningSourceInput, readCache, writeCache } from './LearningSourceInput';
@@ -47,6 +47,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
   const [basicActivityType, setBasicActivityType] = useState('');
   const [basicActivityOther, setBasicActivityOther] = useState('');
   const [basicActivities, setBasicActivities] = useState<Array<{ id: string; text: string; count: number }>>([]);
+  const basicActivityOtherInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen && activityType === 'watering') {
@@ -148,10 +149,15 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
         : undefined;
 
       let resolvedBasicActivity: string | undefined;
+      let resolvedOtherText = '';
       if (activityType === 'fruit' && isBasicActivity) {
-        resolvedBasicActivity = basicActivityType === 'other'
-          ? basicActivityOther.trim() || undefined
-          : basicActivityType || undefined;
+        if (basicActivityType === 'other') {
+          const domValue = basicActivityOtherInputRef.current?.value ?? '';
+          resolvedOtherText = (domValue || basicActivityOther).trim();
+          resolvedBasicActivity = resolvedOtherText || undefined;
+        } else {
+          resolvedBasicActivity = basicActivityType || undefined;
+        }
       }
 
       const submitData = {
@@ -172,9 +178,9 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
         SupabaseService.upsertLearningSource(submitData.source.trim(), userId);
       }
 
-      if (activityType === 'fruit' && basicActivityType === 'other' && basicActivityOther.trim()) {
+      if (activityType === 'fruit' && basicActivityType === 'other' && resolvedOtherText) {
         const userId = localStorage.getItem('user_id') || '';
-        SupabaseService.upsertBasicActivity(basicActivityOther.trim(), userId);
+        SupabaseService.upsertBasicActivity(resolvedOtherText, userId);
       }
 
       onClose();
@@ -413,6 +419,8 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                   values={basicActivities}
                   placeholder="Enter basic activity type..."
                   accentColor="red"
+                  required
+                  inputRef={basicActivityOtherInputRef}
                 />
               </div>
             )}
@@ -504,8 +512,17 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
         return formData.source;
       case 'sunlight':
         return formData.topic;
-      case 'fruit':
-        return formData.description;
+      case 'fruit': {
+        if (!formData.description) return false;
+        if (isBasicActivity) {
+          if (!basicActivityType) return false;
+          if (basicActivityType === 'other') {
+            const domValue = basicActivityOtherInputRef.current?.value ?? '';
+            if (!(domValue || basicActivityOther).trim()) return false;
+          }
+        }
+        return true;
+      }
       case 'pruning':
         return formData.description;
       case 'companion':
