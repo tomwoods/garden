@@ -283,7 +283,8 @@ export const PlantDetailView: React.FC = () => {
             break;
           case 'fruit':
             await DatabaseService.updateFruit(activityModal.editingItem.id, {
-              description: data.description
+              description: data.description,
+              basic_activity: data.basic_activity || undefined
             });
             break;
           case 'pruning':
@@ -331,7 +332,8 @@ export const PlantDetailView: React.FC = () => {
             await DatabaseService.addFruit({
               plant_id: plantId!,
               datetime: timestamp,
-              description: data.description
+              description: data.description,
+              basic_activity: data.basic_activity || undefined
             });
             break;
           case 'pruning':
