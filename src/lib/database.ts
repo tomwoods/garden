@@ -251,6 +251,13 @@ export class DatabaseService {
       additional_info STRING
     `);
 
+    // Migration: add basic_activity column to fruits table for existing users
+    try {
+      alasql('SELECT basic_activity FROM fruits LIMIT 1');
+    } catch {
+      alasql('ALTER TABLE fruits ADD COLUMN basic_activity STRING');
+    }
+
     await this.createTable('prunings', `
       id STRING PRIMARY KEY,
       plant_id STRING NOT NULL,
