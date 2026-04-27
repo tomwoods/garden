@@ -50,6 +50,7 @@ export interface Fruit {
   plant_id: string;
   datetime: number;
   description: string;
+  basic_activity?: string;
   additional_info?: string; // JSON string
 }
 
@@ -246,6 +247,7 @@ export class DatabaseService {
       plant_id STRING NOT NULL,
       datetime NUMBER NOT NULL,
       description STRING NOT NULL,
+      basic_activity STRING,
       additional_info STRING
     `);
 
@@ -581,11 +583,12 @@ export class DatabaseService {
       ...fruit
     };
     
-    alasql('INSERT INTO fruits VALUES (?, ?, ?, ?, ?)', [
+    alasql('INSERT INTO fruits VALUES (?, ?, ?, ?, ?, ?)', [
       newFruit.id,
       newFruit.plant_id,
       newFruit.datetime,
       newFruit.description,
+      newFruit.basic_activity || null,
       newFruit.additional_info || null
     ]);
     
@@ -754,7 +757,7 @@ export class DatabaseService {
         break;
       case 'fruit':
         tableName = 'fruits';
-        columns = ['id', 'plant_id', 'datetime', 'description', 'additional_info'];
+        columns = ['id', 'plant_id', 'datetime', 'description', 'basic_activity', 'additional_info'];
         break;
       default:
         throw new Error(`Unsupported activity type: ${activityType}`);
@@ -801,6 +804,7 @@ export class DatabaseService {
             plantId,
             timestamp,
             activityData.description,
+            activityData.basic_activity || null,
             activityData.additional_info || null
           ];
           break;
@@ -1198,8 +1202,8 @@ export class DatabaseService {
 
     if (backup.fruits) {
       backup.fruits.forEach((fruit: Fruit) => {
-        alasql('INSERT INTO fruits VALUES (?, ?, ?, ?, ?)', [
-          fruit.id, fruit.plant_id, fruit.datetime, fruit.description, fruit.additional_info || null
+        alasql('INSERT INTO fruits VALUES (?, ?, ?, ?, ?, ?)', [
+          fruit.id, fruit.plant_id, fruit.datetime, fruit.description, fruit.basic_activity || null, fruit.additional_info || null
         ]);
       });
     }

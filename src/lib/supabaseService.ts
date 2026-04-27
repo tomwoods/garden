@@ -254,6 +254,16 @@ export class SupabaseService {
     return this.upsertAutocompleteValue(text, userId, 'proven_capacity');
   }
 
+  /** Convenience wrapper for basic activity autocomplete. */
+  static async fetchTop200BasicActivities(): Promise<Array<{ id: string; text: string; count: number }>> {
+    return this.fetchTop200AutocompleteValues('basic_activity');
+  }
+
+  /** Convenience wrapper — upsert a basic activity. */
+  static async upsertBasicActivity(text: string, userId: string): Promise<void> {
+    return this.upsertAutocompleteValue(text, userId, 'basic_activity');
+  }
+
   /**
    * Check if user exists in Supabase by attempting to register.
    * Returns true if the user is already registered (409 conflict), false if not found.

@@ -73,6 +73,7 @@ export interface HarvestSunlight {
 export interface HarvestFruit {
   hashed_plant_id: string;
   datetime: number;
+  basic_activity?: string;
 }
 
 export interface HarvestPruning {
@@ -296,12 +297,13 @@ export async function generatePersonalHarvest(dateFrom: Date, dateTo: Date, plan
     topic: s.topic,
   }));
 
-  const rawFruits: { plant_id: string; datetime: number }[] =
-    queryActivity('fruits', 'plant_id, datetime');
+  const rawFruits: { plant_id: string; datetime: number; basic_activity?: string }[] =
+    queryActivity('fruits', 'plant_id, datetime, basic_activity');
 
   const fruits: HarvestFruit[] = rawFruits.map(f => ({
     hashed_plant_id: hashId(f.plant_id, salt),
     datetime: f.datetime,
+    ...(f.basic_activity ? { basic_activity: f.basic_activity } : {}),
   }));
 
   const rawPrunings: { plant_id: string; datetime: number }[] =

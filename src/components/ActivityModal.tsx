@@ -2,8 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { LearningSourceInput, readCache, writeCache } from './LearningSourceInput';
+import { AutocompleteInput, readAutocompleteCache, writeAutocompleteCache } from './AutocompleteInput';
 import { SupabaseService } from '../lib/supabaseService';
 import type { Plant } from '../lib/database';
+
+const BASIC_ACTIVITY_CACHE_KEY = 'basic_activity_cache';
+const PRESET_BASIC_ACTIVITIES = [
+  { value: "children's class", label: "Children's class" },
+  { value: 'prayer meeting', label: 'Prayer meeting' },
+  { value: 'pre-youth group', label: 'Pre-youth group' },
+  { value: 'study circle', label: 'Study circle' },
+];
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -34,6 +43,10 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
   const [customDateTime, setCustomDateTime] = useState<number>(Date.now());
   const [showDateTimeMenu, setShowDateTimeMenu] = useState(false);
   const [learningSources, setLearningSources] = useState<Array<{ id: string; text: string; count: number }>>([]);
+  const [isBasicActivity, setIsBasicActivity] = useState(false);
+  const [basicActivityType, setBasicActivityType] = useState('');
+  const [basicActivityOther, setBasicActivityOther] = useState('');
+  const [basicActivities, setBasicActivities] = useState<Array<{ id: string; text: string; count: number }>>([]);
 
   useEffect(() => {
     if (isOpen && activityType === 'watering') {
@@ -45,6 +58,16 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
         if (fresh.length > 0) {
           setLearningSources(fresh);
           writeCache(fresh);
+        }
+      });
+    }
+    if (isOpen && activityType === 'fruit') {
+      const cached = readAutocompleteCache(BASIC_ACTIVITY_CACHE_KEY);
+      if (cached.length > 0) setBasicActivities(cached);
+      SupabaseService.fetchTop200BasicActivities().then((fresh) => {
+        if (fresh.length > 0) {
+          setBasicActivities(fresh);
+          writeAutocompleteCache(BASIC_ACTIVITY_CACHE_KEY, fresh);
         }
       });
     }
@@ -95,6 +118,23 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
       setShowDateTimeField(false);
       setCustomDateTime(Date.now());
       setShowDateTimeMenu(false);
+      // Reset basic activity fields
+      if (activityType === 'fruit' && editingItem?.basic_activity) {
+        const presetValues = PRESET_BASIC_ACTIVITIES.map(p => p.value);
+        if (presetValues.includes(editingItem.basic_activity)) {
+          setIsBasicActivity(true);
+          setBasicActivityType(editingItem.basic_activity);
+          setBasicActivityOther('');
+        } else {
+          setIsBasicActivity(true);
+          setBasicActivityType('other');
+          setBasicActivityOther(editingItem.basic_activity);
+        }
+      } else {
+        setIsBasicActivity(false);
+        setBasicActivityType('');
+        setBasicActivityOther('');
+      }
     }
   }, [isOpen, editingItem, activityType]);
 
@@ -107,8 +147,16 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
         ? JSON.stringify(additionalInfo)
         : undefined;
 
+      let resolvedBasicActivity: string | undefined;
+      if (activityType === 'fruit' && isBasicActivity) {
+        resolvedBasicActivity = basicActivityType === 'other'
+          ? basicActivityOther.trim() || undefined
+          : basicActivityType || undefined;
+      }
+
       const submitData = {
         ...formData,
+        ...(activityType === 'fruit' ? { basic_activity: resolvedBasicActivity || null } : {}),
         additional_info: additionalInfoJson,
         datetime: showDateTimeField ? customDateTime : Date.now()
       };
@@ -122,6 +170,11 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
       if (activityType === 'watering' && submitData.source?.trim()) {
         const userId = localStorage.getItem('user_id') || '';
         SupabaseService.upsertLearningSource(submitData.source.trim(), userId);
+      }
+
+      if (activityType === 'fruit' && basicActivityType === 'other' && basicActivityOther.trim()) {
+        const userId = localStorage.getItem('user_id') || '';
+        SupabaseService.upsertBasicActivity(basicActivityOther.trim(), userId);
       }
 
       onClose();
@@ -316,6 +369,53 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
         return (
           <>
             {dateTimeField}
+            <div className="flex items-center gap-2">
+              <input
+                id="is-basic-activity"
+                type="checkbox"
+                checked={isBasicActivity}
+                onChange={(e) => {
+                  setIsBasicActivity(e.target.checked);
+                  if (!e.target.checked) {
+                    setBasicActivityType('');
+                    setBasicActivityOther('');
+                  }
+                }}
+                className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
+              />
+              <label htmlFor="is-basic-activity" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                Is basic activity?
+              </label>
+            </div>
+            {isBasicActivity && (
+              <div>
+                <select
+                  value={basicActivityType}
+                  onChange={(e) => {
+                    setBasicActivityType(e.target.value);
+                    setBasicActivityOther('');
+                  }}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
+                >
+                  <option value="">Select activity type...</option>
+                  {PRESET_BASIC_ACTIVITIES.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            )}
+            {isBasicActivity && basicActivityType === 'other' && (
+              <div>
+                <AutocompleteInput
+                  value={basicActivityOther}
+                  onChange={setBasicActivityOther}
+                  values={basicActivities}
+                  placeholder="Enter basic activity type..."
+                  accentColor="red"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description of service or teaching *
