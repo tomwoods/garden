@@ -397,6 +397,11 @@ export const ActivityListView: React.FC = () => {
       case 'fruit':
         return (
           <div className="text-gray-900">
+            {item.basic_activity && (
+              <div className="font-medium text-amber-700 capitalize mb-1">
+                {item.basic_activity}
+              </div>
+            )}
             {item.description}
           </div>
         );

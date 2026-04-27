@@ -717,7 +717,14 @@ export const PlantDetailView: React.FC = () => {
                       <span>{item.topic}</span>
                     )}
                     {type === 'fruit' && (
-                      <span>{item.description}</span>
+                      <>
+                        {item.basic_activity && (
+                          <span className="block font-medium text-amber-700 capitalize mb-0.5">
+                            {item.basic_activity}
+                          </span>
+                        )}
+                        <span>{item.description}</span>
+                      </>
                     )}
                     {type === 'pruning' && (
                       <span>{item.description || 'No description'}</span>
