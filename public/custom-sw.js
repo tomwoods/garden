@@ -9,6 +9,68 @@ const NOTIFICATION_STORE   = 'scheduled-notifications';
 const PLANT_SCHEDULE_STORE = 'plant-schedules';
 const UPLOAD_QUEUE_DB      = 'upload-queue-db';
 const UPLOAD_QUEUE_STORE   = 'pending-uploads';
+const SHARE_DB             = 'garden-share-db';
+const SHARE_STORE          = 'pending-shared-contact';
+
+// ─── Shared contact DB ────────────────────────────────────────────────────────
+
+async function openShareDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(SHARE_DB, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(SHARE_STORE)) {
+        db.createObjectStore(SHARE_STORE, { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+async function saveSharedContact(data) {
+  const db = await openShareDB();
+  const tx = db.transaction([SHARE_STORE], 'readwrite');
+  tx.objectStore(SHARE_STORE).put({ id: 'pending', ...data });
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror   = () => reject(tx.error);
+  });
+}
+
+// ─── Share Target fetch handler ───────────────────────────────────────────────
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  if (url.pathname === '/share-target' && event.request.method === 'POST') {
+    event.respondWith((async () => {
+      try {
+        const formData = await event.request.formData();
+        const title = formData.get('title') || '';
+        const text  = formData.get('text')  || '';
+        const file  = formData.get('contact');
+
+        let vcfText = '';
+        if (file && typeof file === 'object' && file.size > 0) {
+          vcfText = await file.text();
+        } else if (typeof text === 'string' && text.trim()) {
+          vcfText = text.trim();
+        }
+
+        await saveSharedContact({
+          title: typeof title === 'string' ? title : '',
+          vcfText,
+        });
+      } catch (_) {
+        // best-effort — still redirect so the app opens
+      }
+
+      return Response.redirect('/?shared-contact=1', 303);
+    })());
+    return;
+  }
+});
 
 // ─── Lifecycle ─────────────────────────────────────────────────────────────────
 

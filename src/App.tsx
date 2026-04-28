@@ -21,6 +21,9 @@ import { NotificationService } from './lib/notificationService';
 import { syncOnAppLoad, setLastSyncVersion } from './lib/syncService';
 import { syncMissingImages } from './lib/imageSync';
 import { uploadService } from './lib/uploadService';
+import { ImportContactModal } from './components/ImportContactModal';
+import { parseVCardFile } from './lib/vCardParser';
+import type { ParsedContact } from './lib/vCardParser';
 import { Leaf } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -42,6 +45,7 @@ function App() {
   const autoSyncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const userRef = useRef<User | null>(null);
   const { toasts, success, error, removeToast } = useToast();
+  const [sharedContacts, setSharedContacts] = useState<ParsedContact[] | null>(null);
 
   userRef.current = user;
 
@@ -154,6 +158,54 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('shared-contact') !== '1') return;
+
+    window.history.replaceState({}, '', '/');
+
+    const readSharedContact = async () => {
+      try {
+        const db: IDBDatabase = await new Promise((resolve, reject) => {
+          const req = indexedDB.open('garden-share-db', 1);
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve(req.result);
+          req.onupgradeneeded = (e) => {
+            const d = (e.target as IDBOpenDBRequest).result;
+            if (!d.objectStoreNames.contains('pending-shared-contact')) {
+              d.createObjectStore('pending-shared-contact', { keyPath: 'id' });
+            }
+          };
+        });
+
+        const tx = db.transaction(['pending-shared-contact'], 'readwrite');
+        const store = tx.objectStore('pending-shared-contact');
+        const record: any = await new Promise((resolve, reject) => {
+          const r = store.get('pending');
+          r.onsuccess = () => resolve(r.result);
+          r.onerror = () => reject(r.error);
+        });
+        store.delete('pending');
+
+        if (!record) return;
+
+        const vcfText: string = record.vcfText || '';
+        if (!vcfText.trim()) return;
+
+        const contacts = parseVCardFile(vcfText);
+        if (contacts.length > 0) {
+          setSharedContacts(contacts);
+        } else if (record.title) {
+          setSharedContacts([{ name: record.title }]);
+        }
+      } catch {
+        // non-critical
+      }
+    };
+
+    readSharedContact();
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
 
     const handleVisibilityChange = () => {
@@ -185,6 +237,22 @@ function App() {
       window.removeEventListener('online', handleOnline);
     };
   }, [user, runSync]);
+
+  const handleConfirmSharedContact = async (contact: ParsedContact & {
+    care_frequency_multiplier: number;
+    care_frequency_unit: 'days' | 'weeks';
+  }) => {
+    await DatabaseService.addPlant({
+      name: contact.name,
+      phone: contact.phone,
+      description: contact.note,
+      care_frequency_multiplier: contact.care_frequency_multiplier,
+      care_frequency_unit: contact.care_frequency_unit,
+    });
+    setSharedContacts(null);
+    success('Seed sown', `${contact.name} has been planted in your garden`);
+    window.dispatchEvent(new CustomEvent('garden-data-refreshed'));
+  };
 
   const createNewGarden = async () => {
     console.log('Creating new garden with persistent storage...');
@@ -348,6 +416,13 @@ function App() {
       <UpdatePrompt />
       <InstallPrompt />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      {sharedContacts && (
+        <ImportContactModal
+          contacts={sharedContacts}
+          onConfirm={handleConfirmSharedContact}
+          onClose={() => setSharedContacts(null)}
+        />
+      )}
       {showMergePrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 p-6">
