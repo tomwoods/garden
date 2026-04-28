@@ -3,6 +3,7 @@ export interface ParsedContact {
   phone?: string;
   email?: string;
   note?: string;
+  photoDataUrl?: string;
 }
 
 function decodeQuotedPrintable(value: string): string {
@@ -20,7 +21,6 @@ function unescapeVCardValue(value: string): string {
 }
 
 function extractFieldValue(line: string): string {
-  // Handle quoted-printable encoding
   const upperLine = line.toUpperCase();
   let value = line.includes(':') ? line.substring(line.indexOf(':') + 1) : '';
 
@@ -28,7 +28,6 @@ function extractFieldValue(line: string): string {
     value = decodeQuotedPrintable(value);
   }
 
-  // Handle base64 (just skip it — not useful for text fields)
   if (upperLine.includes('ENCODING=BASE64') || upperLine.includes('ENCODING=B')) {
     return '';
   }
@@ -36,24 +35,86 @@ function extractFieldValue(line: string): string {
   return unescapeVCardValue(value.trim());
 }
 
+function mimeTypeForPhoto(paramString: string): string {
+  const upper = paramString.toUpperCase();
+  if (upper.includes('PNG')) return 'image/png';
+  if (upper.includes('GIF')) return 'image/gif';
+  if (upper.includes('WEBP')) return 'image/webp';
+  return 'image/jpeg';
+}
+
+function extractPhotoDataUrl(lines: string[], startIndex: number): string | undefined {
+  const line = lines[startIndex];
+  const upperLine = line.toUpperCase();
+
+  // Skip URI-type entries — fetching remote URLs would leak the user's IP
+  if (upperLine.includes('VALUE=URI') || upperLine.includes('VALUE=URL')) return undefined;
+
+  const colonPos = line.indexOf(':');
+  if (colonPos === -1) return undefined;
+
+  const paramsPart = line.substring(0, colonPos);
+  const mime = mimeTypeForPhoto(paramsPart);
+
+  const isBase64 =
+    upperLine.includes('ENCODING=BASE64') ||
+    upperLine.includes('ENCODING=B') ||
+    upperLine.includes(';B;') ||
+    upperLine.includes(';B:') ||
+    upperLine.startsWith('PHOTO;B:') ||
+    upperLine.startsWith('PHOTO:DATA:');
+
+  if (!isBase64) {
+    // vCard 4.0 inline data URI: PHOTO:data:image/jpeg;base64,...
+    const val = line.substring(colonPos + 1).trim();
+    if (val.startsWith('data:')) return val;
+    return undefined;
+  }
+
+  // Gather base64 payload — may span multiple folded continuation lines
+  let payload = line.substring(colonPos + 1).trim();
+  let i = startIndex + 1;
+  while (i < lines.length) {
+    const next = lines[i];
+    if (/^[ \t]/.test(next)) {
+      payload += next.trim();
+      i++;
+    } else {
+      break;
+    }
+  }
+
+  payload = payload.replace(/\s/g, '');
+  if (!payload) return undefined;
+
+  return `data:${mime};base64,${payload}`;
+}
+
 function parseVCardBlock(block: string): ParsedContact | null {
   const lines: string[] = [];
 
-  // Unfold: lines that start with whitespace are continuations
+  // Unfold: lines starting with whitespace are continuations of the previous line
+  // Exception: PHOTO base64 continuations — we handle those manually in extractPhotoDataUrl
   for (const raw of block.split(/\r?\n/)) {
     if (/^[ \t]/.test(raw) && lines.length > 0) {
-      lines[lines.length - 1] += raw.slice(1);
-    } else {
-      lines.push(raw);
+      const prev = lines[lines.length - 1].toUpperCase();
+      // Don't auto-unfold PHOTO lines — extractPhotoDataUrl reads them raw
+      if (!prev.startsWith('PHOTO')) {
+        lines[lines.length - 1] += raw.slice(1);
+        continue;
+      }
     }
+    lines.push(raw);
   }
 
   let name = '';
   let phone: string | undefined;
   let email: string | undefined;
   let note: string | undefined;
+  let photoDataUrl: string | undefined;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const upper = line.toUpperCase();
 
     if (upper.startsWith('FN:') || upper.startsWith('FN;')) {
@@ -62,10 +123,8 @@ function parseVCardBlock(block: string): ParsedContact | null {
       continue;
     }
 
-    // Structured name fallback when FN is absent
     if ((upper.startsWith('N:') || upper.startsWith('N;')) && !name) {
       const raw = extractFieldValue(line);
-      // N format: Last;First;Middle;Prefix;Suffix
       const parts = raw.split(';').map(p => p.trim()).filter(Boolean);
       if (parts.length >= 2) {
         name = `${parts[1]} ${parts[0]}`.trim();
@@ -92,6 +151,11 @@ function parseVCardBlock(block: string): ParsedContact | null {
       if (candidate) note = candidate;
       continue;
     }
+
+    if (upper.startsWith('PHOTO') && !photoDataUrl) {
+      photoDataUrl = extractPhotoDataUrl(lines, i);
+      continue;
+    }
   }
 
   if (!name) return null;
@@ -101,6 +165,7 @@ function parseVCardBlock(block: string): ParsedContact | null {
     phone: phone || undefined,
     email: email || undefined,
     note: note || undefined,
+    photoDataUrl: photoDataUrl || undefined,
   };
 }
 

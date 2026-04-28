@@ -435,14 +435,18 @@ export const SettingsView: React.FC = () => {
   const handleConfirmContactImport = async (contact: ParsedContact & {
     care_frequency_multiplier: number;
     care_frequency_unit: 'days' | 'weeks';
+    photoDataUrl?: string;
   }) => {
-    await DatabaseService.addPlant({
+    const newPlant = await DatabaseService.addPlant({
       name: contact.name,
       phone: contact.phone,
       description: contact.note,
       care_frequency_multiplier: contact.care_frequency_multiplier,
       care_frequency_unit: contact.care_frequency_unit,
     });
+    if (contact.photoDataUrl) {
+      await uploadService.queueUpload(newPlant.id, contact.name, contact.photoDataUrl);
+    }
     setImportContacts(null);
     success('Seed sown', `${contact.name} has been planted in your garden`);
     window.dispatchEvent(new CustomEvent('garden-data-refreshed'));
