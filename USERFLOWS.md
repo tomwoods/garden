@@ -114,6 +114,11 @@ The user opens a plant's detail view and taps one of the care action buttons (Te
 
 **Fruit** (selfless act of service)
 - Description: what the person did
+- Basic activity (optional): whether the act was a core community-building activity type.
+  - User checks "Is basic activity?" to reveal the classification field.
+  - Preset options: Prayer, Devotional Meeting, Study Circle, Children's Class, Junior Youth Group.
+  - Selecting "Other" opens a free-text autocomplete field. Suggestions are fetched from the shared `autocomplete_values` table (`basic_activity` type). A new value entered here is contributed back to the shared table after the record is saved.
+  - When `basic_activity` is set, its value is displayed as the activity's title in the timeline instead of the generic "Fruit" label.
 
 **Pruning** (difficult conversation)
 - Difficulty: easy / medium / hard

@@ -40,7 +40,7 @@
 - [DONE] Tending (quality time) — type selection + summary
 - [DONE] Watering (sharing writings) — source + progress; learning source autocomplete backed by `autocomplete_values`
 - [DONE] Sunlight (prayer) — topic
-- [DONE] Fruit (service) — description
+- [DONE] Fruit (service) — description; optional basic activity classification (preset types + "Other" free-text backed by shared `autocomplete_values` with `basic_activity` type)
 - [DONE] Pruning (difficult conversation) — difficulty + description
 - [DONE] Companion (relationship memory) — descriptor + linked plant
 - [DONE] Edit and delete for all activity types

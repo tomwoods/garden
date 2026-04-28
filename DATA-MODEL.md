@@ -164,6 +164,7 @@ A Fruit activity — a selfless act of service performed by the person.
 | `plant_id` | STRING | NOT NULL | References `plants.id` |
 | `datetime` | NUMBER | NOT NULL | Unix ms timestamp |
 | `description` | STRING | NOT NULL | Description of the service act |
+| `basic_activity` | STRING | nullable | Optional classification as a core community-building activity type. When set, used as the display title of the fruit entry in the timeline. |
 | `additional_info` | STRING | nullable | JSON string for custom metadata |
 
 **TypeScript Interface:**
@@ -173,11 +174,18 @@ interface Fruit {
   plant_id: string;
   datetime: number;
   description: string;
+  basic_activity?: string;
   additional_info?: string;
 }
 ```
 
 **Side effects:** If at least one Fruit record exists, the plant card shows the fruit overlay SVG.
+
+**`basic_activity` field notes:**
+- Populated only when the user checks "Is basic activity?" in the Fruit modal.
+- Preset values: `prayer`, `devotional meeting`, `study circle`, `children's class`, `junior youth group`.
+- Selecting "Other" opens a free-text autocomplete field populated from the shared `autocomplete_values` table (type `basic_activity`). The entered value is saved to the record and contributed back to that shared table.
+- When `basic_activity` is set, it is shown as the activity title instead of the generic "Fruit" label.
 
 ---
 
@@ -487,14 +495,14 @@ CREATE TABLE IF NOT EXISTS users (
 
 ### 3.2 `autocomplete_values` Table
 
-Stores community-shared autocomplete suggestions for learning sources and proven capacities. Contains no names, identifiers, or private data — only short text strings contributed voluntarily.
+Stores community-shared autocomplete suggestions for learning sources, proven capacities, and basic activity types. Contains no names, identifiers, or private data — only short text strings contributed voluntarily.
 
 ```sql
 CREATE TABLE IF NOT EXISTS autocomplete_values (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   text text NOT NULL,
   count integer DEFAULT 1,
-  type text NOT NULL,           -- 'learning_source' | 'proven_capacity'
+  type text NOT NULL,           -- 'learning_source' | 'proven_capacity' | 'basic_activity'
   language text DEFAULT 'en_US',
   last_updated_by uuid,
   created_at timestamptz DEFAULT now()
@@ -504,17 +512,25 @@ CREATE TABLE IF NOT EXISTS autocomplete_values (
 | Column | Type | Description |
 |---|---|---|
 | `id` | uuid | Row UUID |
-| `text` | text | The autocomplete string (e.g., "Ruhi Book 1", "tutoring") |
+| `text` | text | The autocomplete string (e.g., "Ruhi Book 1", "tutoring", "home visits") |
 | `count` | integer | Number of users who have used this value |
-| `type` | text | Category: `learning_source` or `proven_capacity` |
+| `type` | text | Category: `learning_source`, `proven_capacity`, or `basic_activity` |
 | `language` | text | Locale of the value; currently always `en_US` |
 | `last_updated_by` | uuid | UUID of the last user who incremented the count; prevents a single user from inflating counts |
 
 **Access pattern:** `supabaseService.fetchTop200AutocompleteValues(type)` returns the top 200 entries ordered by count. `upsertAutocompleteValue(text, userId, type)` inserts or increments.
 
+**Convenience wrappers in `supabaseService.ts`:**
+- `fetchTop200LearningSources()` / `upsertLearningSource(text, userId)` — for Watering source autocomplete
+- `fetchTop200ProvenCapacities()` / `upsertProvenCapacity(text, userId)` — for Capability autocomplete
+- `fetchTop200BasicActivities()` / `upsertBasicActivity(text, userId)` — for Fruit "Other" basic activity autocomplete
+
+**Count increment rule:** When a value already exists, the count is only incremented if `last_updated_by` differs from the current user. This prevents a single user from artificially inflating community counts.
+
 **RLS Policies:**
 - `SELECT`: public (any user can read suggestions).
-- `INSERT`/`UPDATE`: authenticated users (via the Supabase anon key from the client).
+- `INSERT`: type must be one of `learning_source`, `proven_capacity`, or `basic_activity`; text must be non-empty.
+- `UPDATE`: same type allowlist; count must remain non-negative.
 
 ---
 
@@ -917,6 +933,10 @@ autocomplete_values (Supabase)                   (shared/global, not user-scoped
 ## 8. Schema Migration Policy
 
 **Current schema version:** (unversioned — to be addressed as debt)
+
+**Notable schema additions:**
+- `fruits.basic_activity` (STRING, nullable) — added for the basic activity classification feature. Existing records without this column default to `NULL` (no basic activity set), which is handled gracefully by `restoreBackupFromObject()`.
+- `autocomplete_values.type` allowlist expanded from `['learning_source', 'proven_capacity']` to include `'basic_activity'` via an RLS policy migration (`add_basic_activity_to_autocomplete_rls`).
 
 **Required process for any schema change:**
 1. Add new column to the AlaSQL `CREATE TABLE` statement in `DatabaseService.init()`.

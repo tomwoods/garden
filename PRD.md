@@ -142,10 +142,20 @@ A person who maintains many relationships across multiple communities — perhap
 - Acceptance: Logging Sunlight does not change the plant's urgency state.
 
 **F3.4 Fruit (Selfless Service)**
-- Fields: description (what the person did).
+- Fields: description (what the person did); optional `basic_activity` classification.
 - Does NOT update the care clock.
 - Shows fruit overlay on plant card if at least one Fruit activity exists.
-- Acceptance: Plant card gains fruit overlay after first Fruit is logged.
+- **Basic activity classification (optional):**
+  - An "Is basic activity?" checkbox reveals the classification field.
+  - Preset options: Prayer, Devotional Meeting, Study Circle, Children's Class, Junior Youth Group.
+  - An "Other" option opens a free-text autocomplete field backed by the shared `autocomplete_values` table (`basic_activity` type).
+  - When `basic_activity` is set, its value is shown as the timeline entry title in place of the generic "Fruit" label.
+  - Custom "Other" values entered by the user are contributed to the shared autocomplete table after save. A user re-submitting the same value does not increment the community count (only a different user can increment it).
+- Acceptance criteria:
+  - Plant card gains fruit overlay after first Fruit is logged.
+  - When `basic_activity` is set, that value appears as the title on the timeline entry.
+  - Selecting a preset does not write to `autocomplete_values`. Only custom "Other" values do.
+  - The autocomplete field for "Other" displays community suggestions ordered by frequency.
 
 **F3.5 Pruning (Difficult Conversation)**
 - Fields: difficulty (easy / medium / hard), description.
