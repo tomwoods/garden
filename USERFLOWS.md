@@ -429,3 +429,70 @@ From `SlidingMenu`, the user taps "Harvest" to open `HarvestBriefView`. They can
 - **No plants in range:** Report generates with empty arrays. Preview shows zeros.
 - **Plant has no age_info:** Defaults to `adult` age group.
 - **Offline:** Harvest report generation is fully local. No network required.
+
+---
+
+## 16. Adding a Plant from a Contact
+
+### User Experience
+The gardener can sow a new plant directly from an existing contact record, avoiding manual re-entry of a name, phone number, email, or notes. Three entry points all converge on the same `ImportContactModal` confirmation flow.
+
+### Entry Points
+
+**A — VCF file import (Settings)**
+1. User opens Settings → Garden Management → "Import from File."
+2. Native file picker opens, accepting `.vcf` files.
+3. `parseVCardFile(text)` parses every `BEGIN:VCARD … END:VCARD` block and returns an array of `ParsedContact` objects.
+4. If no valid contacts are found, an error toast is shown and nothing opens.
+5. `ImportContactModal` opens pre-populated with the first parsed contact.
+
+**B — Contact Picker API (Settings)**
+1. User opens Settings → Garden Management → "Import from Contacts."
+2. The native Contact Picker sheet opens (Chrome on Android; not supported on all platforms).
+3. User selects one contact. The browser returns `name`, `tel`, `email`, and `note` fields.
+4. A single `ParsedContact` is assembled from the raw result.
+5. `ImportContactModal` opens pre-populated with that contact.
+6. No PHOTO field is available via the Contact Picker path — the photo crop step is skipped.
+
+**C — Share target (from another app)**
+1. Another app (Contacts, WhatsApp, etc.) shares a `.vcf` file to Garden.
+2. The service worker intercepts the POST to the share target URL and stores the file in IndexedDB.
+3. On next app open, `App.tsx` reads the pending shared file, calls `parseVCardFile`, and, if contacts are found, opens `ImportContactModal`.
+
+### Shared Confirmation Flow (all entry points)
+
+1. `ImportContactModal` opens with name, phone, email, and notes pre-filled from the parsed contact.
+2. **If multiple contacts are in the VCF file:** a contact selector dropdown appears above the form. Selecting a different contact re-populates all fields and resets the photo state for that contact.
+3. **Photo crop step:** If the parsed contact contains a base64-encoded PHOTO field, `CropModal` opens automatically on top of the import modal before the gardener sees the form.
+   - The gardener can reposition (drag) and zoom (pinch / buttons) the image.
+   - Tapping "Use Photo" exports a 720×720 JPEG blob from the cropper.
+   - The blob is converted to a data URL and stored as `croppedPhoto` in local component state.
+   - The form then appears with a 100×100 rounded-corner thumbnail of the cropped photo, consistent with the app's standard image display.
+   - A hover-to-reveal trash icon allows the gardener to remove the photo before confirming.
+   - **Cancelling the crop** discards the photo silently. The import form opens without an image.
+4. **Quota check:** Before the crop step, `uploadService.getQuotaInfo()` is checked. If `hasReachedLimit` is true, the photo is skipped entirely and a small inline notice is shown in the form.
+5. The gardener reviews and edits any fields, sets the care frequency, and taps "Sow into Garden."
+6. `DatabaseService.addPlant()` creates the plant record and returns the new plant with its assigned UUID.
+7. If a cropped photo is present: `uploadService.queueUpload(newPlant.id, contact.name, croppedPhoto)` is called — the same queue used for manually captured images.
+   - The data URL is saved to `localStorage` under `plant_image_{plantId}_0` immediately (works fully offline).
+   - The upload job is processed asynchronously: the image is resized, encrypted with AES-GCM, signed with secp256k1, and POSTed to the `upload-plant-image` Edge Function.
+   - On success, `additional_info.image_id` on the plant record is updated and the `plant-image-uploaded` event fires, causing `PlantCard` to display the image.
+8. `ImportContactModal` closes. A "Seed sown" success toast is shown. The garden data refreshed event fires and `GardenView` re-renders.
+
+### PHOTO Field Parsing Details
+
+- **Supported formats:** vCard 2.1 (`ENCODING=BASE64`), vCard 3.0 (`ENCODING=b`), vCard 4.0 (inline `data:image/…;base64,…` URI).
+- **Multi-line folded payloads:** Base64 data split across continuation lines (lines beginning with a space or tab) is re-assembled automatically.
+- **URI-type PHOTO entries** (`VALUE=uri` or `VALUE=url`) are silently skipped. No outbound network request is made to an unknown server.
+- **Content type detection:** `TYPE=JPEG`, `TYPE=PNG`, `TYPE=GIF`, `TYPE=WEBP` are recognised. Unrecognised types default to `image/jpeg`.
+
+### Edge Cases
+- **No PHOTO in vCard:** The crop step is skipped entirely. Import proceeds directly to the form.
+- **URI-type PHOTO:** Silently skipped. Import proceeds without an image.
+- **Gardener cancels crop:** Photo is discarded. Import continues and the form opens without an image.
+- **Image quota full:** The crop step is skipped. An inline notice in the form explains that the image quota is full. The plant is still sown without an image.
+- **Multiple contacts in one VCF:** The contact selector appears. Switching to a different contact resets the photo state — if the newly selected contact has its own PHOTO, the crop step will not re-trigger automatically; the gardener can use the form as-is.
+- **Offline at import time:** The plant record is saved to localStorage immediately. If a photo was queued, the upload is retried automatically when connectivity is restored (up to 3 attempts).
+- **Contact Picker not supported:** The "Import from Contacts" button is hidden on platforms where `navigator.contacts` is unavailable. Only the file import path is shown.
+- **Contact Picker returns no selection:** If the user dismisses the native picker without selecting a contact, no modal opens.
+- **Share target received while app is closed:** The vCard is held in IndexedDB by the service worker and processed the next time the app is opened.
