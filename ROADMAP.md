@@ -113,7 +113,7 @@
 ### Multi-Device Sync
 - [DONE] Encrypted backup stored in Supabase after each write
 - [DONE] Restore from server backup via garden key file
-- [PLANNED] Conflict detection — show user a prompt when the server backup is newer than local state
+- [DONE] Conflict detection and per-record merge — when a device with pending local changes encounters a newer server backup, `mergeBackups()` in `syncService.ts` unions all records by `id` across 10 tables and resolves conflicts using a timestamp priority chain (`last_interaction` → `datetime` → `created_at`). The user confirms before the merged result is applied and re-uploaded.
 - [PLANNED] Passphrase-lock for localStorage — after a configurable idle period, local data is encrypted at rest using a passphrase-derived key (PBKDF2). The user must re-enter their passphrase to unlock. This is additive security on top of the existing key file system.
 
 ---

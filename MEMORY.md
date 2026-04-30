@@ -322,3 +322,38 @@ When any schema change is made:
 
 **Trade-offs:**
 - Users from different traditions for whom these dates have no significance will see the banner at times that may feel arbitrary. Accepted — the app is designed for a specific community.
+
+---
+
+## Decision 16: Per-Record Timestamp Merge for Cross-Device Conflict Resolution
+
+**Date:** Phase 2 (multi-device sync)
+
+**Context:** When a user makes local changes on one device while another device has independently synced a newer backup to the server, the app cannot simply overwrite one side — both sides may contain records the other does not have, or conflicting edits to the same record.
+
+**Options considered:**
+- **Last-write-wins (whole-backup overwrite):** The most recent successful upload unconditionally replaces the server copy. Simple, but destroys any local changes on whichever device "loses." Documented incorrectly as the strategy in early USERFLOWS.md — never implemented as the final approach.
+- **Third-party deep merge library (e.g., `deepmerge`, `deepmerge-json`):** Generic recursive object merging. These libraries operate on the wrong abstraction: they merge nested object properties, but the backup format is a collection of flat record arrays. They have no concept of record identity (deduplication by `id`) or of which version of a record is "newer." Custom array strategies would be required that reproduce the domain logic anyway, adding a dependency with no gain.
+- **Per-record timestamp-based merge (chosen):** Union all records by `id` across every synced table. When the same `id` exists on both sides, pick the record whose authoritative timestamp is later.
+
+**Decision:** Custom `mergeBackups()` function in `syncService.ts` implementing per-record timestamp arbitration.
+
+**Timestamp priority chain:** `last_interaction` → `datetime` → `created_at`. The first non-null field on a record is used as its authoritative timestamp. This ordering reflects the semantic meaning of each field:
+- `last_interaction` is explicitly updated on the `plants` table when any care activity is logged — it represents the most recent meaningful event for a plant and is the strongest signal of recency.
+- `datetime` is the user-specified event time on activity records (tendings, waterings, etc.). It may be backdated, but it is still the most semantically meaningful timestamp for those rows.
+- `created_at` is the fallback for records that have neither of the above (e.g., plots, plot_memberships, companions).
+
+**Tables covered:** `plants`, `tendings`, `waterings`, `sunlight`, `fruits`, `prunings`, `companions`, `scheduled_events`, `plots`, `plot_memberships`. These are the 10 tables that constitute the full garden backup.
+
+**Tables intentionally excluded:** `buds`, `notchings`, and `capabilities` are not in the merge scope. These tables were added in Phase 2 and are appended to the backup object as independent arrays. Because the merge logic unions records by ID and no record ID will collide across devices for these tables (each record is created on one device), a simple union is effectively what happens during `restoreBackupFromObject()` when the merged backup is applied. No special conflict logic is needed.
+
+**User confirmation step:** Before applying the merged result, the user sees a confirmation prompt (via `onMergeConfirm` callback). This is a deliberate UX choice — the merge touches the user's entire garden. Applying silently felt presumptuous. If the user declines, the sync state is set to `dirty` and neither side is changed.
+
+**Reasons for custom implementation over a library:**
+- The merge problem is identity-aware and domain-specific. No general-purpose library can know which timestamp field is authoritative for each table.
+- The function is 36 lines with no external dependencies — consistent with Garden's security-conscious posture of minimizing the dependency surface.
+- The backup format is intentionally simple (flat arrays of records). A complex merge library would be architectural overkill and harder to audit.
+
+**Trade-offs:**
+- If two devices edit the exact same record within the same timestamp resolution (unlikely in practice), the merge arbitrarily favors one version. There is no field-level merge — the whole record from the "newer" side wins. This is acceptable because the records are small and the conflict scenario is rare.
+- The merge does not detect deletions: if a record was deleted on one device and modified on the other, the modified version survives the merge. Deletion-aware merging would require tombstone records, which adds schema complexity not warranted at this stage.

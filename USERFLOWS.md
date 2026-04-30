@@ -265,7 +265,7 @@ The app periodically syncs an encrypted backup to Supabase. The user can also tr
 - **Sync while offline:** Silently fails. State stays `dirty`. Sync is retried on next connectivity.
 - **Signature verification failure server-side:** Backup is rejected with HTTP 403. Local data is not lost.
 - **Corrupted backup file on server:** The user can restore from their downloaded backup file instead.
-- **Two devices syncing simultaneously:** Last-write wins. There is no merge strategy. The most recent successful upload overwrites the previous one.
+- **Two devices syncing simultaneously (or a device with pending local changes encounters a newer server backup):** The app performs a per-record merge. For each of the 10 synced tables (`plants`, `tendings`, `waterings`, `sunlight`, `fruits`, `prunings`, `companions`, `scheduled_events`, `plots`, `plot_memberships`), records are unioned by `id`. Where the same `id` exists in both local and remote, the record with the later timestamp wins. The timestamp priority chain is: `last_interaction` → `datetime` → `created_at` (first non-null field wins). The user sees a confirmation prompt before the merged result is applied and re-uploaded as the new authoritative backup. If the user declines, the sync state is marked `dirty` and no changes are applied to either side.
 
 ---
 
