@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, User, Phone, FileText, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { LocationPicker } from './LocationPicker';
 import { PlantImageCapture } from './PlantImageCapture';
 import { AgePicker } from './AgePicker';
+import { ImportContactModal } from './ImportContactModal';
+import { parseVCardFile } from '../lib/vCardParser';
+import type { ParsedContact } from '../lib/vCardParser';
 import type { AgeInfo } from '../lib/harvestService';
 
 interface AddPlantModalProps {
@@ -39,6 +42,10 @@ export const AddPlantModal: React.FC<AddPlantModalProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [showImageCapture, setShowImageCapture] = useState(false);
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
+  const [importContacts, setImportContacts] = useState<ParsedContact[] | null>(null);
+  const vcfInputRef = useRef<HTMLInputElement>(null);
+
+  const hasContactPicker = typeof (navigator as any).contacts !== 'undefined';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +104,60 @@ export const AddPlantModal: React.FC<AddPlantModalProps> = ({
     setAgeInfo(info);
   };
 
+  const handleVcfFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const contacts = parseVCardFile(text);
+      if (contacts.length === 0) return;
+      setImportContacts(contacts);
+    } catch {
+      // silently ignore parse errors
+    } finally {
+      if (vcfInputRef.current) vcfInputRef.current.value = '';
+    }
+  };
+
+  const handleImportFromFile = () => {
+    vcfInputRef.current?.click();
+  };
+
+  const handleImportFromPicker = async () => {
+    try {
+      const cm = (navigator as any).contacts;
+      const results = await cm.select(['name', 'tel', 'email', 'note'], { multiple: false });
+      if (!results || results.length === 0) return;
+      const raw = results[0];
+      const name = Array.isArray(raw.name) ? raw.name[0] : (raw.name ?? '');
+      if (!name) return;
+      const phone = Array.isArray(raw.tel) ? raw.tel[0] : (raw.tel ?? undefined);
+      const email = Array.isArray(raw.email) ? raw.email[0] : (raw.email ?? undefined);
+      const note = Array.isArray(raw.note) ? raw.note[0] : (raw.note ?? undefined);
+      setImportContacts([{ name, phone, email, note }]);
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        console.error('Could not open contacts', err);
+      }
+    }
+  };
+
+  const handleConfirmContactImport = async (contact: ParsedContact & {
+    care_frequency_multiplier: number;
+    care_frequency_unit: 'days' | 'weeks';
+    photoDataUrl?: string;
+  }) => {
+    await onAdd({
+      name: contact.name,
+      phone: contact.phone,
+      description: contact.note,
+      care_frequency_multiplier: contact.care_frequency_multiplier,
+      care_frequency_unit: contact.care_frequency_unit,
+    }, contact.photoDataUrl ? [contact.photoDataUrl] : undefined);
+    setImportContacts(null);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -128,6 +189,8 @@ export const AddPlantModal: React.FC<AddPlantModalProps> = ({
                   setShowMenu(false);
                   setShowImageCapture(true);
                 }}
+                onImportContact={handleImportFromFile}
+                onImportFromPicker={hasContactPicker ? handleImportFromPicker : undefined}
                 hasLocation={!!additionalInfo.location}
                 hasAge={!!ageInfo}
                 hasImages={capturedImages.length > 0}
@@ -285,6 +348,15 @@ export const AddPlantModal: React.FC<AddPlantModalProps> = ({
       </div>
       </div>
 
+      {/* Hidden file input for vCard import */}
+      <input
+        ref={vcfInputRef}
+        type="file"
+        accept=".vcf,text/vcard,text/x-vcard"
+        onChange={handleVcfFileChange}
+        className="hidden"
+      />
+
       {/* Location Picker Modal */}
       {showLocationPicker && (
         <LocationPicker
@@ -311,6 +383,15 @@ export const AddPlantModal: React.FC<AddPlantModalProps> = ({
           image={capturedImages[0] ?? null}
           onImageChange={(img) => setCapturedImages(img ? [img] : [])}
           onClose={() => setShowImageCapture(false)}
+        />
+      )}
+
+      {/* Import Contact Modal */}
+      {importContacts && (
+        <ImportContactModal
+          contacts={importContacts}
+          onConfirm={handleConfirmContactImport}
+          onClose={() => setImportContacts(null)}
         />
       )}
     </>

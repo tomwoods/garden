@@ -1,11 +1,13 @@
 import React, { useRef, useEffect } from 'react';
-import { Calendar, MapPin, Camera, Milestone } from 'lucide-react';
+import { Calendar, MapPin, Camera, Milestone, BookUser, Upload } from 'lucide-react';
 
 interface AdditionalInfoMenuProps {
   onSetDateTime?: () => void;
   onAddLocation?: () => void;
   onAddImage?: () => void;
   onSetAge?: () => void;
+  onImportContact?: () => void;
+  onImportFromPicker?: () => void;
   hasLocation?: boolean;
   hasImages?: boolean;
   hasAge?: boolean;
@@ -18,6 +20,8 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
   onAddLocation,
   onAddImage,
   onSetAge,
+  onImportContact,
+  onImportFromPicker,
   hasLocation = false,
   hasImages = false,
   hasAge = false,
@@ -57,8 +61,18 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
     onClose?.();
   };
 
+  const handleImportContactClick = () => {
+    onImportContact?.();
+    onClose?.();
+  };
+
+  const handleImportFromPickerClick = () => {
+    onImportFromPicker?.();
+    onClose?.();
+  };
+
   return (
-    <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[160px] z-10" ref={menuRef}>
+    <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[180px] z-10" ref={menuRef}>
       {mode === 'datetime' && (
         <button
           type="button"
@@ -97,6 +111,26 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
         >
           <Camera className="w-4 h-4" />
           {hasImages ? 'View images' : 'Add image'}
+        </button>
+      )}
+      {mode === 'all' && onImportContact && (
+        <button
+          type="button"
+          onClick={handleImportContactClick}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+        >
+          <Upload className="w-4 h-4" />
+          Import from file
+        </button>
+      )}
+      {mode === 'all' && onImportFromPicker && (
+        <button
+          type="button"
+          onClick={handleImportFromPickerClick}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+        >
+          <BookUser className="w-4 h-4" />
+          Import from contacts
         </button>
       )}
     </div>

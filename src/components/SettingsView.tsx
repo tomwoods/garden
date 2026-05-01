@@ -17,9 +17,6 @@ import { getPendingChanges } from '../lib/database';
 import { generatePersonalHarvest, generateHarvestPreview, downloadHarvestReport, HarvestPreview } from '../lib/harvestService';
 import type { Plant } from '../lib/database';
 import { HarvestPreviewModal } from './HarvestPreviewModal';
-import { ImportContactModal } from './ImportContactModal';
-import { parseVCardFile } from '../lib/vCardParser';
-import type { ParsedContact } from '../lib/vCardParser';
 import dayjs from 'dayjs';
 
 declare const __APP_VERSION__: string;
@@ -73,10 +70,6 @@ export const SettingsView: React.FC = () => {
     title: '',
     message: ''
   });
-
-  const [importContacts, setImportContacts] = React.useState<ParsedContact[] | null>(null);
-  const vcfInputRef = React.useRef<HTMLInputElement>(null);
-  const hasContactPicker = typeof (navigator as any).contacts !== 'undefined';
 
   const handleBack = () => {
     navigate('/');
@@ -388,70 +381,6 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleVcfFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const contacts = parseVCardFile(text);
-      if (contacts.length === 0) {
-        error('No contacts found', 'The file did not contain any recognisable contacts');
-        return;
-      }
-      setImportContacts(contacts);
-    } catch {
-      error('Could not read file', 'Please check the file and try again');
-    } finally {
-      if (vcfInputRef.current) vcfInputRef.current.value = '';
-    }
-  };
-
-  const handleImportFromFile = () => {
-    vcfInputRef.current?.click();
-  };
-
-  const handleImportFromPicker = async () => {
-    try {
-      const cm = (navigator as any).contacts;
-      const results = await cm.select(['name', 'tel', 'email', 'note'], { multiple: false });
-      if (!results || results.length === 0) return;
-      const raw = results[0];
-      const name = Array.isArray(raw.name) ? raw.name[0] : (raw.name ?? '');
-      if (!name) {
-        error('No name found', 'The selected contact has no name');
-        return;
-      }
-      const phone = Array.isArray(raw.tel) ? raw.tel[0] : (raw.tel ?? undefined);
-      const email = Array.isArray(raw.email) ? raw.email[0] : (raw.email ?? undefined);
-      const note = Array.isArray(raw.note) ? raw.note[0] : (raw.note ?? undefined);
-      setImportContacts([{ name, phone, email, note }]);
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') {
-        error('Could not open contacts', 'Please try again');
-      }
-    }
-  };
-
-  const handleConfirmContactImport = async (contact: ParsedContact & {
-    care_frequency_multiplier: number;
-    care_frequency_unit: 'days' | 'weeks';
-    photoDataUrl?: string;
-  }) => {
-    const newPlant = await DatabaseService.addPlant({
-      name: contact.name,
-      phone: contact.phone,
-      description: contact.note,
-      care_frequency_multiplier: contact.care_frequency_multiplier,
-      care_frequency_unit: contact.care_frequency_unit,
-    });
-    if (contact.photoDataUrl) {
-      await uploadService.queueUpload(newPlant.id, contact.name, contact.photoDataUrl);
-    }
-    setImportContacts(null);
-    success('Seed sown', `${contact.name} has been planted in your garden`);
-    window.dispatchEvent(new CustomEvent('garden-data-refreshed'));
-  };
-
   const handleGenerateHarvest = async () => {
     setHarvestDateError('');
     if (!harvestDateFrom || !harvestDateTo) {
@@ -584,8 +513,6 @@ export const SettingsView: React.FC = () => {
       title: 'Garden Management',
       icon: Database,
       items: [
-        { label: 'Import from Contact File', description: 'Sow a seed from a .vcf vCard file', type: 'action', onClick: handleImportFromFile },
-        ...(hasContactPicker ? [{ label: 'Import from Contacts', description: 'Pick a contact from your device', type: 'action', onClick: handleImportFromPicker }] : []),
         { label: 'Default Care Frequency', description: 'Set default for new plants', type: 'action' },
         { label: 'Auto-scheduling', description: 'Automatically schedule next care', type: 'toggle' },
         { label: 'Bulk Operations', description: 'Mass edit plant settings', type: 'action' }
@@ -955,13 +882,6 @@ export const SettingsView: React.FC = () => {
         onChange={handleFileImport}
         className="hidden"
       />
-      <input
-        ref={vcfInputRef}
-        type="file"
-        accept=".vcf,text/vcard,text/x-vcard"
-        onChange={handleVcfFileChange}
-        className="hidden"
-      />
 
       {/* Modals */}
       <ConfirmationModal
@@ -994,13 +914,6 @@ export const SettingsView: React.FC = () => {
         onClose={() => { setShowHarvestPreview(false); setHarvestPreview(null); }}
       />
 
-      {importContacts && (
-        <ImportContactModal
-          contacts={importContacts}
-          onConfirm={handleConfirmContactImport}
-          onClose={() => setImportContacts(null)}
-        />
-      )}
     </div>
   );
 };
