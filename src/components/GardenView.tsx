@@ -10,6 +10,7 @@ import { ScheduleCareModal } from './ScheduleCareModal';
 import { SlidingMenu } from './SlidingMenu';
 import { ToastContainer } from './ToastContainer';
 import { MapOverlay } from './MapOverlay';
+import { SharePlantModal } from './SharePlantModal';
 import { DatabaseService, type Plant } from '../lib/database';
 import { uploadService } from '../lib/uploadService';
 import { useToast } from '../hooks/useToast';
@@ -83,6 +84,13 @@ export const GardenView: React.FC = () => {
     isOpen: false,
     location: null,
     plantName: ''
+  });
+  const [sharePlantModal, setSharePlantModal] = useState<{
+    isOpen: boolean;
+    plantId: string;
+  }>({
+    isOpen: false,
+    plantId: '',
   });
 
   const { toasts, success, error, removeToast } = useToast();
@@ -564,6 +572,7 @@ export const GardenView: React.FC = () => {
                   onShowConfirmation={handleShowConfirmation}
                   onScheduleCare={handleScheduleCare}
                   onEditPlant={handleEditPlant}
+                  onSharePlant={(plantId) => setSharePlantModal({ isOpen: true, plantId })}
                   onShowMap={(location) => setMapModal({ isOpen: true, location, plantName: plant.name })}
                   imageRefreshKey={imageRefreshKey}
                 />
@@ -623,6 +632,22 @@ export const GardenView: React.FC = () => {
         plantName={scheduleCareModal.plantName}
         onSchedule={handleScheduleSubmit}
       />
+
+      {sharePlantModal.isOpen && (() => {
+        const gardenKey = localStorage.getItem('garden-key');
+        if (!gardenKey) return null;
+        const u = JSON.parse(gardenKey);
+        const sharePlant = plants.find(p => p.id === sharePlantModal.plantId);
+        if (!sharePlant) return null;
+        return (
+          <SharePlantModal
+            isOpen={sharePlantModal.isOpen}
+            onClose={() => setSharePlantModal({ isOpen: false, plantId: '' })}
+            plant={sharePlant}
+            user={u}
+          />
+        );
+      })()}
 
       <SlidingMenu
         isOpen={showSlidingMenu}

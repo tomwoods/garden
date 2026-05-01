@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Calendar, Phone, Mail, MoreHorizontal, CalendarPlus, Trash2, Heart, Leaf, CreditCard as Edit, MapPin } from 'lucide-react';
+import { Calendar, Phone, Mail, MoreHorizontal, CalendarPlus, Trash2, Heart, Leaf, CreditCard as Edit, MapPin, Share2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import isToday from 'dayjs/plugin/isToday';
@@ -42,6 +42,7 @@ interface PlantCardProps {
   onShowConfirmation: (plantId: string, plantName: string) => void;
   onScheduleCare: (plantId: string, plantName: string) => void;
   onEditPlant: (plantId: string) => void;
+  onSharePlant?: (plantId: string) => void;
   onShowMap?: (location: { lat: number; lng: number }) => void;
   imageRefreshKey?: number;
 }
@@ -58,6 +59,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
   onShowConfirmation,
   onScheduleCare,
   onEditPlant,
+  onSharePlant,
   onShowMap,
   imageRefreshKey
 }) => {
@@ -207,6 +209,11 @@ export const PlantCard: React.FC<PlantCardProps> = ({
 
   const plantDisplay = getPlantDisplay();
 
+  const handleSharePlant = () => {
+    setShowMenu(false);
+    onSharePlant?.(plant.id);
+  };
+
   const handleScheduleCare = () => {
     setShowMenu(false);
     onScheduleCare(plant.id, plant.name);
@@ -268,7 +275,21 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             </div>
           )}
           <div>
-            <h3 className="font-semibold text-gray-900 text-lg">{plant.name}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold text-gray-900 text-lg">{plant.name}</h3>
+              {(() => {
+                try {
+                  const info = plant.additional_info ? JSON.parse(plant.additional_info) : {};
+                  if (info.is_shared && info.share_role !== 'owner') {
+                    return (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                        Shared
+                      </span>
+                    );
+                  }
+                } catch {}
+                return null;
+              })()}</div>
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-gray-400" />
@@ -319,6 +340,18 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                 <CalendarPlus className="w-4 h-4" />
                 Schedule care
               </button>
+              {onSharePlant && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSharePlant();
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();

@@ -198,6 +198,37 @@ export async function decryptImageData(encryptedJson: string, privateKey: Crypto
 }
 
 /**
+ * Generate an ephemeral RSA-OAEP key pair and immediately export both keys as Base64 strings.
+ * Used for the plant share handshake — the key pair is short-lived and must not persist as CryptoKey objects.
+ */
+export async function generateEphemeralRSAKeyPair(): Promise<{ publicKeyBase64: string; privateKeyBase64: string }> {
+  const keyPair = await window.crypto.subtle.generateKey(
+    { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+    true,
+    ['encrypt', 'decrypt']
+  );
+  const publicKeyBase64 = await exportCryptoKey(keyPair.publicKey, 'spki');
+  const privateKeyBase64 = await exportCryptoKey(keyPair.privateKey, 'pkcs8');
+  return { publicKeyBase64, privateKeyBase64 };
+}
+
+/**
+ * Encrypt a string using a Base64 RSA-OAEP public key.
+ */
+export async function encryptWithPublicKey(data: string, publicKeyBase64: string): Promise<object> {
+  const publicKey = await importCryptoKey(publicKeyBase64, 'spki', ['encrypt']);
+  return encryptData(data, publicKey);
+}
+
+/**
+ * Decrypt an encrypted package using a Base64 RSA-OAEP private key.
+ */
+export async function decryptWithPrivateKey(encryptedPackage: object, privateKeyBase64: string): Promise<string> {
+  const privateKey = await importCryptoKey(privateKeyBase64, 'pkcs8', ['decrypt']);
+  return decryptData(encryptedPackage, privateKey);
+}
+
+/**
  * Decrypt data using RSA-OAEP private key
  */
 export async function decryptData(encryptedPackage: any, privateKey: CryptoKey): Promise<string> {
