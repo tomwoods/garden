@@ -574,7 +574,7 @@ export class DatabaseService {
     };
     console.log("new plant", newPlant);
 
-    alasql('INSERT INTO plants VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+    alasql('INSERT INTO plants (id, name, email, phone, last_interaction, created_at, updated_at, care_frequency_multiplier, care_frequency_unit, next_scheduled_care, last_cared_for, description, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
       newPlant.id,
       newPlant.name,
       newPlant.email || null,
@@ -1376,7 +1376,7 @@ export class DatabaseService {
 
     if (backup.plants) {
       backup.plants.forEach((plant: Plant) => {
-        alasql('INSERT INTO plants VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO plants (id, name, email, phone, last_interaction, created_at, updated_at, care_frequency_multiplier, care_frequency_unit, next_scheduled_care, last_cared_for, description, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
           plant.id,
           plant.name,
           plant.email || null,
@@ -1396,7 +1396,7 @@ export class DatabaseService {
 
     if (backup.tendings) {
       backup.tendings.forEach((tending: Tending) => {
-        alasql('INSERT INTO tendings VALUES (?, ?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO tendings (id, plant_id, datetime, updated_at, type, summary, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?)', [
           tending.id, tending.plant_id, tending.datetime,
           tending.updated_at ?? tending.datetime ?? now,
           tending.type, tending.summary, tending.additional_info || null
@@ -1406,7 +1406,7 @@ export class DatabaseService {
 
     if (backup.waterings) {
       backup.waterings.forEach((watering: Watering) => {
-        alasql('INSERT INTO waterings VALUES (?, ?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO waterings (id, plant_id, datetime, updated_at, source, progress_description, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?)', [
           watering.id, watering.plant_id, watering.datetime,
           watering.updated_at ?? watering.datetime ?? now,
           watering.source, watering.progress_description, watering.additional_info || null
@@ -1416,7 +1416,7 @@ export class DatabaseService {
 
     if (backup.sunlight) {
       backup.sunlight.forEach((sunlight: Sunlight) => {
-        alasql('INSERT INTO sunlight VALUES (?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO sunlight (id, plant_id, datetime, updated_at, topic, additional_info) VALUES (?, ?, ?, ?, ?, ?)', [
           sunlight.id, sunlight.plant_id, sunlight.datetime,
           sunlight.updated_at ?? sunlight.datetime ?? now,
           sunlight.topic, sunlight.additional_info || null
@@ -1426,7 +1426,7 @@ export class DatabaseService {
 
     if (backup.fruits) {
       backup.fruits.forEach((fruit: Fruit) => {
-        alasql('INSERT INTO fruits VALUES (?, ?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO fruits (id, plant_id, datetime, updated_at, description, basic_activity, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?)', [
           fruit.id, fruit.plant_id, fruit.datetime,
           fruit.updated_at ?? fruit.datetime ?? now,
           fruit.description, fruit.basic_activity || null, fruit.additional_info || null
@@ -1436,7 +1436,7 @@ export class DatabaseService {
 
     if (backup.prunings) {
       backup.prunings.forEach((pruning: Pruning) => {
-        alasql('INSERT INTO prunings VALUES (?, ?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO prunings (id, plant_id, datetime, updated_at, difficulty, description, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?)', [
           pruning.id, pruning.plant_id, pruning.datetime,
           pruning.updated_at ?? pruning.datetime ?? now,
           pruning.difficulty, pruning.description, pruning.additional_info || null
@@ -1446,7 +1446,7 @@ export class DatabaseService {
 
     if (backup.companions) {
       backup.companions.forEach((companion: Companion) => {
-        alasql('INSERT INTO companions VALUES (?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO companions (id, plant_a_id, relationship_descriptor, plant_b_id, updated_at, additional_info) VALUES (?, ?, ?, ?, ?, ?)', [
           companion.id, companion.plant_a_id, companion.relationship_descriptor,
           companion.plant_b_id,
           companion.updated_at ?? now,
@@ -1457,7 +1457,7 @@ export class DatabaseService {
 
     if (backup.scheduled_events) {
       backup.scheduled_events.forEach((event: ScheduledEvent) => {
-        alasql('INSERT INTO scheduled_events VALUES (?, ?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO scheduled_events (id, plant_id, event_type, scheduled_date, updated_at, description, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?)', [
           event.id, event.plant_id, event.event_type, event.scheduled_date,
           event.updated_at ?? event.scheduled_date ?? now,
           event.description, event.additional_info || null
@@ -1467,7 +1467,7 @@ export class DatabaseService {
 
     if (backup.plots) {
       backup.plots.forEach((plot: Plot) => {
-        alasql('INSERT INTO plots VALUES (?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO plots (id, name, description, created_at, updated_at, additional_info) VALUES (?, ?, ?, ?, ?, ?)', [
           plot.id, plot.name, plot.description, plot.created_at,
           plot.updated_at ?? plot.created_at ?? now,
           plot.additional_info || null
@@ -1477,7 +1477,7 @@ export class DatabaseService {
 
     if (backup.plot_memberships) {
       backup.plot_memberships.forEach((membership: PlotMembership) => {
-        alasql('INSERT INTO plot_memberships VALUES (?, ?, ?, ?)', [
+        alasql('INSERT INTO plot_memberships (id, plot_id, plant_id, updated_at) VALUES (?, ?, ?, ?)', [
           membership.id, membership.plot_id, membership.plant_id,
           membership.updated_at ?? now
         ]);
@@ -1486,7 +1486,7 @@ export class DatabaseService {
 
     if (backup.buds) {
       backup.buds.forEach((bud: Bud) => {
-        alasql('INSERT INTO buds VALUES (?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO buds (id, plant_id, text, created_at, updated_at) VALUES (?, ?, ?, ?, ?)', [
           bud.id, bud.plant_id, bud.text, bud.created_at,
           bud.updated_at ?? bud.created_at ?? now
         ]);
@@ -1495,7 +1495,7 @@ export class DatabaseService {
 
     if (backup.notchings) {
       backup.notchings.forEach((n: Notching) => {
-        alasql('INSERT INTO notchings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO notchings (id, plant_id, datetime, updated_at, book, start_unit, start_section, end_unit, end_section, sections_studied, progress_description, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
           n.id, n.plant_id, n.datetime,
           n.updated_at ?? n.datetime ?? now,
           n.book, n.start_unit, n.start_section,
@@ -1507,7 +1507,7 @@ export class DatabaseService {
 
     if (backup.capabilities) {
       backup.capabilities.forEach((cap: Capability) => {
-        alasql('INSERT INTO capabilities VALUES (?, ?, ?, ?, ?)', [
+        alasql('INSERT INTO capabilities (id, plant_id, text, created_at, updated_at) VALUES (?, ?, ?, ?, ?)', [
           cap.id, cap.plant_id, cap.text, cap.created_at,
           cap.updated_at ?? cap.created_at ?? now
         ]);
