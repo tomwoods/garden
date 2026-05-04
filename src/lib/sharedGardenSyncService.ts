@@ -253,16 +253,18 @@ export async function createSharedGarden(
   myDisplayName: string,
   user: GardenSyncUser & { signingPublicKey?: string }
 ): Promise<{ gardenId: string } | null> {
-  console.log('[createSharedGarden] step 1: generating garden key pair');
+  // Generate a garden-specific RSA key pair
   const gardenKeyPair = await generateRSAKeyPair();
   const gardenPublicKeyBase64 = await exportCryptoKey(gardenKeyPair.encryptionKeys.publicKey, 'spki');
   const gardenPrivateKeyBase64 = await exportCryptoKey(gardenKeyPair.encryptionKeys.privateKey, 'pkcs8');
 
+  // Create local garden ID
   const gardenId = uuidv4();
-  console.log('[createSharedGarden] step 2: init local DB for', gardenId);
+
+  // Initialize local DB
   await SharedGardenDatabase.init(gardenId);
 
-  console.log('[createSharedGarden] step 3: upsert member');
+  // Add creator as member
   SharedGardenDatabase.upsertMember(gardenId, {
     id: uuidv4(),
     user_uuid: user.userId,
@@ -271,20 +273,18 @@ export async function createSharedGarden(
     added_by_uuid: user.userId,
   });
 
-  console.log('[createSharedGarden] step 4: build snapshot');
+  // Build initial snapshot
   const snapshot = SharedGardenDatabase.getFullSnapshot(gardenId);
   const gardenObj: SharedGardenObject = { snapshot, deltas: [], schema_version: 1, garden_name: gardenName };
 
-  console.log('[createSharedGarden] step 5: encrypt garden object');
+  // Encrypt and upload
   const encryptedStr = await encryptGardenObject(gardenObj, gardenPublicKeyBase64);
 
-  console.log('[createSharedGarden] step 6: sign request');
   const timestamp = Date.now();
   const message = `create-shared-garden:${user.userId}:${timestamp}:${gardenName}`;
   const signingKey = await importSigningKey(user.signingPrivateKey, 'pkcs8', ['sign']);
   const signature = await signData(message, signingKey);
 
-  console.log('[createSharedGarden] step 7: POST to edge function');
   const res = await fetch(`${SUPABASE_URL}/functions/v1/create-shared-garden`, {
     method: 'POST',
     headers: {
@@ -302,12 +302,7 @@ export async function createSharedGarden(
     }),
   });
 
-  console.log('[createSharedGarden] step 8: response status', res.status);
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    console.error('[createSharedGarden] edge function error:', res.status, errBody);
-    return null;
-  }
+  if (!res.ok) return null;
   const data = await res.json();
   const sharedGardenId: string = data.sharedGardenId;
 

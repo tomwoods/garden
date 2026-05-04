@@ -268,12 +268,13 @@ export class SharedGardenDatabase {
   // ─── Context prefix helper ────────────────────────────────────────────────
 
   private static q(gardenId: string, sql: string): string {
-    return sql.replace(/\bFROM (\w)/g, `FROM ${dbName(gardenId)}.$1`)
-              .replace(/\bINTO (\w)/g, `INTO ${dbName(gardenId)}.$1`)
-              .replace(/\bUPDATE (\w)/g, `UPDATE ${dbName(gardenId)}.$1`)
-              .replace(/\bDELETE FROM (\w)/g, `DELETE FROM ${dbName(gardenId)}.$1`)
-              .replace(/\bINSERT INTO (\w)/g, `INSERT INTO ${dbName(gardenId)}.$1`)
-              .replace(/\bJOIN (\w)/g, `JOIN ${dbName(gardenId)}.$1`);
+    const db = `\`${dbName(gardenId)}\``;
+    return sql.replace(/\bFROM (\w)/g, `FROM ${db}.$1`)
+              .replace(/\bINTO (\w)/g, `INTO ${db}.$1`)
+              .replace(/\bUPDATE (\w)/g, `UPDATE ${db}.$1`)
+              .replace(/\bDELETE FROM (\w)/g, `DELETE FROM ${db}.$1`)
+              .replace(/\bINSERT INTO (\w)/g, `INSERT INTO ${db}.$1`)
+              .replace(/\bJOIN (\w)/g, `JOIN ${db}.$1`);
   }
 
   static run<T = unknown>(gardenId: string, sql: string, params: unknown[] = []): T {
