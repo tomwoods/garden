@@ -230,7 +230,9 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
     setGardenLinkError('');
     setGardenLinkStep('linking');
     try {
-      await linkPlantToSharedGarden(plant.id, selectedGardenId, user.userId, '');
+      const ref = gardenRefs.find(r => r.gardenId === selectedGardenId);
+      const displayName = ref?.myDisplayName ?? '';
+      await linkPlantToSharedGarden(plant.id, selectedGardenId, user.userId, displayName);
       setGardenLinkStep('done');
     } catch {
       setGardenLinkError('Could not add to garden. Please try again.');
