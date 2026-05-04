@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Share2, Download, Users, Eye, Pencil, Copy, Check, QrCode, Leaf } from 'lucide-react';
+import { X, Share2, Download, Users, Eye, Pencil, Copy, Check, QrCode, Leaf, TreePine } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Plant } from '../lib/database';
 import { DatabaseService, addSharedPlantRef, getSharedPlantRefs } from '../lib/database';
@@ -10,6 +10,8 @@ import {
 } from '../lib/cryptoService';
 import { generateRSAKeyPair } from '../lib/cryptoService';
 import { createSharedPlant, createShareClaim } from '../lib/sharedBackupService';
+import { getSharedGardenRefs } from '../lib/sharedGardenDatabase';
+import { linkPlantToSharedGarden } from '../lib/plantLinkService';
 
 interface SharePlantModalProps {
   isOpen: boolean;
@@ -24,7 +26,7 @@ interface SharePlantModalProps {
   };
 }
 
-type Tab = 'contact' | 'share';
+type Tab = 'contact' | 'share' | 'garden';
 type ShareMode = 'view' | 'co-edit';
 type ShareStep = 'configure' | 'generating' | 'ready';
 
@@ -68,6 +70,10 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [gardenRefs, setGardenRefs] = useState(() => getSharedGardenRefs());
+  const [selectedGardenId, setSelectedGardenId] = useState('');
+  const [gardenLinkStep, setGardenLinkStep] = useState<'select' | 'linking' | 'done'>('select');
+  const [gardenLinkError, setGardenLinkError] = useState('');
 
   // Reset on open
   useEffect(() => {
@@ -78,6 +84,11 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
       setQrDataUrl('');
       setError('');
       setCopied(false);
+      const refs = getSharedGardenRefs();
+      setGardenRefs(refs);
+      setSelectedGardenId(refs.length > 0 ? refs[0].gardenId : '');
+      setGardenLinkStep('select');
+      setGardenLinkError('');
     }
   }, [isOpen]);
 
@@ -214,6 +225,19 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleLinkToGarden = async () => {
+    if (!selectedGardenId) return;
+    setGardenLinkError('');
+    setGardenLinkStep('linking');
+    try {
+      await linkPlantToSharedGarden(plant.id, selectedGardenId, user.userId, '');
+      setGardenLinkStep('done');
+    } catch {
+      setGardenLinkError('Could not add to garden. Please try again.');
+      setGardenLinkStep('select');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -255,6 +279,18 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
           >
             Share with Gardener
           </button>
+          {gardenRefs.length > 0 && (
+            <button
+              onClick={() => setActiveTab('garden')}
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'garden'
+                  ? 'text-green-700 border-b-2 border-green-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Add to Garden
+            </button>
+          )}
         </div>
 
         {/* Body */}
@@ -280,6 +316,82 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                 <Download className="w-4 h-4" />
                 Download .vcf contact
               </button>
+            </div>
+          )}
+
+          {/* Add to Shared Garden Tab */}
+          {activeTab === 'garden' && (
+            <div className="space-y-4">
+              {gardenLinkStep === 'select' && (
+                <>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Copy {plant.name}'s profile to a shared garden so others can tend together. Your activity records stay private.
+                  </p>
+                  <div className="space-y-2">
+                    {gardenRefs.map(ref => (
+                      <button
+                        key={ref.gardenId}
+                        onClick={() => setSelectedGardenId(ref.gardenId)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors ${
+                          selectedGardenId === ref.gardenId
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          selectedGardenId === ref.gardenId ? 'bg-green-200' : 'bg-gray-100'
+                        }`}>
+                          <TreePine className={`w-4 h-4 ${selectedGardenId === ref.gardenId ? 'text-green-700' : 'text-gray-500'}`} />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium ${selectedGardenId === ref.gardenId ? 'text-green-900' : 'text-gray-800'}`}>
+                            {ref.gardenName}
+                          </p>
+                          {ref.disconnected && (
+                            <p className="text-xs text-amber-600">Disconnected</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {gardenLinkError && (
+                    <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{gardenLinkError}</p>
+                  )}
+                  <button
+                    onClick={handleLinkToGarden}
+                    disabled={!selectedGardenId}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-medium py-3 px-4 rounded-xl transition-colors"
+                  >
+                    <TreePine className="w-4 h-4" />
+                    Add to shared garden
+                  </button>
+                </>
+              )}
+
+              {gardenLinkStep === 'linking' && (
+                <div className="flex flex-col items-center py-8 gap-3">
+                  <div className="w-10 h-10 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500">Adding to garden...</p>
+                </div>
+              )}
+
+              {gardenLinkStep === 'done' && (
+                <div className="space-y-4">
+                  <div className="bg-green-50 rounded-xl p-4 text-center">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <TreePine className="w-6 h-6 text-green-700" />
+                    </div>
+                    <p className="font-medium text-green-900 text-sm">{plant.name} added to the garden</p>
+                    <p className="text-xs text-green-700 mt-1">Profile copied. Your activities remain private.</p>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-xl transition-colors text-sm"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

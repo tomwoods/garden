@@ -9,6 +9,9 @@ import { PlotDetailView } from './components/PlotDetailView';
 import { HarvestBriefView } from './components/harvest/HarvestBriefView';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { ReceivePlantShareView } from './components/ReceivePlantShareView';
+import { SharedGardensListView } from './components/SharedGardensListView';
+import { SharedGardenView } from './components/SharedGardenView';
+import { JoinSharedGardenView } from './components/JoinSharedGardenView';
 import { DatabaseService, type Plant, getPendingChanges } from './lib/database';
 import { generateRSAKeyPair, exportCryptoKey } from './lib/cryptoService';
 import { importCryptoKey, decryptData } from './lib/cryptoService';
@@ -21,6 +24,7 @@ import { useToast } from './hooks/useToast';
 import { NotificationService } from './lib/notificationService';
 import { syncOnAppLoad, setLastSyncVersion } from './lib/syncService';
 import { syncAllSharedPlants } from './lib/sharedBackupService';
+import { syncAllSharedGardens } from './lib/sharedGardenSyncService';
 import { syncMissingImages } from './lib/imageSync';
 import { uploadService } from './lib/uploadService';
 import { ImportContactModal } from './components/ImportContactModal';
@@ -62,6 +66,8 @@ function App() {
     await syncOnAppLoad(currentUser, handleMergeConfirm);
     // After personal garden syncs, sync all shared plants in turn
     await syncAllSharedPlants(currentUser).catch(() => {});
+    // Then sync all shared gardens
+    await syncAllSharedGardens(currentUser).catch(() => {});
     window.dispatchEvent(new CustomEvent('garden-data-refreshed'));
   }, [handleMergeConfirm]);
 
@@ -420,6 +426,9 @@ function App() {
           <Route path="/plots/:plotId" element={<PlotDetailView />} />
           <Route path="/harvest-brief" element={<HarvestBriefView />} />
           <Route path="/receive-plant-share/:plantId" element={<ReceivePlantShareView />} />
+          <Route path="/shared-gardens" element={<SharedGardensListView />} />
+          <Route path="/shared-garden/:gardenId" element={<SharedGardenView />} />
+          <Route path="/join-shared-garden/:gardenId" element={<JoinSharedGardenView />} />
         </Routes>
       </Router>
       <UpdatePrompt />

@@ -45,6 +45,7 @@ interface PlantCardProps {
   onSharePlant?: (plantId: string) => void;
   onShowMap?: (location: { lat: number; lng: number }) => void;
   imageRefreshKey?: number;
+  authorName?: string;
 }
 
 export const PlantCard: React.FC<PlantCardProps> = ({
@@ -61,7 +62,8 @@ export const PlantCard: React.FC<PlantCardProps> = ({
   onEditPlant,
   onSharePlant,
   onShowMap,
-  imageRefreshKey
+  imageRefreshKey,
+  authorName
 }) => {
   const [plantState, setPlantState] = useState<any>(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -423,7 +425,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
         </div>
       )}
 
-<div className="flex gap-2">
+<div className="flex gap-2 items-end">
         <button
           className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 font-medium py-2.5 px-4 rounded-xl transition-colors duration-200 text-sm"
           onClick={(e) => {
@@ -442,6 +444,11 @@ export const PlantCard: React.FC<PlantCardProps> = ({
         >
           🚿 Water
         </button>
+        {authorName && (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 whitespace-nowrap self-center">
+            {authorName}
+          </span>
+        )}
       </div>
     </div>
 

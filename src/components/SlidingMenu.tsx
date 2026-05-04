@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Sun, Search, Check, Key, Tractor, Users } from 'lucide-react';
+import { X, Download, Sun, Search, Check, Key, Tractor, Users, TreePine } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Plant } from '../lib/database';
 
 interface SlidingMenuProps {
@@ -17,6 +18,7 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
   plants,
   onBulkSunlight
 }) => {
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState<'menu' | 'bulk-sunlight'>('menu');
   const [bulkSunlightData, setBulkSunlightData] = useState({
     topic: '',
@@ -152,7 +154,7 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                 <button
                   onClick={() => {
                     onClose();
-                    window.location.pathname = '/plots';
+                    navigate('/plots');
                   }}
                   className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
                 >
@@ -164,11 +166,27 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                     <div className="text-sm text-gray-600">Group plants and log bulk activities</div>
                   </div>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     onClose();
-                    window.location.pathname = '/settings';
+                    navigate('/shared-gardens');
+                  }}
+                  className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <TreePine className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Shared Gardens</div>
+                    <div className="text-sm text-gray-600">Tend together with other gardeners</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/settings');
                   }}
                   className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
                 >

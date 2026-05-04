@@ -1,0 +1,898 @@
+import alasql from 'alasql';
+import { v4 as uuidv4 } from 'uuid';
+import type {
+  Plant, Tending, Watering, Sunlight, Fruit, Pruning,
+  Companion, ScheduledEvent, Plot, PlotMembership, Bud, Notching, Capability
+} from './database';
+
+// ─── Shared-garden-specific types ────────────────────────────────────────────
+
+export interface GardenMember {
+  id: string;
+  user_uuid: string;
+  display_name: string;
+  joined_at: number;
+  added_by_uuid: string;
+}
+
+export interface GardenChangeLogEntry {
+  id: string;
+  actor_uuid: string;
+  actor_display_name: string;
+  action_type: string; // 'add_plant' | 'remove_plant' | 'add_tending' | 'delete_tending' | etc.
+  target_table: string;
+  target_id: string;
+  target_label: string; // human-readable name of the affected record
+  occurred_at: number;
+}
+
+export interface SharedGardenDelta {
+  id: string;
+  type: 'INSERT' | 'UPDATE' | 'DELETE';
+  table: string;
+  record_id: string;
+  data?: Record<string, unknown>;
+  ts: number;
+  authored_by_uuid: string;
+  authored_by_display_name: string;
+}
+
+export interface SharedGardenSnapshot {
+  plants: Plant[];
+  tendings: Tending[];
+  waterings: Watering[];
+  sunlight: Sunlight[];
+  fruits: Fruit[];
+  prunings: Pruning[];
+  companions: Companion[];
+  scheduled_events: ScheduledEvent[];
+  plots: Plot[];
+  plot_memberships: PlotMembership[];
+  buds: Bud[];
+  notchings: Notching[];
+  capabilities: Capability[];
+  members: GardenMember[];
+  change_log: GardenChangeLogEntry[];
+  snapshot_at: number;
+}
+
+export interface SharedGardenObject {
+  snapshot: SharedGardenSnapshot;
+  deltas: SharedGardenDelta[];
+  schema_version: number;
+  garden_name: string;
+}
+
+export interface SharedGardenTombstone {
+  id: string;
+  record_id: string;
+  table_name: string;
+  deleted_at: number;
+}
+
+// ─── Shared garden refs (registry in localStorage) ────────────────────────────
+
+export interface SharedGardenRef {
+  gardenId: string;           // local identifier (same as sharedGardenId)
+  sharedGardenId: string;     // UUID in Supabase shared_gardens table
+  gardenName: string;
+  myDisplayName: string;
+  myUuid: string;
+  gardenPublicKeyBase64: string;
+  lastSyncTs: number;
+  disconnected?: boolean;     // set to true if removed from garden
+}
+
+const GARDEN_REFS_KEY = 'shared_garden_refs_v1';
+
+export function getSharedGardenRefs(): SharedGardenRef[] {
+  try {
+    const raw = localStorage.getItem(GARDEN_REFS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveSharedGardenRefs(refs: SharedGardenRef[]): void {
+  localStorage.setItem(GARDEN_REFS_KEY, JSON.stringify(refs));
+}
+
+export function addSharedGardenRef(ref: SharedGardenRef): void {
+  const refs = getSharedGardenRefs();
+  const idx = refs.findIndex(r => r.gardenId === ref.gardenId);
+  if (idx >= 0) refs[idx] = ref;
+  else refs.push(ref);
+  saveSharedGardenRefs(refs);
+}
+
+export function removeSharedGardenRef(gardenId: string): void {
+  saveSharedGardenRefs(getSharedGardenRefs().filter(r => r.gardenId !== gardenId));
+}
+
+export function getSharedGardenRef(gardenId: string): SharedGardenRef | null {
+  return getSharedGardenRefs().find(r => r.gardenId === gardenId) ?? null;
+}
+
+export function markGardenDisconnected(gardenId: string): void {
+  const refs = getSharedGardenRefs();
+  const idx = refs.findIndex(r => r.gardenId === gardenId);
+  if (idx >= 0) { refs[idx].disconnected = true; saveSharedGardenRefs(refs); }
+}
+
+export function setGardenSyncTs(gardenId: string, ts: number): void {
+  const refs = getSharedGardenRefs();
+  const idx = refs.findIndex(r => r.gardenId === gardenId);
+  if (idx >= 0) { refs[idx].lastSyncTs = ts; saveSharedGardenRefs(refs); }
+}
+
+// ─── Per-garden AlaSQL database ───────────────────────────────────────────────
+
+const initializedGardens = new Set<string>();
+
+function dbName(gardenId: string): string {
+  return `SharedGarden_${gardenId.replace(/-/g, '_')}`;
+}
+
+export class SharedGardenDatabase {
+  static async init(gardenId: string): Promise<void> {
+    if (initializedGardens.has(gardenId)) return;
+
+    const name = dbName(gardenId);
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        alasql(`CREATE LOCALSTORAGE DATABASE IF NOT EXISTS ${name}`, [], (res: unknown) => {
+          if (res === 1 || res === 0) resolve(); else reject(new Error(`Failed to create ${name}`));
+        });
+      });
+      await new Promise<void>((resolve, reject) => {
+        alasql(`ATTACH LOCALSTORAGE DATABASE ${name}`, [], (res: unknown) => {
+          if (res === 1) resolve(); else reject(new Error(`Failed to attach ${name}`));
+        });
+      });
+      await new Promise<void>((resolve, reject) => {
+        alasql(`USE ${name}`, [], (res: unknown) => {
+          if (res === 1 || res === 0) resolve(); else reject(new Error(`Failed to use ${name}`));
+        });
+      });
+    } catch {
+      // fall back to memory
+    }
+
+    await this._createTables(gardenId);
+    initializedGardens.add(gardenId);
+  }
+
+  private static async _createTables(gardenId: string): Promise<void> {
+    const tables: Array<[string, string]> = [
+      ['plants', `
+        id STRING PRIMARY KEY, name STRING NOT NULL, email STRING, phone STRING,
+        last_interaction NUMBER DEFAULT 0, created_at NUMBER NOT NULL, updated_at NUMBER NOT NULL,
+        care_frequency_multiplier NUMBER DEFAULT 2, care_frequency_unit STRING DEFAULT 'weeks',
+        next_scheduled_care NUMBER NOT NULL, last_cared_for NUMBER NOT NULL,
+        description STRING, additional_info STRING,
+        authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['tendings', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, datetime NUMBER NOT NULL,
+        updated_at NUMBER NOT NULL, type STRING NOT NULL, summary STRING, additional_info STRING,
+        authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['waterings', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, datetime NUMBER NOT NULL,
+        updated_at NUMBER NOT NULL, source STRING NOT NULL, progress_description STRING,
+        additional_info STRING, authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['sunlight', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, datetime NUMBER NOT NULL,
+        updated_at NUMBER NOT NULL, topic STRING NOT NULL, additional_info STRING,
+        authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['fruits', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, datetime NUMBER NOT NULL,
+        updated_at NUMBER NOT NULL, description STRING NOT NULL, basic_activity STRING,
+        additional_info STRING, authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['prunings', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, datetime NUMBER NOT NULL,
+        updated_at NUMBER NOT NULL, difficulty STRING NOT NULL, description STRING,
+        additional_info STRING, authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['companions', `
+        id STRING PRIMARY KEY, plant_a_id STRING NOT NULL, relationship_descriptor STRING NOT NULL,
+        plant_b_id STRING NOT NULL, updated_at NUMBER NOT NULL, additional_info STRING
+      `],
+      ['scheduled_events', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, event_type STRING NOT NULL,
+        scheduled_date NUMBER NOT NULL, updated_at NUMBER NOT NULL, description STRING,
+        additional_info STRING
+      `],
+      ['plots', `
+        id STRING PRIMARY KEY, name STRING NOT NULL, description STRING,
+        created_at NUMBER NOT NULL, updated_at NUMBER NOT NULL, additional_info STRING
+      `],
+      ['plot_memberships', `
+        id STRING PRIMARY KEY, plot_id STRING NOT NULL, plant_id STRING NOT NULL,
+        updated_at NUMBER NOT NULL
+      `],
+      ['buds', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, text STRING NOT NULL,
+        created_at NUMBER NOT NULL, updated_at NUMBER NOT NULL,
+        authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['notchings', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, datetime NUMBER NOT NULL,
+        updated_at NUMBER NOT NULL, book STRING NOT NULL, start_unit NUMBER NOT NULL,
+        start_section NUMBER NOT NULL, end_unit NUMBER NOT NULL, end_section NUMBER NOT NULL,
+        sections_studied NUMBER NOT NULL, progress_description STRING, additional_info STRING,
+        authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['capabilities', `
+        id STRING PRIMARY KEY, plant_id STRING NOT NULL, text STRING NOT NULL,
+        created_at NUMBER NOT NULL, updated_at NUMBER NOT NULL,
+        authored_by_uuid STRING, authored_by_display_name STRING
+      `],
+      ['garden_members', `
+        id STRING PRIMARY KEY, user_uuid STRING NOT NULL, display_name STRING NOT NULL,
+        joined_at NUMBER NOT NULL, added_by_uuid STRING NOT NULL
+      `],
+      ['garden_change_log', `
+        id STRING PRIMARY KEY, actor_uuid STRING NOT NULL, actor_display_name STRING NOT NULL,
+        action_type STRING NOT NULL, target_table STRING NOT NULL, target_id STRING NOT NULL,
+        target_label STRING NOT NULL, occurred_at NUMBER NOT NULL
+      `],
+      ['garden_tombstones', `
+        id STRING PRIMARY KEY, record_id STRING NOT NULL, table_name STRING NOT NULL,
+        deleted_at NUMBER NOT NULL
+      `],
+    ];
+
+    const name = dbName(gardenId);
+    for (const [tableName, schema] of tables) {
+      await new Promise<void>((resolve) => {
+        alasql(`CREATE TABLE IF NOT EXISTS ${name}.${tableName} (${schema})`, [], () => resolve());
+      });
+    }
+  }
+
+  // ─── Context prefix helper ────────────────────────────────────────────────
+
+  private static q(gardenId: string, sql: string): string {
+    return sql.replace(/\bFROM (\w)/g, `FROM ${dbName(gardenId)}.$1`)
+              .replace(/\bINTO (\w)/g, `INTO ${dbName(gardenId)}.$1`)
+              .replace(/\bUPDATE (\w)/g, `UPDATE ${dbName(gardenId)}.$1`)
+              .replace(/\bDELETE FROM (\w)/g, `DELETE FROM ${dbName(gardenId)}.$1`)
+              .replace(/\bINSERT INTO (\w)/g, `INSERT INTO ${dbName(gardenId)}.$1`)
+              .replace(/\bJOIN (\w)/g, `JOIN ${dbName(gardenId)}.$1`);
+  }
+
+  static run<T = unknown>(gardenId: string, sql: string, params: unknown[] = []): T {
+    return alasql(this.q(gardenId, sql), params) as T;
+  }
+
+  // ─── Change log ───────────────────────────────────────────────────────────
+
+  static logChange(
+    gardenId: string,
+    actorUuid: string,
+    actorDisplayName: string,
+    actionType: string,
+    targetTable: string,
+    targetId: string,
+    targetLabel: string
+  ): void {
+    const entry: GardenChangeLogEntry = {
+      id: uuidv4(),
+      actor_uuid: actorUuid,
+      actor_display_name: actorDisplayName,
+      action_type: actionType,
+      target_table: targetTable,
+      target_id: targetId,
+      target_label: targetLabel,
+      occurred_at: Date.now(),
+    };
+    this.run(gardenId,
+      'INSERT INTO garden_change_log (id, actor_uuid, actor_display_name, action_type, target_table, target_id, target_label, occurred_at) VALUES (?,?,?,?,?,?,?,?)',
+      [entry.id, entry.actor_uuid, entry.actor_display_name, entry.action_type, entry.target_table, entry.target_id, entry.target_label, entry.occurred_at]
+    );
+  }
+
+  static getChangeLog(gardenId: string, limit = 10, offset = 0): GardenChangeLogEntry[] {
+    return this.run<GardenChangeLogEntry[]>(gardenId,
+      'SELECT * FROM garden_change_log ORDER BY occurred_at DESC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+  }
+
+  static getChangeLogCount(gardenId: string): number {
+    const result = this.run<Array<{ cnt: number }>>(gardenId,
+      'SELECT COUNT(*) as cnt FROM garden_change_log', []
+    );
+    return result[0]?.cnt ?? 0;
+  }
+
+  // ─── Tombstones ───────────────────────────────────────────────────────────
+
+  static recordTombstone(gardenId: string, recordId: string, tableName: string): void {
+    const existing = this.run<unknown[]>(gardenId,
+      'SELECT id FROM garden_tombstones WHERE record_id = ?', [recordId]
+    );
+    if ((existing as unknown[]).length > 0) return;
+    this.run(gardenId,
+      'INSERT INTO garden_tombstones (id, record_id, table_name, deleted_at) VALUES (?,?,?,?)',
+      [uuidv4(), recordId, tableName, Date.now()]
+    );
+  }
+
+  static hasTombstone(gardenId: string, recordId: string): boolean {
+    const res = this.run<unknown[]>(gardenId,
+      'SELECT id FROM garden_tombstones WHERE record_id = ?', [recordId]
+    );
+    return (res as unknown[]).length > 0;
+  }
+
+  static getTombstones(gardenId: string): SharedGardenTombstone[] {
+    return this.run<SharedGardenTombstone[]>(gardenId,
+      'SELECT * FROM garden_tombstones', []
+    );
+  }
+
+  static purgeTombstones(gardenId: string): void {
+    this.run(gardenId, 'DELETE FROM garden_tombstones', []);
+  }
+
+  // ─── Members ──────────────────────────────────────────────────────────────
+
+  static getMembers(gardenId: string): GardenMember[] {
+    return this.run<GardenMember[]>(gardenId,
+      'SELECT * FROM garden_members ORDER BY joined_at ASC', []
+    );
+  }
+
+  static getMember(gardenId: string, userUuid: string): GardenMember | null {
+    const res = this.run<GardenMember[]>(gardenId,
+      'SELECT * FROM garden_members WHERE user_uuid = ?', [userUuid]
+    );
+    return res[0] ?? null;
+  }
+
+  static upsertMember(gardenId: string, member: GardenMember): void {
+    const existing = this.getMember(gardenId, member.user_uuid);
+    if (existing) {
+      this.run(gardenId,
+        'UPDATE garden_members SET display_name = ? WHERE user_uuid = ?',
+        [member.display_name, member.user_uuid]
+      );
+    } else {
+      this.run(gardenId,
+        'INSERT INTO garden_members (id, user_uuid, display_name, joined_at, added_by_uuid) VALUES (?,?,?,?,?)',
+        [member.id, member.user_uuid, member.display_name, member.joined_at, member.added_by_uuid]
+      );
+    }
+  }
+
+  static removeMember(gardenId: string, userUuid: string): void {
+    this.run(gardenId, 'DELETE FROM garden_members WHERE user_uuid = ?', [userUuid]);
+  }
+
+  // ─── Plants ───────────────────────────────────────────────────────────────
+
+  static getAllPlants(gardenId: string): Plant[] {
+    return this.run<Plant[]>(gardenId,
+      'SELECT * FROM plants ORDER BY next_scheduled_care ASC', []
+    );
+  }
+
+  static getPlant(gardenId: string, plantId: string): Plant | null {
+    const res = this.run<Plant[]>(gardenId, 'SELECT * FROM plants WHERE id = ?', [plantId]);
+    return res[0] ?? null;
+  }
+
+  static addPlant(
+    gardenId: string,
+    plant: Omit<Plant, 'id' | 'created_at' | 'updated_at'>,
+    authorUuid: string,
+    authorDisplayName: string
+  ): Plant {
+    const now = Date.now();
+    const hoursInUnit = plant.care_frequency_unit === 'weeks' ? 168 : 24;
+    const nextCare = now + (plant.care_frequency_multiplier * hoursInUnit * 3600000);
+    const newPlant: Plant & { authored_by_uuid: string; authored_by_display_name: string } = {
+      id: uuidv4(),
+      created_at: now,
+      updated_at: now,
+      last_interaction: now,
+      last_cared_for: plant.last_cared_for || now,
+      next_scheduled_care: plant.next_scheduled_care || nextCare,
+      ...plant,
+      authored_by_uuid: authorUuid,
+      authored_by_display_name: authorDisplayName,
+    };
+
+    this.run(gardenId,
+      'INSERT INTO plants (id,name,email,phone,last_interaction,created_at,updated_at,care_frequency_multiplier,care_frequency_unit,next_scheduled_care,last_cared_for,description,additional_info,authored_by_uuid,authored_by_display_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [newPlant.id, newPlant.name, newPlant.email||null, newPlant.phone||null, newPlant.last_interaction, newPlant.created_at, newPlant.updated_at, newPlant.care_frequency_multiplier, newPlant.care_frequency_unit, newPlant.next_scheduled_care, newPlant.last_cared_for, newPlant.description||null, newPlant.additional_info||null, authorUuid, authorDisplayName]
+    );
+
+    this.logChange(gardenId, authorUuid, authorDisplayName, 'add_plant', 'plants', newPlant.id, newPlant.name);
+    return newPlant;
+  }
+
+  static updatePlant(gardenId: string, plantId: string, updates: Partial<Omit<Plant, 'id'|'created_at'>>, actorUuid: string, actorDisplayName: string): void {
+    const now = Date.now();
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    const values = Object.values(updates);
+    this.run(gardenId, `UPDATE plants SET ${fields}, updated_at = ? WHERE id = ?`, [...values, now, plantId]);
+
+    const plant = this.getPlant(gardenId, plantId);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_plant', 'plants', plantId, plant?.name ?? plantId);
+  }
+
+  static updatePlantCare(gardenId: string, plantId: string, timestamp: number): void {
+    const plant = this.getPlant(gardenId, plantId);
+    if (!plant) return;
+    const hoursInUnit = plant.care_frequency_unit === 'weeks' ? 168 : 24;
+    const nextCare = timestamp + (plant.care_frequency_multiplier * hoursInUnit * 3600000);
+    this.run(gardenId,
+      'UPDATE plants SET last_cared_for = ?, next_scheduled_care = ?, updated_at = ? WHERE id = ?',
+      [timestamp, nextCare, Date.now(), plantId]
+    );
+  }
+
+  static removePlant(gardenId: string, plantId: string, actorUuid: string, actorDisplayName: string): void {
+    const plant = this.getPlant(gardenId, plantId);
+    const plantName = plant?.name ?? plantId;
+
+    // Tombstone the plant and all related records
+    const relatedTables = ['tendings','waterings','sunlight','fruits','prunings','scheduled_events','buds','notchings','capabilities'];
+    for (const table of relatedTables) {
+      const rows = this.run<Array<{ id: string }>>(gardenId, `SELECT id FROM ${table} WHERE plant_id = ?`, [plantId]);
+      for (const row of rows) this.recordTombstone(gardenId, row.id, table);
+      this.run(gardenId, `DELETE FROM ${table} WHERE plant_id = ?`, [plantId]);
+    }
+    this.recordTombstone(gardenId, plantId, 'plants');
+    this.run(gardenId, 'DELETE FROM plants WHERE id = ?', [plantId]);
+    this.run(gardenId, 'DELETE FROM companions WHERE plant_a_id = ? OR plant_b_id = ?', [plantId, plantId]);
+    this.run(gardenId, 'DELETE FROM plot_memberships WHERE plant_id = ?', [plantId]);
+
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'remove_plant', 'plants', plantId, plantName);
+  }
+
+  // ─── Activity helpers (generic for all activity tables) ───────────────────
+
+  private static _addActivity(
+    gardenId: string,
+    table: string,
+    record: Record<string, unknown>,
+    authorUuid: string,
+    authorDisplayName: string,
+    actionType: string,
+    targetLabel: string
+  ): void {
+    const cols = Object.keys(record).join(', ');
+    const placeholders = Object.keys(record).map(() => '?').join(', ');
+    this.run(gardenId, `INSERT INTO ${table} (${cols}) VALUES (${placeholders})`, Object.values(record));
+    this.logChange(gardenId, authorUuid, authorDisplayName, actionType, table, record.id as string, targetLabel);
+  }
+
+  private static _deleteActivity(
+    gardenId: string,
+    table: string,
+    recordId: string,
+    actorUuid: string,
+    actorDisplayName: string,
+    actionType: string,
+    targetLabel: string
+  ): void {
+    this.recordTombstone(gardenId, recordId, table);
+    this.run(gardenId, `DELETE FROM ${table} WHERE id = ?`, [recordId]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, actionType, table, recordId, targetLabel);
+  }
+
+  // ─── Tendings ─────────────────────────────────────────────────────────────
+
+  static addTending(gardenId: string, tending: Omit<Tending,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Tending {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...tending, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'tendings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_tending', `tending for ${tending.plant_id}`);
+    this.updatePlantCare(gardenId, tending.plant_id, tending.datetime);
+    return rec;
+  }
+
+  static getTendingsForPlant(gardenId: string, plantId: string): Tending[] {
+    return this.run<Tending[]>(gardenId, 'SELECT * FROM tendings WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
+  }
+
+  static updateTending(gardenId: string, id: string, updates: Partial<Tending>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE tendings SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_tending', 'tendings', id, 'tending');
+  }
+
+  static deleteTending(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'tendings', id, actorUuid, actorDisplayName, 'delete_tending', 'tending');
+  }
+
+  // ─── Waterings ────────────────────────────────────────────────────────────
+
+  static addWatering(gardenId: string, watering: Omit<Watering,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Watering {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...watering, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'waterings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_watering', `watering for ${watering.plant_id}`);
+    this.updatePlantCare(gardenId, watering.plant_id, watering.datetime);
+    return rec;
+  }
+
+  static getWateringsForPlant(gardenId: string, plantId: string): Watering[] {
+    return this.run<Watering[]>(gardenId, 'SELECT * FROM waterings WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
+  }
+
+  static updateWatering(gardenId: string, id: string, updates: Partial<Watering>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE waterings SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_watering', 'waterings', id, 'watering');
+  }
+
+  static deleteWatering(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'waterings', id, actorUuid, actorDisplayName, 'delete_watering', 'watering');
+  }
+
+  // ─── Sunlight ─────────────────────────────────────────────────────────────
+
+  static addSunlight(gardenId: string, sunlight: Omit<Sunlight,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Sunlight {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...sunlight, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'sunlight', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_sunlight', `sunlight for ${sunlight.plant_id}`);
+    return rec;
+  }
+
+  static getSunlightForPlant(gardenId: string, plantId: string): Sunlight[] {
+    return this.run<Sunlight[]>(gardenId, 'SELECT * FROM sunlight WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
+  }
+
+  static updateSunlight(gardenId: string, id: string, updates: Partial<Sunlight>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE sunlight SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_sunlight', 'sunlight', id, 'sunlight');
+  }
+
+  static deleteSunlight(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'sunlight', id, actorUuid, actorDisplayName, 'delete_sunlight', 'sunlight');
+  }
+
+  // ─── Fruits ───────────────────────────────────────────────────────────────
+
+  static addFruit(gardenId: string, fruit: Omit<Fruit,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Fruit {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...fruit, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'fruits', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_fruit', fruit.description);
+    return rec;
+  }
+
+  static getFruitsForPlant(gardenId: string, plantId: string): Fruit[] {
+    return this.run<Fruit[]>(gardenId, 'SELECT * FROM fruits WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
+  }
+
+  static deleteFruit(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'fruits', id, actorUuid, actorDisplayName, 'delete_fruit', 'fruit');
+  }
+
+  // ─── Prunings ─────────────────────────────────────────────────────────────
+
+  static addPruning(gardenId: string, pruning: Omit<Pruning,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Pruning {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...pruning, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'prunings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_pruning', pruning.description || 'pruning');
+    return rec;
+  }
+
+  static getPruningsForPlant(gardenId: string, plantId: string): Pruning[] {
+    return this.run<Pruning[]>(gardenId, 'SELECT * FROM prunings WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
+  }
+
+  static deletePruning(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'prunings', id, actorUuid, actorDisplayName, 'delete_pruning', 'pruning');
+  }
+
+  // ─── Buds ─────────────────────────────────────────────────────────────────
+
+  static addBud(gardenId: string, bud: Omit<Bud,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Bud {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...bud, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'buds', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_bud', bud.text);
+    return rec;
+  }
+
+  static getBudsForPlant(gardenId: string, plantId: string): Bud[] {
+    return this.run<Bud[]>(gardenId, 'SELECT * FROM buds WHERE plant_id = ? ORDER BY created_at ASC', [plantId]);
+  }
+
+  static deleteBud(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'buds', id, actorUuid, actorDisplayName, 'delete_bud', 'bud');
+  }
+
+  // ─── Notchings ────────────────────────────────────────────────────────────
+
+  static addNotching(gardenId: string, notching: Omit<Notching,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Notching {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...notching, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'notchings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_notching', notching.book);
+    this.updatePlantCare(gardenId, notching.plant_id, notching.datetime);
+    return rec;
+  }
+
+  static getNotchingsForPlant(gardenId: string, plantId: string): Notching[] {
+    return this.run<Notching[]>(gardenId, 'SELECT * FROM notchings WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
+  }
+
+  static deleteNotching(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'notchings', id, actorUuid, actorDisplayName, 'delete_notching', 'notching');
+  }
+
+  // ─── Capabilities ─────────────────────────────────────────────────────────
+
+  static addCapability(gardenId: string, capability: Omit<Capability,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Capability {
+    const now = Date.now();
+    const rec = { id: uuidv4(), updated_at: now, ...capability, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
+    this._addActivity(gardenId, 'capabilities', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_capability', capability.text);
+    return rec;
+  }
+
+  static getCapabilitiesForPlant(gardenId: string, plantId: string): Capability[] {
+    return this.run<Capability[]>(gardenId, 'SELECT * FROM capabilities WHERE plant_id = ? ORDER BY created_at ASC', [plantId]);
+  }
+
+  static deleteCapability(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'capabilities', id, actorUuid, actorDisplayName, 'delete_capability', 'capability');
+  }
+
+  // ─── Scheduled events ─────────────────────────────────────────────────────
+
+  static addScheduledEvent(gardenId: string, event: Omit<ScheduledEvent,'id'|'updated_at'>): ScheduledEvent {
+    const now = Date.now();
+    const rec: ScheduledEvent = { id: uuidv4(), updated_at: now, ...event };
+    this.run(gardenId,
+      'INSERT INTO scheduled_events (id,plant_id,event_type,scheduled_date,updated_at,description,additional_info) VALUES (?,?,?,?,?,?,?)',
+      [rec.id, rec.plant_id, rec.event_type, rec.scheduled_date, rec.updated_at, rec.description||null, rec.additional_info||null]
+    );
+    return rec;
+  }
+
+  static getScheduledEventsForPlant(gardenId: string, plantId: string): ScheduledEvent[] {
+    return this.run<ScheduledEvent[]>(gardenId, 'SELECT * FROM scheduled_events WHERE plant_id = ? ORDER BY scheduled_date ASC', [plantId]);
+  }
+
+  static deleteScheduledEvent(gardenId: string, id: string): void {
+    this.recordTombstone(gardenId, id, 'scheduled_events');
+    this.run(gardenId, 'DELETE FROM scheduled_events WHERE id = ?', [id]);
+  }
+
+  // ─── Companions ───────────────────────────────────────────────────────────
+
+  static addCompanion(gardenId: string, companion: Omit<Companion,'id'|'updated_at'>): Companion {
+    const now = Date.now();
+    const rec: Companion = { id: uuidv4(), updated_at: now, ...companion };
+    this.run(gardenId,
+      'INSERT INTO companions (id,plant_a_id,relationship_descriptor,plant_b_id,updated_at,additional_info) VALUES (?,?,?,?,?,?)',
+      [rec.id, rec.plant_a_id, rec.relationship_descriptor, rec.plant_b_id, rec.updated_at, rec.additional_info||null]
+    );
+    return rec;
+  }
+
+  static getCompanionsForPlant(gardenId: string, plantId: string): Companion[] {
+    return this.run<Companion[]>(gardenId, 'SELECT * FROM companions WHERE plant_a_id = ? OR plant_b_id = ?', [plantId, plantId]);
+  }
+
+  static deleteCompanion(gardenId: string, id: string): void {
+    this.run(gardenId, 'DELETE FROM companions WHERE id = ?', [id]);
+  }
+
+  // ─── Plots ────────────────────────────────────────────────────────────────
+
+  static getPlots(gardenId: string): Plot[] {
+    return this.run<Plot[]>(gardenId, 'SELECT * FROM plots ORDER BY created_at DESC', []);
+  }
+
+  static createPlot(gardenId: string, plot: Omit<Plot,'id'|'created_at'|'updated_at'>): Plot {
+    const now = Date.now();
+    const rec: Plot = { id: uuidv4(), created_at: now, updated_at: now, ...plot };
+    this.run(gardenId,
+      'INSERT INTO plots (id,name,description,created_at,updated_at,additional_info) VALUES (?,?,?,?,?,?)',
+      [rec.id, rec.name, rec.description||null, rec.created_at, rec.updated_at, rec.additional_info||null]
+    );
+    return rec;
+  }
+
+  static updatePlotMemberships(gardenId: string, plotId: string, plantIds: string[]): void {
+    this.run(gardenId, 'DELETE FROM plot_memberships WHERE plot_id = ?', [plotId]);
+    const now = Date.now();
+    for (const plantId of plantIds) {
+      this.run(gardenId,
+        'INSERT INTO plot_memberships (id,plot_id,plant_id,updated_at) VALUES (?,?,?,?)',
+        [uuidv4(), plotId, plantId, now]
+      );
+    }
+  }
+
+  // ─── Full snapshot ────────────────────────────────────────────────────────
+
+  static getFullSnapshot(gardenId: string): SharedGardenSnapshot {
+    return {
+      plants: this.run<Plant[]>(gardenId, 'SELECT * FROM plants', []),
+      tendings: this.run<Tending[]>(gardenId, 'SELECT * FROM tendings', []),
+      waterings: this.run<Watering[]>(gardenId, 'SELECT * FROM waterings', []),
+      sunlight: this.run<Sunlight[]>(gardenId, 'SELECT * FROM sunlight', []),
+      fruits: this.run<Fruit[]>(gardenId, 'SELECT * FROM fruits', []),
+      prunings: this.run<Pruning[]>(gardenId, 'SELECT * FROM prunings', []),
+      companions: this.run<Companion[]>(gardenId, 'SELECT * FROM companions', []),
+      scheduled_events: this.run<ScheduledEvent[]>(gardenId, 'SELECT * FROM scheduled_events', []),
+      plots: this.run<Plot[]>(gardenId, 'SELECT * FROM plots', []),
+      plot_memberships: this.run<PlotMembership[]>(gardenId, 'SELECT * FROM plot_memberships', []),
+      buds: this.run<Bud[]>(gardenId, 'SELECT * FROM buds', []),
+      notchings: this.run<Notching[]>(gardenId, 'SELECT * FROM notchings', []),
+      capabilities: this.run<Capability[]>(gardenId, 'SELECT * FROM capabilities', []),
+      members: this.getMembers(gardenId),
+      change_log: this.run<GardenChangeLogEntry[]>(gardenId, 'SELECT * FROM garden_change_log ORDER BY occurred_at DESC', []),
+      snapshot_at: Date.now(),
+    };
+  }
+
+  // ─── Delta collection ─────────────────────────────────────────────────────
+
+  static getDeltasSince(gardenId: string, sinceTs: number, authorUuid: string, authorDisplayName: string): SharedGardenDelta[] {
+    const deltas: SharedGardenDelta[] = [];
+    const tables = [
+      'plants','tendings','waterings','sunlight','fruits','prunings',
+      'companions','scheduled_events','buds','notchings','capabilities',
+      'garden_members','garden_change_log'
+    ];
+
+    for (const table of tables) {
+      let rows: Array<Record<string, unknown>>;
+      try {
+        rows = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM ${table} WHERE updated_at > ?`, [sinceTs]);
+      } catch {
+        // table might not have updated_at — skip
+        continue;
+      }
+      for (const row of rows) {
+        deltas.push({
+          id: uuidv4(),
+          type: 'UPDATE',
+          table,
+          record_id: row.id as string,
+          data: row,
+          ts: (row.updated_at as number) ?? (row.occurred_at as number) ?? (row.joined_at as number) ?? sinceTs,
+          authored_by_uuid: (row.authored_by_uuid as string) ?? authorUuid,
+          authored_by_display_name: (row.authored_by_display_name as string) ?? authorDisplayName,
+        });
+      }
+    }
+
+    // Tombstones
+    const tombstones = this.run<Array<{ id: string; record_id: string; table_name: string; deleted_at: number }>>(
+      gardenId, 'SELECT * FROM garden_tombstones WHERE deleted_at > ?', [sinceTs]
+    );
+    for (const t of tombstones) {
+      deltas.push({
+        id: uuidv4(),
+        type: 'DELETE',
+        table: t.table_name,
+        record_id: t.record_id,
+        ts: t.deleted_at,
+        authored_by_uuid: authorUuid,
+        authored_by_display_name: authorDisplayName,
+      });
+    }
+
+    return deltas.sort((a, b) => a.ts - b.ts);
+  }
+
+  // ─── Apply incoming deltas ────────────────────────────────────────────────
+
+  static applyDeltas(
+    gardenId: string,
+    deltas: SharedGardenDelta[]
+  ): Array<{ delta: SharedGardenDelta; reason: string }> {
+    const conflicts: Array<{ delta: SharedGardenDelta; reason: string }> = [];
+
+    for (const delta of [...deltas].sort((a, b) => a.ts - b.ts)) {
+      if (delta.type === 'DELETE') {
+        // Conflict: if anyone tries to write to a record we don't have (already deleted)
+        // — but we only need to prevent re-insertion from stale snapshots
+        this.run(gardenId, `DELETE FROM ${delta.table} WHERE id = ?`, [delta.record_id]);
+        this.recordTombstone(gardenId, delta.record_id, delta.table);
+        continue;
+      }
+
+      if (!delta.data) continue;
+
+      // Check tombstone — if we deleted this record and incoming tries to INSERT it, that's a conflict
+      if (this.hasTombstone(gardenId, delta.record_id)) {
+        conflicts.push({ delta, reason: 'Activity added to a deleted record' });
+        continue;
+      }
+
+      let existing: Array<Record<string, unknown>>;
+      try {
+        existing = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM ${delta.table} WHERE id = ?`, [delta.record_id]);
+      } catch {
+        existing = [];
+      }
+
+      if (existing.length === 0) {
+        // Insert new record
+        const cols = Object.keys(delta.data).join(', ');
+        const placeholders = Object.keys(delta.data).map(() => '?').join(', ');
+        try {
+          this.run(gardenId, `INSERT INTO ${delta.table} (${cols}) VALUES (${placeholders})`, Object.values(delta.data));
+        } catch {
+          // duplicate — silently skip
+        }
+      } else {
+        // Last-write-wins by individual record timestamp
+        const localTs: number = (existing[0].updated_at as number) ?? (existing[0].occurred_at as number) ?? 0;
+        if (delta.ts >= localTs) {
+          const fields = Object.keys(delta.data).filter(k => k !== 'id').map(k => `${k} = ?`).join(', ');
+          const values = Object.keys(delta.data).filter(k => k !== 'id').map(k => delta.data![k]);
+          if (fields) {
+            try {
+              this.run(gardenId, `UPDATE ${delta.table} SET ${fields} WHERE id = ?`, [...values, delta.record_id]);
+            } catch {
+              // silently skip
+            }
+          }
+        }
+        // if local is newer, keep local — do nothing
+      }
+    }
+
+    return conflicts;
+  }
+
+  // ─── Apply full snapshot (first join) ─────────────────────────────────────
+
+  static applySnapshot(gardenId: string, snapshot: SharedGardenSnapshot): void {
+    const tables: Array<[string, Array<Record<string, unknown>>]> = [
+      ['plants', snapshot.plants as unknown as Array<Record<string, unknown>>],
+      ['tendings', snapshot.tendings as unknown as Array<Record<string, unknown>>],
+      ['waterings', snapshot.waterings as unknown as Array<Record<string, unknown>>],
+      ['sunlight', snapshot.sunlight as unknown as Array<Record<string, unknown>>],
+      ['fruits', snapshot.fruits as unknown as Array<Record<string, unknown>>],
+      ['prunings', snapshot.prunings as unknown as Array<Record<string, unknown>>],
+      ['companions', snapshot.companions as unknown as Array<Record<string, unknown>>],
+      ['scheduled_events', snapshot.scheduled_events as unknown as Array<Record<string, unknown>>],
+      ['plots', snapshot.plots as unknown as Array<Record<string, unknown>>],
+      ['plot_memberships', snapshot.plot_memberships as unknown as Array<Record<string, unknown>>],
+      ['buds', snapshot.buds as unknown as Array<Record<string, unknown>>],
+      ['notchings', snapshot.notchings as unknown as Array<Record<string, unknown>>],
+      ['capabilities', snapshot.capabilities as unknown as Array<Record<string, unknown>>],
+      ['garden_members', snapshot.members as unknown as Array<Record<string, unknown>>],
+      ['garden_change_log', snapshot.change_log as unknown as Array<Record<string, unknown>>],
+    ];
+
+    for (const [table, rows] of tables) {
+      for (const row of rows) {
+        if (this.hasTombstone(gardenId, row.id as string)) continue;
+        const existing = this.run<unknown[]>(gardenId, `SELECT id FROM ${table} WHERE id = ?`, [row.id]);
+        if ((existing as unknown[]).length > 0) continue;
+        const cols = Object.keys(row).join(', ');
+        const placeholders = Object.keys(row).map(() => '?').join(', ');
+        try {
+          this.run(gardenId, `INSERT INTO ${table} (${cols}) VALUES (${placeholders})`, Object.values(row));
+        } catch {
+          // silently skip duplicate
+        }
+      }
+    }
+  }
+
+  // ─── Garden name management ───────────────────────────────────────────────
+
+  static getGardenStats(gardenId: string): { plantCount: number; memberCount: number } {
+    const plants = this.run<unknown[]>(gardenId, 'SELECT id FROM plants', []);
+    const members = this.run<unknown[]>(gardenId, 'SELECT id FROM garden_members', []);
+    return { plantCount: (plants as unknown[]).length, memberCount: (members as unknown[]).length };
+  }
+}
