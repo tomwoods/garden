@@ -596,12 +596,11 @@ export const SharedGardenView: React.FC = () => {
         />
       )}
 
-      {showAddPlant && user && (
+      {showAddPlant && (
         <AddPlantModal
           isOpen={showAddPlant}
           onClose={() => setShowAddPlant(false)}
-          onSave={handleAddPlant}
-          user={user}
+          onAdd={handleAddPlant}
         />
       )}
 

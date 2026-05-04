@@ -171,6 +171,11 @@ export class SharedGardenDatabase {
 
     await this._createTables(gardenId);
     initializedGardens.add(gardenId);
+
+    // Restore the personal garden's database context so that subsequent
+    // DatabaseService calls (which use unqualified table names) continue to
+    // resolve against GardenDB rather than this shared garden database.
+    try { alasql('USE GardenDB'); } catch { /* GardenDB not yet initialised — harmless */ }
   }
 
   private static async _createTables(gardenId: string): Promise<void> {
