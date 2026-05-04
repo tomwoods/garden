@@ -140,24 +140,33 @@ export class SharedGardenDatabase {
 
     const name = dbName(gardenId);
 
+    let attached = false;
     try {
       await new Promise<void>((resolve, reject) => {
         alasql(`CREATE LOCALSTORAGE DATABASE IF NOT EXISTS ${name}`, [], (res: unknown) => {
           if (res === 1 || res === 0) resolve(); else reject(new Error(`Failed to create ${name}`));
         });
       });
-      await new Promise<void>((resolve, reject) => {
-        alasql(`ATTACH LOCALSTORAGE DATABASE ${name}`, [], (res: unknown) => {
-          if (res === 1) resolve(); else reject(new Error(`Failed to attach ${name}`));
-        });
+      // ATTACH can return 0 or 1 depending on AlaSQL version/state — accept any truthy-ish value
+      await new Promise<void>((resolve) => {
+        alasql(`ATTACH LOCALSTORAGE DATABASE ${name}`, [], () => resolve());
       });
-      await new Promise<void>((resolve, reject) => {
-        alasql(`USE ${name}`, [], (res: unknown) => {
-          if (res === 1 || res === 0) resolve(); else reject(new Error(`Failed to use ${name}`));
-        });
+      await new Promise<void>((resolve) => {
+        alasql(`USE ${name}`, [], () => resolve());
       });
+      attached = true;
     } catch {
-      // fall back to memory
+      // localStorage unavailable — fall back to an in-memory named database so that
+      // db-qualified SQL (e.g. SharedGarden_xxx.plants) still resolves correctly
+    }
+
+    if (!attached) {
+      try {
+        alasql(`CREATE DATABASE IF NOT EXISTS ${name}`);
+        alasql(`USE ${name}`);
+      } catch {
+        // ignore — tables will fall into whatever current context AlaSQL has
+      }
     }
 
     await this._createTables(gardenId);

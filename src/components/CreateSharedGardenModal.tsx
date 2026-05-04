@@ -38,7 +38,8 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
       }
       setCreatedGardenId(result.gardenId);
       setStep('done');
-    } catch {
+    } catch (err) {
+      console.error('Failed to create shared garden:', err);
       setError('Something went wrong. Please try again.');
       setStep('form');
     }
