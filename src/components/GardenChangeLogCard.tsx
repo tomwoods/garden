@@ -96,7 +96,7 @@ export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ garden
         <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
           <ClipboardList className="w-4 h-4 text-gray-600" />
         </div>
-        <h3 className="font-medium text-gray-900 text-sm">Garden history</h3>
+        <h3 className="font-medium text-gray-900 text-sm">Garden activity</h3>
       </div>
 
       <div className="space-y-2">
