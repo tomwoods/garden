@@ -438,7 +438,7 @@ export const SharedPlantDetailView: React.FC = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-gray-900">{formatRelativeTime(item.datetime)}</span>
                         {item.authored_by_display_name && (
-                          <span className="text-xs text-gray-400">by {item.authored_by_display_name}</span>
+                          <span className="text-xs text-gray-400">added by {item.authored_by_display_name}</span>
                         )}
                       </div>
                     )}
