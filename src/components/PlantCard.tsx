@@ -447,7 +447,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
       </div>
       {authorName && (
         <p className="mt-2 text-xs text-gray-400">
-          Sown by {authorName}
+          Added by {authorName}
         </p>
       )}
     </div>
