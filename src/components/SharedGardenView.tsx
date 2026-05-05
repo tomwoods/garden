@@ -510,7 +510,7 @@ export const SharedGardenView: React.FC = () => {
                   getPlantState={(p) => getPlantState(p, gardenId)}
                   onTend={() => !isDisconnected && handleTend(plant.id)}
                   onWater={() => !isDisconnected && handleWater(plant.id)}
-                  onViewDetails={() => {}}
+                  onViewDetails={() => navigate(`/plants/${plant.id}`)}
                   onRemove={() => !isDisconnected && setConfirmModal({ isOpen: true, plantId: plant.id, plantName: plant.name })}
                   onShowConfirmation={(id, name) => !isDisconnected && setConfirmModal({ isOpen: true, plantId: id, plantName: name })}
                   onScheduleCare={(id, name) => !isDisconnected && setScheduleCareModal({ isOpen: true, plantId: id, plantName: name })}
@@ -611,7 +611,7 @@ export const SharedGardenView: React.FC = () => {
           plantName={activityModal.plantName}
           activityType={activityModal.type}
           onClose={() => setActivityModal(null)}
-          onSave={handleActivitySave}
+          onSubmit={handleActivitySave}
         />
       )}
 
