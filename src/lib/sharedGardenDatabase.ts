@@ -510,7 +510,8 @@ export class SharedGardenDatabase {
   static addTending(gardenId: string, tending: Omit<Tending,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Tending {
     const now = Date.now();
     const rec = { id: uuidv4(), updated_at: now, ...tending, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
-    this._addActivity(gardenId, 'tendings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_tending', `tending for ${tending.plant_id}`);
+    const plantName = this.getPlant(gardenId, tending.plant_id)?.name ?? tending.plant_id;
+    this._addActivity(gardenId, 'tendings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_tending', plantName);
     this.updatePlantCare(gardenId, tending.plant_id, tending.datetime);
     return rec;
   }
@@ -534,7 +535,8 @@ export class SharedGardenDatabase {
   static addWatering(gardenId: string, watering: Omit<Watering,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Watering {
     const now = Date.now();
     const rec = { id: uuidv4(), updated_at: now, ...watering, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
-    this._addActivity(gardenId, 'waterings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_watering', `watering for ${watering.plant_id}`);
+    const plantName = this.getPlant(gardenId, watering.plant_id)?.name ?? watering.plant_id;
+    this._addActivity(gardenId, 'waterings', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_watering', plantName);
     this.updatePlantCare(gardenId, watering.plant_id, watering.datetime);
     return rec;
   }
@@ -558,7 +560,8 @@ export class SharedGardenDatabase {
   static addSunlight(gardenId: string, sunlight: Omit<Sunlight,'id'|'updated_at'>, authorUuid: string, authorDisplayName: string): Sunlight {
     const now = Date.now();
     const rec = { id: uuidv4(), updated_at: now, ...sunlight, authored_by_uuid: authorUuid, authored_by_display_name: authorDisplayName };
-    this._addActivity(gardenId, 'sunlight', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_sunlight', `sunlight for ${sunlight.plant_id}`);
+    const plantName = this.getPlant(gardenId, sunlight.plant_id)?.name ?? sunlight.plant_id;
+    this._addActivity(gardenId, 'sunlight', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_sunlight', plantName);
     return rec;
   }
 
