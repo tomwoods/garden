@@ -315,8 +315,8 @@ export class SharedGardenDatabase {
 
   static getChangeLog(gardenId: string, limit = 10, offset = 0): GardenChangeLogEntry[] {
     return this.run<GardenChangeLogEntry[]>(gardenId,
-      'SELECT * FROM garden_change_log ORDER BY occurred_at DESC LIMIT ? OFFSET ?',
-      [limit, offset]
+      `SELECT * FROM garden_change_log ORDER BY occurred_at DESC LIMIT ${limit} OFFSET ${offset}`,
+      []
     );
   }
 
@@ -589,6 +589,12 @@ export class SharedGardenDatabase {
     return this.run<Fruit[]>(gardenId, 'SELECT * FROM fruits WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
   }
 
+  static updateFruit(gardenId: string, id: string, updates: Partial<Fruit>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE fruits SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_fruit', 'fruits', id, 'fruit');
+  }
+
   static deleteFruit(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
     this._deleteActivity(gardenId, 'fruits', id, actorUuid, actorDisplayName, 'delete_fruit', 'fruit');
   }
@@ -606,6 +612,12 @@ export class SharedGardenDatabase {
     return this.run<Pruning[]>(gardenId, 'SELECT * FROM prunings WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
   }
 
+  static updatePruning(gardenId: string, id: string, updates: Partial<Pruning>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE prunings SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_pruning', 'prunings', id, 'pruning');
+  }
+
   static deletePruning(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
     this._deleteActivity(gardenId, 'prunings', id, actorUuid, actorDisplayName, 'delete_pruning', 'pruning');
   }
@@ -621,6 +633,12 @@ export class SharedGardenDatabase {
 
   static getBudsForPlant(gardenId: string, plantId: string): Bud[] {
     return this.run<Bud[]>(gardenId, 'SELECT * FROM buds WHERE plant_id = ? ORDER BY created_at ASC', [plantId]);
+  }
+
+  static updateBud(gardenId: string, id: string, updates: Partial<Bud>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE buds SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_bud', 'buds', id, updates.text ?? 'bud');
   }
 
   static deleteBud(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
@@ -641,6 +659,12 @@ export class SharedGardenDatabase {
     return this.run<Notching[]>(gardenId, 'SELECT * FROM notchings WHERE plant_id = ? ORDER BY datetime DESC', [plantId]);
   }
 
+  static updateNotching(gardenId: string, id: string, updates: Partial<Notching>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE notchings SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_notching', 'notchings', id, 'notching');
+  }
+
   static deleteNotching(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
     this._deleteActivity(gardenId, 'notchings', id, actorUuid, actorDisplayName, 'delete_notching', 'notching');
   }
@@ -656,6 +680,12 @@ export class SharedGardenDatabase {
 
   static getCapabilitiesForPlant(gardenId: string, plantId: string): Capability[] {
     return this.run<Capability[]>(gardenId, 'SELECT * FROM capabilities WHERE plant_id = ? ORDER BY created_at ASC', [plantId]);
+  }
+
+  static updateCapability(gardenId: string, id: string, updates: Partial<Capability>, actorUuid: string, actorDisplayName: string): void {
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    this.run(gardenId, `UPDATE capabilities SET ${fields}, updated_at = ? WHERE id = ?`, [...Object.values(updates), Date.now(), id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_capability', 'capabilities', id, updates.text ?? 'capability');
   }
 
   static deleteCapability(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
@@ -685,13 +715,14 @@ export class SharedGardenDatabase {
 
   // ─── Companions ───────────────────────────────────────────────────────────
 
-  static addCompanion(gardenId: string, companion: Omit<Companion,'id'|'updated_at'>): Companion {
+  static addCompanion(gardenId: string, companion: Omit<Companion,'id'|'updated_at'>, actorUuid: string, actorDisplayName: string): Companion {
     const now = Date.now();
     const rec: Companion = { id: uuidv4(), updated_at: now, ...companion };
     this.run(gardenId,
       'INSERT INTO companions (id,plant_a_id,relationship_descriptor,plant_b_id,updated_at,additional_info) VALUES (?,?,?,?,?,?)',
       [rec.id, rec.plant_a_id, rec.relationship_descriptor, rec.plant_b_id, rec.updated_at, rec.additional_info||null]
     );
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'add_companion', 'companions', rec.id, companion.relationship_descriptor);
     return rec;
   }
 
@@ -699,8 +730,10 @@ export class SharedGardenDatabase {
     return this.run<Companion[]>(gardenId, 'SELECT * FROM companions WHERE plant_a_id = ? OR plant_b_id = ?', [plantId, plantId]);
   }
 
-  static deleteCompanion(gardenId: string, id: string): void {
+  static deleteCompanion(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this.recordTombstone(gardenId, id, 'companions');
     this.run(gardenId, 'DELETE FROM companions WHERE id = ?', [id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'delete_companion', 'companions', id, 'companion');
   }
 
   // ─── Plots ────────────────────────────────────────────────────────────────

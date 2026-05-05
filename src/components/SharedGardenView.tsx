@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef } from '../lib/sharedGardenDatabase';
 import { syncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile } from '../lib/sharedGardenSyncService';
-import type { Plant, Tending, Watering, Sunlight } from '../lib/database';
+import type { Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion } from '../lib/database';
 import { PlantCard } from './PlantCard';
 import { ActivityModal } from './ActivityModal';
 import { AddPlantModal } from './AddPlantModal';
@@ -274,7 +274,7 @@ export const SharedGardenView: React.FC = () => {
 
   // Modals
   const [showAddPlant, setShowAddPlant] = useState(false);
-  const [activityModal, setActivityModal] = useState<{ isOpen: boolean; plantId: string; plantName: string; type: 'tending' | 'watering' } | null>(null);
+  const [activityModal, setActivityModal] = useState<{ isOpen: boolean; plantId: string; plantName: string; type: 'tending' | 'watering' | 'sunlight' | 'fruit' | 'pruning' | 'companion' } | null>(null);
   const [editPlantModal, setEditPlantModal] = useState<{ isOpen: boolean; plant: Plant | null }>({ isOpen: false, plant: null });
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; plantId: string; plantName: string } | null>(null);
   const [scheduleCareModal, setScheduleCareModal] = useState<{ isOpen: boolean; plantId: string; plantName: string } | null>(null);
@@ -350,24 +350,32 @@ export const SharedGardenView: React.FC = () => {
     setActivityModal({ isOpen: true, plantId, plantName: plant.name, type: 'watering' });
   };
 
-  const handleActivitySave = async (activityData: Partial<Tending & Watering & Sunlight>) => {
+  const handleActivitySave = async (activityData: Partial<Tending & Watering & Sunlight & Fruit & Pruning & Companion>) => {
     if (!activityModal || !gardenId || !user) return;
     await SharedGardenDatabase.init(gardenId);
     const myDisplayName = SharedGardenDatabase.getMember(gardenId, user.userId)?.display_name ?? 'Unknown';
-    const now = Date.now();
+    const now = (activityData as any).datetime || Date.now();
+    const pid = activityModal.plantId;
 
-    if (activityModal.type === 'tending') {
-      SharedGardenDatabase.addTending(
-        gardenId,
-        { plant_id: activityModal.plantId, datetime: now, type: (activityData as Tending).type ?? '', summary: (activityData as Tending).summary ?? '' },
-        user.userId, myDisplayName
-      );
-    } else {
-      SharedGardenDatabase.addWatering(
-        gardenId,
-        { plant_id: activityModal.plantId, datetime: now, source: (activityData as Watering).source ?? '', progress_description: (activityData as Watering).progress_description ?? '' },
-        user.userId, myDisplayName
-      );
+    switch (activityModal.type) {
+      case 'tending':
+        SharedGardenDatabase.addTending(gardenId, { plant_id: pid, datetime: now, type: (activityData as Tending).type ?? '', summary: (activityData as Tending).summary ?? '' }, user.userId, myDisplayName);
+        break;
+      case 'watering':
+        SharedGardenDatabase.addWatering(gardenId, { plant_id: pid, datetime: now, source: (activityData as Watering).source ?? '', progress_description: (activityData as Watering).progress_description ?? '' }, user.userId, myDisplayName);
+        break;
+      case 'sunlight':
+        SharedGardenDatabase.addSunlight(gardenId, { plant_id: pid, datetime: now, topic: (activityData as Sunlight).topic ?? '' }, user.userId, myDisplayName);
+        break;
+      case 'fruit':
+        SharedGardenDatabase.addFruit(gardenId, { plant_id: pid, datetime: now, description: (activityData as Fruit).description ?? '', basic_activity: (activityData as Fruit).basic_activity }, user.userId, myDisplayName);
+        break;
+      case 'pruning':
+        SharedGardenDatabase.addPruning(gardenId, { plant_id: pid, datetime: now, difficulty: (activityData as Pruning).difficulty ?? '', description: (activityData as Pruning).description ?? '' }, user.userId, myDisplayName);
+        break;
+      case 'companion':
+        SharedGardenDatabase.addCompanion(gardenId, { plant_a_id: pid, relationship_descriptor: (activityData as Companion).relationship_descriptor ?? '', plant_b_id: (activityData as Companion).plant_b_id ?? '' }, user.userId, myDisplayName);
+        break;
     }
 
     await loadPlants();
@@ -510,7 +518,7 @@ export const SharedGardenView: React.FC = () => {
                   getPlantState={(p) => getPlantState(p, gardenId)}
                   onTend={() => !isDisconnected && handleTend(plant.id)}
                   onWater={() => !isDisconnected && handleWater(plant.id)}
-                  onViewDetails={() => navigate(`/plants/${plant.id}`)}
+                  onViewDetails={() => navigate(`/shared-garden/${gardenId}/plants/${plant.id}`)}
                   onRemove={() => !isDisconnected && setConfirmModal({ isOpen: true, plantId: plant.id, plantName: plant.name })}
                   onShowConfirmation={(id, name) => !isDisconnected && setConfirmModal({ isOpen: true, plantId: id, plantName: name })}
                   onScheduleCare={(id, name) => !isDisconnected && setScheduleCareModal({ isOpen: true, plantId: id, plantName: name })}
@@ -525,11 +533,11 @@ export const SharedGardenView: React.FC = () => {
             })}
           </div>
         )}
+      </div>
 
-        {/* Change log at bottom */}
-        <div className="mt-6">
-          <GardenChangeLogCard gardenId={gardenId} refreshKey={refreshKey} />
-        </div>
+      {/* Change log — full width */}
+      <div className="px-4 pb-8">
+        <GardenChangeLogCard gardenId={gardenId} refreshKey={refreshKey} />
       </div>
 
       {/* FAB */}

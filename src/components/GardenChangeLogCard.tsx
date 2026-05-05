@@ -35,6 +35,13 @@ function formatEntry(entry: GardenChangeLogEntry): string {
     case 'delete_notching': return `${actor} deleted a notching`;
     case 'add_capability': return `${actor} noted a capacity: ${label}`;
     case 'delete_capability': return `${actor} deleted a capacity`;
+    case 'add_companion': return `${actor} added a companion relationship`;
+    case 'delete_companion': return `${actor} removed a companion relationship`;
+    case 'edit_fruit': return `${actor} edited a fruit`;
+    case 'edit_pruning': return `${actor} edited a pruning`;
+    case 'edit_bud': return `${actor} edited a bud`;
+    case 'edit_notching': return `${actor} edited a notching`;
+    case 'edit_capability': return `${actor} edited a capacity`;
     case 'remove_member': return `${actor} removed a gardener from the garden`;
     default: return `${actor} made a change`;
   }
