@@ -440,7 +440,7 @@ export const SharedGardenView: React.FC = () => {
             {!isDisconnected && (
               <>
                 <button
-                  onClick={() => setShowSearch(true)}
+                  onClick={() => { setShowSearch(s => !s); if (showSearch) setSearchTerm(''); }}
                   className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   <Search className="w-5 h-5" />
@@ -462,6 +462,26 @@ export const SharedGardenView: React.FC = () => {
             </button>
           </div>
         </div>
+        {showSearch && !isDisconnected && (
+          <div className="max-w-2xl mx-auto px-4 pb-3">
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl">
+              <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-400"
+                placeholder="Search plants..."
+                autoFocus
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Disconnected banner */}
@@ -550,27 +570,6 @@ export const SharedGardenView: React.FC = () => {
         </button>
       )}
 
-      {/* Search overlay */}
-      {showSearch && (
-        <div className="fixed inset-0 z-40 bg-white flex flex-col">
-          <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none"
-              placeholder="Search plants..."
-              autoFocus
-            />
-            <button
-              onClick={() => { setShowSearch(false); setSearchTerm(''); }}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Panels and modals */}
       {showMembersPanel && ref_ && user && (
