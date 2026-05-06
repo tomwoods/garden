@@ -506,3 +506,92 @@ export function downloadGardenKeyFile(gardenId: string): void {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// ─── Restore from key file ────────────────────────────────────────────────────
+
+export interface GardenKeyFileData {
+  gardenId: string;
+  sharedGardenId: string;
+  gardenName: string;
+  myUuid: string;
+  myDisplayName: string;
+  gardenPrivateKey: string;
+  gardenPublicKey: string;
+}
+
+export function parseGardenKeyFile(raw: string): GardenKeyFileData | null {
+  try {
+    const data = JSON.parse(raw);
+    const required = ['gardenId','sharedGardenId','gardenName','myUuid','myDisplayName','gardenPrivateKey','gardenPublicKey'];
+    if (!required.every(k => typeof data[k] === 'string' && data[k].length > 0)) return null;
+    return data as GardenKeyFileData;
+  } catch {
+    return null;
+  }
+}
+
+export async function restoreSharedGardenFromKeyFile(
+  keyFile: GardenKeyFileData,
+  user: GardenSyncUser
+): Promise<{ gardenId: string; gardenName: string } | { error: string }> {
+  const { gardenId, sharedGardenId, gardenName, myUuid, myDisplayName, gardenPrivateKey, gardenPublicKey } = keyFile;
+
+  // Guard: already on device
+  const existing = getSharedGardenRefs().find(r => r.gardenId === gardenId);
+  if (existing) {
+    return { gardenId, gardenName };
+  }
+
+  // Store private key locally
+  localStorage.setItem(`shared_garden_key_${gardenId}`, gardenPrivateKey);
+
+  // Register the ref before syncing so syncSharedGarden can find the key
+  addSharedGardenRef({
+    gardenId,
+    sharedGardenId,
+    gardenName,
+    myDisplayName,
+    myUuid,
+    gardenPublicKeyBase64: gardenPublicKey,
+    lastSyncTs: 0,
+  });
+
+  // Init local DB and pull the latest state from the server
+  await SharedGardenDatabase.init(gardenId);
+
+  const remote = await fetchSharedGarden(sharedGardenId, user);
+  if (!remote) {
+    // Clean up the ref we just added — garden is gone or we lack access
+    const refs = getSharedGardenRefs().filter(r => r.gardenId !== gardenId);
+    localStorage.setItem('shared_garden_refs', JSON.stringify(refs));
+    localStorage.removeItem(`shared_garden_key_${gardenId}`);
+    return { error: 'Could not reach this garden. The garden may have been deleted or you may have been removed.' };
+  }
+
+  const gardenObj = await decryptGardenObject(remote.encryptedData, gardenPrivateKey);
+
+  SharedGardenDatabase.applySnapshot(gardenId, gardenObj.snapshot);
+  SharedGardenDatabase.applyDeltas(gardenId, gardenObj.deltas);
+
+  // Ensure we are present as a member with the stored display name
+  SharedGardenDatabase.upsertMember(gardenId, {
+    id: uuidv4(),
+    user_uuid: myUuid,
+    display_name: myDisplayName,
+    joined_at: Date.now(),
+    added_by_uuid: myUuid,
+  });
+
+  // Update ref with fresh sync timestamp and confirmed garden name
+  addSharedGardenRef({
+    gardenId,
+    sharedGardenId,
+    gardenName: gardenObj.garden_name ?? gardenName,
+    myDisplayName,
+    myUuid,
+    gardenPublicKeyBase64: gardenPublicKey,
+    lastSyncTs: Date.now(),
+  });
+
+  return { gardenId, gardenName: gardenObj.garden_name ?? gardenName };
+}
