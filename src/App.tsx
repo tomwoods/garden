@@ -12,6 +12,8 @@ import { ReceivePlantShareView } from './components/ReceivePlantShareView';
 import { SharedGardensListView } from './components/SharedGardensListView';
 import { SharedGardenView } from './components/SharedGardenView';
 import { SharedPlantDetailView } from './components/SharedPlantDetailView';
+import { SharedPlotsView } from './components/SharedPlotsView';
+import { SharedPlotDetailView } from './components/SharedPlotDetailView';
 import { JoinSharedGardenView } from './components/JoinSharedGardenView';
 import { DatabaseService, type Plant, getPendingChanges } from './lib/database';
 import { generateRSAKeyPair, exportCryptoKey } from './lib/cryptoService';
@@ -430,6 +432,8 @@ function App() {
           <Route path="/shared-gardens" element={<SharedGardensListView />} />
           <Route path="/shared-garden/:gardenId" element={<SharedGardenView />} />
           <Route path="/shared-garden/:gardenId/plants/:plantId" element={<SharedPlantDetailView />} />
+          <Route path="/shared-garden/:gardenId/plots" element={<SharedPlotsView />} />
+          <Route path="/shared-garden/:gardenId/plots/:plotId" element={<SharedPlotDetailView />} />
           <Route path="/join-shared-garden/:gardenId" element={<JoinSharedGardenView />} />
         </Routes>
       </Router>

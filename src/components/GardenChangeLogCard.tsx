@@ -43,6 +43,15 @@ function formatEntry(entry: GardenChangeLogEntry): string {
     case 'edit_notching': return `${actor} edited a notching`;
     case 'edit_capability': return `${actor} edited a capacity`;
     case 'remove_member': return `${actor} removed a gardener from the garden`;
+    case 'create_plot': return `${actor} created the plot "${label}"`;
+    case 'edit_plot': return `${actor} updated the plot "${label}"`;
+    case 'delete_plot': return `${actor} removed the plot "${label}"`;
+    case 'edit_plot_members': return `${actor} updated members of the "${label}" plot`;
+    case 'bulk_tending': return `${actor} logged a tending for the "${label}" plot`;
+    case 'bulk_watering': return `${actor} logged a watering for the "${label}" plot`;
+    case 'bulk_sunlight': return `${actor} added sunlight for the "${label}" plot`;
+    case 'bulk_fruit': return `${actor} recorded a fruit for the "${label}" plot`;
+    case 'bulk_notching': return `${actor} recorded a study session for the "${label}" plot`;
     default: return `${actor} made a change`;
   }
 }

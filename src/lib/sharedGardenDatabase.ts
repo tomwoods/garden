@@ -745,17 +745,73 @@ export class SharedGardenDatabase {
     return this.run<Plot[]>(gardenId, 'SELECT * FROM plots ORDER BY created_at DESC', []);
   }
 
-  static createPlot(gardenId: string, plot: Omit<Plot,'id'|'created_at'|'updated_at'>): Plot {
+  static getPlot(gardenId: string, plotId: string): Plot | null {
+    const res = this.run<Plot[]>(gardenId, 'SELECT * FROM plots WHERE id = ?', [plotId]);
+    return res[0] ?? null;
+  }
+
+  static getPlotMembers(gardenId: string, plotId: string): Plant[] {
+    return this.run<Plant[]>(gardenId,
+      'SELECT p.* FROM plants p JOIN plot_memberships pm ON pm.plant_id = p.id WHERE pm.plot_id = ?',
+      [plotId]
+    );
+  }
+
+  static createPlot(
+    gardenId: string,
+    plot: Omit<Plot,'id'|'created_at'|'updated_at'>,
+    actorUuid: string,
+    actorDisplayName: string
+  ): Plot {
     const now = Date.now();
     const rec: Plot = { id: uuidv4(), created_at: now, updated_at: now, ...plot };
     this.run(gardenId,
       'INSERT INTO plots (id,name,description,created_at,updated_at,additional_info) VALUES (?,?,?,?,?,?)',
       [rec.id, rec.name, rec.description||null, rec.created_at, rec.updated_at, rec.additional_info||null]
     );
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'create_plot', 'plots', rec.id, rec.name);
     return rec;
   }
 
-  static updatePlotMemberships(gardenId: string, plotId: string, plantIds: string[]): void {
+  static updatePlot(
+    gardenId: string,
+    plotId: string,
+    changes: { name?: string; description?: string; additional_info?: string },
+    actorUuid: string,
+    actorDisplayName: string
+  ): void {
+    const now = Date.now();
+    const existing = this.getPlot(gardenId, plotId);
+    if (!existing) return;
+    const updated = { ...existing, ...changes, updated_at: now };
+    this.run(gardenId,
+      'UPDATE plots SET name=?,description=?,additional_info=?,updated_at=? WHERE id=?',
+      [updated.name, updated.description||null, updated.additional_info||null, now, plotId]
+    );
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_plot', 'plots', plotId, updated.name);
+  }
+
+  static deletePlot(
+    gardenId: string,
+    plotId: string,
+    actorUuid: string,
+    actorDisplayName: string,
+    plotName: string
+  ): void {
+    this.run(gardenId, 'DELETE FROM plot_memberships WHERE plot_id = ?', [plotId]);
+    this.run(gardenId, 'DELETE FROM plots WHERE id = ?', [plotId]);
+    this.recordTombstone(gardenId, plotId, 'plots');
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'delete_plot', 'plots', plotId, plotName);
+  }
+
+  static updatePlotMemberships(
+    gardenId: string,
+    plotId: string,
+    plantIds: string[],
+    actorUuid: string,
+    actorDisplayName: string,
+    plotName: string
+  ): void {
     this.run(gardenId, 'DELETE FROM plot_memberships WHERE plot_id = ?', [plotId]);
     const now = Date.now();
     for (const plantId of plantIds) {
@@ -764,6 +820,18 @@ export class SharedGardenDatabase {
         [uuidv4(), plotId, plantId, now]
       );
     }
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_plot_members', 'plots', plotId, plotName);
+  }
+
+  static logPlotBulkActivity(
+    gardenId: string,
+    actorUuid: string,
+    actorDisplayName: string,
+    activityType: 'tending' | 'watering' | 'sunlight' | 'fruit' | 'notching',
+    plotId: string,
+    plotName: string
+  ): void {
+    this.logChange(gardenId, actorUuid, actorDisplayName, `bulk_${activityType}`, 'plots', plotId, plotName);
   }
 
   // ─── Full snapshot ────────────────────────────────────────────────────────
@@ -795,7 +863,8 @@ export class SharedGardenDatabase {
     const deltas: SharedGardenDelta[] = [];
     const tables = [
       'plants','tendings','waterings','sunlight','fruits','prunings',
-      'companions','scheduled_events','buds','notchings','capabilities',
+      'companions','scheduled_events','plots','plot_memberships',
+      'buds','notchings','capabilities',
       'garden_members','garden_change_log'
     ];
 
