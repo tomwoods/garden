@@ -1,0 +1,23 @@
+{
+  "updateAvailable": "Mise à Jour Disponible",
+  "updateDesc": "Une nouvelle version est prête à être installée",
+  "updateBtn": "Mettre à jour",
+  "offlineReady": "Application prête à fonctionner hors ligne",
+  "installTitle": "Installer Garden",
+  "installSubtitle": "Ajouter à votre écran d'accueil",
+  "installDesc": "Installez Garden pour un accès rapide et une utilisation hors ligne. Fonctionne comme une application native !",
+  "installNow": "Installer Maintenant",
+  "notNow": "Pas Maintenant",
+  "keyBackupTitle": "Sauvegardez Votre Clé de Jardin",
+  "keyBackupMessage": "Téléchargez votre clé de jardin pour vous assurer de ne jamais perdre l'accès à votre jardin. Conservez-la en lieu sûr - c'est le seul moyen de récupérer votre jardin.",
+  "downloadKey": "Télécharger la Clé de Jardin",
+  "remindLater": "Me rappeler plus tard",
+  "swTendTime": "Il est temps de soigner {{name}}",
+  "swTendBody": "Votre plante attend des soins",
+  "swOverdue": "{{name}} attend d'être soigné — {{days}} jour de retard",
+  "swOverdue_other": "{{name}} attend d'être soigné — {{days}} jours de retard",
+  "swGardenTime": "Il est temps de soigner votre jardin",
+  "swGardenBody": "Certaines de vos plantes ont besoin d'attention",
+  "imageQueued": "Image en attente de téléchargement",
+  "imageLocalOnly": "Image sauvegardée localement mais le téléchargement a échoué"
+}

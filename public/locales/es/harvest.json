@@ -1,0 +1,26 @@
+{
+  "title": "Resumen de Cosecha",
+  "viewTitle": "Resumen de Cosecha",
+  "momentum": "Impulso",
+  "careIndex": "Índice de Cuidado",
+  "flowerRadar": "Radar de Flores",
+  "communityRhythm": "Ritmo Comunitario",
+  "lifecycleVelocity": "Velocidad del Ciclo de Vida",
+  "generateBtn": "Generar Resumen de Cosecha",
+  "downloadBtn": "Descargar Informe",
+  "briefDocument": {
+    "title": "Resumen de Cosecha del Jardín",
+    "period": "Período",
+    "generatedOn": "Generado el",
+    "totalPlants": "Total de Plantas",
+    "activePlants": "Plantas Activas",
+    "tendingActivities": "Actividades de Cuidado",
+    "wateringActivities": "Actividades de Riego",
+    "prayerActivities": "Actividades de Oración",
+    "fruitActivities": "Actividades de Servicio",
+    "summary": "Resumen",
+    "plantHealth": "Panorama de Salud de Plantas",
+    "activityBreakdown": "Desglose de Actividades",
+    "confidential": "Confidencial — solo para reflexión personal"
+  }
+}

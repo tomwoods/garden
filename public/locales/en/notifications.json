@@ -1,0 +1,23 @@
+{
+  "updateAvailable": "Update Available",
+  "updateDesc": "A new version is ready to install",
+  "updateBtn": "Update",
+  "offlineReady": "App ready to work offline",
+  "installTitle": "Install Garden",
+  "installSubtitle": "Add to your home screen",
+  "installDesc": "Install Garden for quick access and offline use. Works just like a native app!",
+  "installNow": "Install Now",
+  "notNow": "Not Now",
+  "keyBackupTitle": "Save Your Garden Key",
+  "keyBackupMessage": "Download your garden key to ensure you never lose access to your garden. Store it somewhere safe - this is the only way to recover your garden.",
+  "downloadKey": "Download Garden Key",
+  "remindLater": "Remind me later",
+  "swTendTime": "It's time to tend to {{name}}",
+  "swTendBody": "Your plant is waiting for care",
+  "swOverdue": "{{name}} is waiting to be tended — {{days}} day overdue",
+  "swOverdue_other": "{{name}} is waiting to be tended — {{days}} days overdue",
+  "swGardenTime": "Time to tend your garden",
+  "swGardenBody": "Some of your plants need attention",
+  "imageQueued": "Image queued for upload",
+  "imageLocalOnly": "Image saved locally but upload failed"
+}

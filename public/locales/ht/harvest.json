@@ -1,0 +1,26 @@
+{
+  "title": "Rezime Rekòlt",
+  "viewTitle": "Rezime Rekòlt",
+  "momentum": "Elan",
+  "careIndex": "Endèks Swen",
+  "flowerRadar": "Rada Flè",
+  "communityRhythm": "Ritm Kominotè",
+  "lifecycleVelocity": "Vitès Sik lavi",
+  "generateBtn": "Jenere Rezime Rekòlt",
+  "downloadBtn": "Telechaje Rapò",
+  "briefDocument": {
+    "title": "Rezime Rekòlt Jaden",
+    "period": "Peryòd",
+    "generatedOn": "Jenere nan",
+    "totalPlants": "Total Plant",
+    "activePlants": "Plant Aktif",
+    "tendingActivities": "Aktivite Swen",
+    "wateringActivities": "Aktivite Wouze",
+    "prayerActivities": "Aktivite Lapriyè",
+    "fruitActivities": "Aktivite Sèvis",
+    "summary": "Rezime",
+    "plantHealth": "Apèsi Sante Plant",
+    "activityBreakdown": "Dekonpozisyon Aktivite",
+    "confidential": "Konfidansyèl — pou refleksyon pèsonèl sèlman"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "updateAvailable": "Mise Ajou Disponib",
+  "updateDesc": "Yon nouvo vèsyon prè pou enstale",
+  "updateBtn": "Mete ajou",
+  "offlineReady": "Aplikasyon prè pou travay òflàyn",
+  "installTitle": "Enstale Garden",
+  "installSubtitle": "Ajoute nan ekran akèy ou",
+  "installDesc": "Enstale Garden pou aksè rapid ak itilizasyon san entènèt. Travay tankou yon aplikasyon natif natal!",
+  "installNow": "Enstale Kounye a",
+  "notNow": "Pa Kounye a",
+  "keyBackupTitle": "Sovgade Kle Jaden Ou",
+  "keyBackupMessage": "Telechaje kle jaden ou pou asire ou pap janm pèdi aksè nan jaden ou. Estoke li nan yon kote ki an sekirite - se sèl fason pou rekipere jaden ou.",
+  "downloadKey": "Telechaje Kle Jaden",
+  "remindLater": "Rapèle m pita",
+  "swTendTime": "Li lè pou okipe {{name}}",
+  "swTendBody": "Plant ou a ap tann swen",
+  "swOverdue": "{{name}} ap tann pou okipe — {{days}} jou anreta",
+  "swOverdue_other": "{{name}} ap tann pou okipe — {{days}} jou anreta",
+  "swGardenTime": "Li lè pou okipe jaden ou",
+  "swGardenBody": "Kèk plant ou yo bezwen atansyon",
+  "imageQueued": "Imaj an atant pou voye",
+  "imageLocalOnly": "Imaj sovgade lokalman men telechajman echwe"
+}

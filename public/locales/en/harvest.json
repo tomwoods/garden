@@ -1,0 +1,26 @@
+{
+  "title": "Harvest Brief",
+  "viewTitle": "Harvest Brief",
+  "momentum": "Momentum",
+  "careIndex": "Care Index",
+  "flowerRadar": "Flower Radar",
+  "communityRhythm": "Community Rhythm",
+  "lifecycleVelocity": "Lifecycle Velocity",
+  "generateBtn": "Generate Harvest Brief",
+  "downloadBtn": "Download Report",
+  "briefDocument": {
+    "title": "Garden Harvest Brief",
+    "period": "Period",
+    "generatedOn": "Generated on",
+    "totalPlants": "Total Plants",
+    "activePlants": "Active Plants",
+    "tendingActivities": "Tending Activities",
+    "wateringActivities": "Watering Activities",
+    "prayerActivities": "Prayer Activities",
+    "fruitActivities": "Service Activities",
+    "summary": "Summary",
+    "plantHealth": "Plant Health Overview",
+    "activityBreakdown": "Activity Breakdown",
+    "confidential": "Confidential — for personal reflection only"
+  }
+}

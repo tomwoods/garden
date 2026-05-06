@@ -1,4 +1,5 @@
 import type { Plant } from './database';
+import i18n from './i18n';
 
 export class NotificationService {
   private static permissionGranted = false;
@@ -37,13 +38,17 @@ export class NotificationService {
 
     try {
       const registration = await navigator.serviceWorker.ready;
+      const notificationTitle = i18n.t('swTendTime', { ns: 'notifications', name: plantName });
+      const notificationBody  = i18n.t('swTendBody', { ns: 'notifications' });
       registration.active?.postMessage({
         type: 'SCHEDULE_NOTIFICATION',
         payload: {
           plantId,
           plantName,
           scheduledTime,
-          tag: `plant-care-${plantId}`
+          tag: `plant-care-${plantId}`,
+          notificationTitle,
+          notificationBody,
         }
       });
     } catch (_) {

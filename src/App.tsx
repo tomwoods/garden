@@ -35,6 +35,7 @@ import { parseVCardFile } from './lib/vCardParser';
 import type { ParsedContact } from './lib/vCardParser';
 import { Leaf } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import i18n from './lib/i18n';
 
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -140,7 +141,11 @@ function App() {
               const sw = await navigator.serviceWorker.ready;
               sw.active?.postMessage({
                 type: 'PLANTS_DATA',
-                payload: { plants }
+                payload: {
+                  plants,
+                  overdueTitle: i18n.t('swGardenTime', { ns: 'notifications' }),
+                  overdueTemplate: i18n.t('swOverdue_other', { ns: 'notifications', name: '{{name}}', days: '{{days}}' }),
+                }
               });
             }
           });

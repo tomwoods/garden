@@ -248,19 +248,22 @@ function buildNotificationOptions(plantId, title, body, tag) {
   };
 }
 
-async function scheduleNotificationWithTrigger(plantId, plantName, scheduledTime, tag) {
+async function scheduleNotificationWithTrigger(plantId, plantName, scheduledTime, tag, notificationTitle, notificationBody) {
+  const title = notificationTitle || plantName;
+  const body  = notificationBody  || `It's time to tend to ${plantName}.`;
+
   if (!supportsTimestampTrigger()) {
-    await saveNotification({ tag, plantId, plantName, scheduledTime });
+    await saveNotification({ tag, plantId, plantName, scheduledTime, notificationTitle: title, notificationBody: body });
     return;
   }
 
   try {
-    await self.registration.showNotification(plantName, {
-      ...buildNotificationOptions(plantId, plantName, `It's time to tend to ${plantName}.`, tag),
+    await self.registration.showNotification(title, {
+      ...buildNotificationOptions(plantId, plantName, body, tag),
       showTrigger: new TimestampTrigger(scheduledTime)
     });
   } catch (error) {
-    await saveNotification({ tag, plantId, plantName, scheduledTime });
+    await saveNotification({ tag, plantId, plantName, scheduledTime, notificationTitle: title, notificationBody: body });
   }
 }
 
@@ -269,17 +272,19 @@ async function rescheduleStoredNotifications() {
     const notifications = await getAllNotifications();
     const now = Date.now();
     for (const n of notifications) {
+      const title = n.notificationTitle || n.plantName;
+      const body  = n.notificationBody  || `It's time to tend to ${n.plantName}.`;
       if (n.scheduledTime <= now) {
-        await self.registration.showNotification(n.plantName, buildNotificationOptions(
+        await self.registration.showNotification(title, buildNotificationOptions(
           n.plantId,
           n.plantName,
-          `It's time to tend to ${n.plantName}.`,
+          body,
           n.tag
         ));
         await deleteNotification(n.tag);
       } else if (supportsTimestampTrigger()) {
-        await self.registration.showNotification(n.plantName, {
-          ...buildNotificationOptions(n.plantId, n.plantName, `It's time to tend to ${n.plantName}.`, n.tag),
+        await self.registration.showNotification(title, {
+          ...buildNotificationOptions(n.plantId, n.plantName, body, n.tag),
           showTrigger: new TimestampTrigger(n.scheduledTime)
         });
         await deleteNotification(n.tag);
@@ -296,10 +301,12 @@ async function checkAndFireNotifications() {
     const now = Date.now();
     for (const n of notifications) {
       if (n.scheduledTime <= now) {
-        await self.registration.showNotification(n.plantName, buildNotificationOptions(
+        const title = n.notificationTitle || n.plantName;
+        const body  = n.notificationBody  || `It's time to tend to ${n.plantName}.`;
+        await self.registration.showNotification(title, buildNotificationOptions(
           n.plantId,
           n.plantName,
-          `It's time to tend to ${n.plantName}.`,
+          body,
           n.tag
         ));
         await deleteNotification(n.tag);
@@ -326,13 +333,16 @@ async function checkMissedCare() {
           const hoursSinceDue = (now - plant.nextScheduledCare) / (1000 * 60 * 60);
           if (hoursSinceDue >= 24) {
             const daysOverdue = Math.floor(hoursSinceDue / 24);
-            const body = daysOverdue === 1
-              ? `${plant.name} is waiting to be tended — a day overdue.`
-              : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`;
+            const body = plant.overdueBodyTemplate
+              ? plant.overdueBodyTemplate.replace('{{days}}', daysOverdue)
+              : (daysOverdue === 1
+                ? `${plant.name} is waiting to be tended — a day overdue.`
+                : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`);
+            const notifTitle = plant.overdueTitle || 'Time to tend your garden';
 
-            await self.registration.showNotification('Time to tend your garden', buildNotificationOptions(
+            await self.registration.showNotification(notifTitle, buildNotificationOptions(
               plant.plantId,
-              'Time to tend your garden',
+              notifTitle,
               body,
               `plant-overdue-${plant.plantId}`
             ));
@@ -363,7 +373,9 @@ self.addEventListener('message', async (event) => {
         payload.plantId,
         payload.plantName,
         payload.scheduledTime,
-        payload.tag
+        payload.tag,
+        payload.notificationTitle,
+        payload.notificationBody
       );
       break;
 
@@ -383,18 +395,23 @@ self.addEventListener('message', async (event) => {
         await savePlantSchedules(payload.plants);
 
         const now = Date.now();
+        const overdueTitle    = payload.overdueTitle    || 'Time to tend your garden';
+        const overdueTemplate = payload.overdueTemplate || null;
+
         for (const plant of payload.plants) {
           if (plant.next_scheduled_care && plant.next_scheduled_care < now) {
             const hoursSinceDue = (now - plant.next_scheduled_care) / (1000 * 60 * 60);
             if (hoursSinceDue >= 24) {
               const daysOverdue = Math.floor(hoursSinceDue / 24);
-              const body = daysOverdue === 1
-                ? `${plant.name} is waiting to be tended — a day overdue.`
-                : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`;
+              const body = overdueTemplate
+                ? overdueTemplate.replace('{{name}}', plant.name).replace('{{days}}', daysOverdue)
+                : (daysOverdue === 1
+                  ? `${plant.name} is waiting to be tended — a day overdue.`
+                  : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`);
 
-              await self.registration.showNotification('Time to tend your garden', buildNotificationOptions(
+              await self.registration.showNotification(overdueTitle, buildNotificationOptions(
                 plant.id,
-                'Time to tend your garden',
+                overdueTitle,
                 body,
                 `plant-overdue-${plant.id}`
               ));

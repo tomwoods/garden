@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bell, Shield, Palette, Database, Info, Smartphone, Globe, Moon, Tractor, Image as ImageIcon, RefreshCw, Sprout, BookUser, FileUp } from 'lucide-react';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { useToast } from '../hooks/useToast';
@@ -23,6 +25,7 @@ declare const __APP_VERSION__: string;
 
 export const SettingsView: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('settings');
   const { toasts, success, error, removeToast } = useToast();
   const [isExporting, setIsExporting] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
@@ -80,7 +83,7 @@ export const SettingsView: React.FC = () => {
       const granted = await NotificationService.requestPermission();
       if (granted) {
         setNotificationsEnabled(true);
-        success('Notifications enabled', 'You will receive care reminders for your plants');
+        success(t('toasts.notificationsEnabled'), t('toasts.notificationsEnabledDesc'));
 
         // Schedule notifications for all plants
         const plants = await DatabaseService.getAllPlants();
@@ -94,11 +97,11 @@ export const SettingsView: React.FC = () => {
           }
         }
       } else {
-        error('Permission denied', 'Please enable notifications in your browser settings');
+        error(t('toasts.permissionDenied'), t('toasts.permissionDeniedDesc'));
       }
     } else {
       setNotificationsEnabled(false);
-      success('Notifications disabled', 'You will no longer receive care reminders');
+      success(t('toasts.notificationsDisabled'), t('toasts.notificationsDisabledDesc'));
     }
   };
 
@@ -108,12 +111,12 @@ export const SettingsView: React.FC = () => {
       // Get user data from localStorage
       const storedUser = localStorage.getItem('garden-key');
       if (!storedUser) {
-        error('No garden key found', 'Please create a new garden first');
+        error(t('toasts.noGardenKey'), t('toasts.noGardenKeyDesc'));
         return;
       }
-      
+
       const userData = JSON.parse(storedUser);
-      
+
       // Try to sync with Supabase first to get latest data
       try {
         console.log('Syncing with Supabase before export...');
@@ -170,10 +173,10 @@ export const SettingsView: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      success('Data exported', 'Your garden data has been encrypted and downloaded');
+      success(t('toasts.dataExported'), t('toasts.dataExportedDesc'));
     } catch (err) {
       console.error('Failed to export data:', err);
-      error('Export failed', 'Unable to export garden data. Please try again.');
+      error(t('toasts.exportFailed'), t('toasts.exportFailedDesc'));
     } finally {
       setIsExporting(false);
     }
@@ -192,7 +195,7 @@ export const SettingsView: React.FC = () => {
       // Get user data from localStorage
       const storedUser = localStorage.getItem('garden-key');
       if (!storedUser) {
-        error('No garden key found', 'Please restore your garden key first');
+        error(t('toasts.noGardenKey'), t('toasts.noGardenKeyDesc'));
         return;
       }
       
@@ -214,15 +217,15 @@ export const SettingsView: React.FC = () => {
       // Restore database from backup
       await DatabaseService.restoreBackupFromObject(backupData);
       
-      success('Data imported', 'Your garden data has been successfully restored');
-      
+      success(t('toasts.dataImported'), t('toasts.dataImportedDesc'));
+
       // Redirect to garden view after successful import
       setTimeout(() => {
         navigate('/');
       }, 1500);
     } catch (err) {
       console.error('Failed to import data:', err);
-      error('Import failed', 'Unable to import garden data. Please check the file and try again.');
+      error(t('toasts.importFailed'), t('toasts.importFailedDesc'));
     } finally {
       setIsImporting(false);
       // Reset file input
@@ -248,7 +251,7 @@ export const SettingsView: React.FC = () => {
           // Clear all sessionStorage data
           sessionStorage.clear();
 
-          success('Garden cleared', 'All data has been permanently deleted');
+          success(t('toasts.gardenCleared'), t('toasts.gardenClearedDesc'));
 
           // Navigate back to welcome screen after a short delay
           setTimeout(() => {
@@ -256,7 +259,7 @@ export const SettingsView: React.FC = () => {
           }, 2000);
         } catch (err) {
           console.error('Failed to clear data:', err);
-          error('Failed to clear data', 'Please try again');
+          error(t('toasts.clearFailed'), t('toasts.clearFailedDesc'));
         }
       }
     });
@@ -278,16 +281,16 @@ export const SettingsView: React.FC = () => {
       if (hasPending) {
         const ok = await pushLocalBackup(userData);
         if (ok) {
-          success('Garden saved', 'Your changes have been backed up to the cloud');
+          success(t('toasts.gardenSaved'), t('toasts.gardenSavedDesc'));
         } else {
-          error('Sync failed', 'Could not save to cloud. Please try again');
+          error(t('toasts.syncFailed'), t('toasts.syncFailedDesc'));
         }
       } else {
         await syncOnAppLoad(userData, () => Promise.resolve(true));
-        success('Garden synced', 'Your garden is up to date with the cloud');
+        success(t('toasts.gardenSynced'), t('toasts.gardenSyncedDesc'));
       }
     } catch (err) {
-      error('Sync failed', 'Please check your connection and try again');
+      error(t('toasts.syncFailedConnection'), t('toasts.syncFailedConnectionDesc'));
     } finally {
       setIsCloudSyncing(false);
       setLastSyncTime(getLastSyncVersion());
@@ -305,9 +308,9 @@ export const SettingsView: React.FC = () => {
     }
 
     if (enabled) {
-      success('Offline mode enabled', 'The app will work without an internet connection');
+      success(t('toasts.offlineModeEnabled'), t('toasts.offlineModeEnabledDesc'));
     } else {
-      success('Offline mode disabled', 'The app requires an internet connection');
+      success(t('toasts.offlineModeDisabled'), t('toasts.offlineModeDisabledDesc'));
     }
   };
 
@@ -321,9 +324,9 @@ export const SettingsView: React.FC = () => {
     }
 
     if (enabled) {
-      success('Background sync enabled', 'Changes will sync automatically when connected');
+      success(t('toasts.bgSyncEnabled'), t('toasts.bgSyncEnabledDesc'));
     } else {
-      success('Background sync disabled', 'Changes will only sync when you open the app');
+      success(t('toasts.bgSyncDisabled'), t('toasts.bgSyncDisabledDesc'));
     }
   };
 
@@ -334,14 +337,14 @@ export const SettingsView: React.FC = () => {
           if (registration.waiting) {
             setUpdateAvailable(true);
             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            success('Update ready', 'Reload the app to apply the update');
+            success(t('toasts.updateReady'), t('toasts.updateReadyDesc'));
           } else {
-            success('Up to date', 'You have the latest version of the app');
+            success(t('toasts.upToDate'), t('toasts.upToDateDesc'));
           }
         });
       });
     } else {
-      success('Up to date', 'You have the latest version of the app');
+      success(t('toasts.upToDate'), t('toasts.upToDateDesc'));
     }
   };
 
@@ -362,10 +365,10 @@ export const SettingsView: React.FC = () => {
         signingPrivateKey: userData.signingPrivateKey,
       });
       setImageQuota(uploadService.getQuotaInfo());
-      success('Images synced', 'Any missing images have been downloaded');
+      success(t('toasts.imagesSynced'), t('toasts.imagesSyncedDesc'));
     } catch (err) {
       console.error('Failed to sync images:', err);
-      error('Sync failed', 'Please try again');
+      error(t('toasts.syncFailed'), t('toasts.tryAgain', { ns: 'common' }));
     } finally {
       setIsSyncing(false);
     }
@@ -374,17 +377,17 @@ export const SettingsView: React.FC = () => {
   const handleRetryUploads = async () => {
     try {
       await uploadService.retryFailedUploads();
-      success('Retrying uploads', 'Failed uploads will be retried');
+      success(t('toasts.retryingUploads'), t('toasts.retryingUploadsDesc'));
     } catch (err) {
       console.error('Failed to retry uploads:', err);
-      error('Retry failed', 'Please try again');
+      error(t('toasts.retryFailed'), t('toasts.retryFailedDesc'));
     }
   };
 
   const handleGenerateHarvest = async () => {
     setHarvestDateError('');
     if (!harvestDateFrom || !harvestDateTo) {
-      setHarvestDateError('Please set both a start and end date.');
+      setHarvestDateError(t('harvest.bothDatesRequired'));
       return;
     }
     const [fy, fm, fd] = harvestDateFrom.split('-').map(Number);
@@ -392,7 +395,7 @@ export const SettingsView: React.FC = () => {
     const [ty, tm, td] = harvestDateTo.split('-').map(Number);
     const to = new Date(ty, tm - 1, td, 23, 59, 59, 999);
     if (from > to) {
-      setHarvestDateError('The start date must come before the end date.');
+      setHarvestDateError(t('harvest.startBeforeEnd'));
       return;
     }
     const allPlants = await DatabaseService.getAllPlants();
@@ -410,9 +413,9 @@ export const SettingsView: React.FC = () => {
       downloadHarvestReport(report);
       setShowHarvestPreview(false);
       setHarvestPreview(null);
-      success('Your harvest is ready', 'The report has been saved to your device');
+      success(t('toasts.harvestReady'), t('toasts.harvestReadyDesc'));
     } catch (err) {
-      error('Could not generate report', 'Please try again');
+      error(t('toasts.harvestFailed'), t('toasts.harvestFailedDesc'));
     } finally {
       setIsGeneratingHarvest(false);
     }
@@ -420,31 +423,31 @@ export const SettingsView: React.FC = () => {
 
   const settingsSections = [
     {
-      title: 'Notifications',
+      title: t('sections.notifications'),
       icon: Bell,
       items: [
-        { label: 'Push Notifications', description: 'Receive care reminders', type: 'notification-toggle', enabled: notificationsEnabled, onToggle: handleToggleNotifications },
-        { label: 'Notification Sound', description: 'Play sound with notifications', type: 'toggle' },
-        { label: 'Quiet Hours', description: 'Set do not disturb times', type: 'action' }
+        { label: t('notifications.push'), description: t('notifications.pushDesc'), type: 'notification-toggle', enabled: notificationsEnabled, onToggle: handleToggleNotifications },
+        { label: t('notifications.sound'), description: t('notifications.soundDesc'), type: 'toggle' },
+        { label: t('notifications.quietHours'), description: t('notifications.quietHoursDesc'), type: 'action' }
       ]
     },
     {
-      title: 'Appearance',
+      title: t('sections.appearance'),
       icon: Palette,
       items: [
-        { label: 'Theme', description: 'Light, dark, or system', type: 'select' },
-        { label: 'Plant Display', description: 'Customize plant visualization', type: 'action' },
-        { label: 'Card Layout', description: 'Grid density and spacing', type: 'action' }
+        { label: t('appearance.theme'), description: t('appearance.themeDesc'), type: 'select' },
+        { label: t('appearance.plantDisplay'), description: t('appearance.plantDisplayDesc'), type: 'action' },
+        { label: t('appearance.cardLayout'), description: t('appearance.cardLayoutDesc'), type: 'action' }
       ]
     },
     {
-      title: 'Data & Privacy',
+      title: t('sections.dataPrivacy'),
       icon: Shield,
       items: [
-        { label: 'Sync with Cloud', description: 'Synchronize encrypted backup to the cloud', type: 'sync', onClick: handleCloudSync, loading: isCloudSyncing },
-        { label: 'Local Backup', description: 'Download encrypted garden data (do not store in the same device as your garden key)', type: 'action', onClick: handleExportData, loading: isExporting },
-        { label: 'Import Data', description: 'Restore from encrypted backup', type: 'action', onClick: handleImportData, loading: isImporting },
-        { label: 'Download Garden Key', description: 'Save your encryption keys', type: 'action', onClick: () => {
+        { label: t('dataPrivacy.syncCloud'), description: t('dataPrivacy.syncCloudDesc'), type: 'sync', onClick: handleCloudSync, loading: isCloudSyncing },
+        { label: t('dataPrivacy.localBackup'), description: t('dataPrivacy.localBackupDesc'), type: 'action', onClick: handleExportData, loading: isExporting },
+        { label: t('dataPrivacy.importData'), description: t('dataPrivacy.importDataDesc'), type: 'action', onClick: handleImportData, loading: isImporting },
+        { label: t('dataPrivacy.downloadKey'), description: t('dataPrivacy.downloadKeyDesc'), type: 'action', onClick: () => {
           const storedUser = localStorage.getItem('garden-key');
           if (!storedUser) {
             error('No garden key found', 'Please create a new garden first');
@@ -467,74 +470,74 @@ export const SettingsView: React.FC = () => {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
 
-          success('Garden key downloaded', 'Your encryption keys have been saved');
+          success(t('toasts.keyDownloaded'), t('toasts.keyDownloadedDesc'));
         } },
-        { label: 'Clear All Data', description: 'Reset your entire garden', type: 'danger', onClick: handleClearAllData }
+        { label: t('dataPrivacy.clearAll'), description: t('dataPrivacy.clearAllDesc'), type: 'danger', onClick: handleClearAllData }
       ]
     },
     {
-      title: 'Sharing Your Harvest',
+      title: t('sections.sharingHarvest'),
       icon: Sprout,
       items: [
         { label: 'harvest-form', type: 'harvest-form' },
-        { label: 'Generate Harvest Brief', description: 'Combine reports from multiple gardeners', type: 'harvest-brief-link' }
+        { label: t('harvest.generateBriefLink'), description: t('harvest.generateBriefLinkDesc'), type: 'harvest-brief-link' }
       ]
     },
     {
-      title: 'Image Management',
+      title: t('sections.imageManagement'),
       icon: ImageIcon,
       items: [
         {
-          label: 'Image Quota',
-          description: `${imageQuota.imagesUsed} / ${imageQuota.maxImages} images used`,
+          label: t('images.quota'),
+          description: t('images.quotaDesc', { used: imageQuota.imagesUsed, max: imageQuota.maxImages }),
           type: 'info'
         },
         {
-          label: 'Storage Used',
-          description: `${(imageQuota.storageUsed / 1024 / 1024).toFixed(2)} MB / ${(imageQuota.maxStorage / 1024 / 1024).toFixed(2)} MB`,
+          label: t('images.storage'),
+          description: t('images.storageDesc', { used: (imageQuota.storageUsed / 1024 / 1024).toFixed(2), max: (imageQuota.maxStorage / 1024 / 1024).toFixed(2) }),
           type: 'info'
         },
         {
-          label: 'Sync Images',
-          description: 'Download images from other devices',
+          label: t('images.sync'),
+          description: t('images.syncDesc'),
           type: 'action',
           onClick: handleSyncImages,
           loading: isSyncing
         },
         {
-          label: 'Retry Failed Uploads',
-          description: 'Retry images that failed to upload',
+          label: t('images.retry'),
+          description: t('images.retryDesc'),
           type: 'action',
           onClick: handleRetryUploads
         }
       ]
     },
     {
-      title: 'Garden Management',
+      title: t('sections.gardenManagement'),
       icon: Database,
       items: [
-        { label: 'Default Care Frequency', description: 'Set default for new plants', type: 'action' },
-        { label: 'Auto-scheduling', description: 'Automatically schedule next care', type: 'toggle' },
-        { label: 'Bulk Operations', description: 'Mass edit plant settings', type: 'action' }
+        { label: t('gardenMgmt.defaultFreq'), description: t('gardenMgmt.defaultFreqDesc'), type: 'action' },
+        { label: t('gardenMgmt.autoSchedule'), description: t('gardenMgmt.autoScheduleDesc'), type: 'toggle' },
+        { label: t('gardenMgmt.bulkOps'), description: t('gardenMgmt.bulkOpsDesc'), type: 'action' }
       ]
     },
     {
-      title: 'App Features',
+      title: t('sections.appFeatures'),
       icon: Smartphone,
       items: [
-        { label: 'Install App', description: 'Add to home screen', type: 'install' },
-        { label: 'Offline Mode', description: 'Use app without internet', type: 'functional-toggle', enabled: offlineModeEnabled, onToggle: () => handleToggleOfflineMode(!offlineModeEnabled) },
-        { label: 'Background Sync', description: 'Sync when connection returns', type: 'functional-toggle', enabled: backgroundSyncEnabled, onToggle: () => handleToggleBackgroundSync(!backgroundSyncEnabled) },
-        { label: 'App Version', description: `v${__APP_VERSION__}`, type: 'version', onAction: handleCheckForUpdate, updateAvailable }
+        { label: t('appFeatures.install'), description: t('appFeatures.installDesc'), type: 'install' },
+        { label: t('appFeatures.offlineMode'), description: t('appFeatures.offlineModeDesc'), type: 'functional-toggle', enabled: offlineModeEnabled, onToggle: () => handleToggleOfflineMode(!offlineModeEnabled) },
+        { label: t('appFeatures.backgroundSync'), description: t('appFeatures.backgroundSyncDesc'), type: 'functional-toggle', enabled: backgroundSyncEnabled, onToggle: () => handleToggleBackgroundSync(!backgroundSyncEnabled) },
+        { label: t('appFeatures.appVersion'), description: t('appFeatures.appVersionDesc', { version: __APP_VERSION__ }), type: 'version', onAction: handleCheckForUpdate, updateAvailable }
       ]
     },
     {
-      title: 'About',
+      title: t('sections.about'),
       icon: Info,
       items: [
-        { label: 'Privacy Policy', description: 'How we protect your data', type: 'link' },
-        { label: 'Terms of Service', description: 'Usage terms and conditions', type: 'link' },
-        { label: 'Help & Support', description: 'Get help using the app', type: 'link' }
+        { label: t('about.privacyPolicy'), description: t('about.privacyPolicyDesc'), type: 'link' },
+        { label: t('about.terms'), description: t('about.termsDesc'), type: 'link' },
+        { label: t('about.help'), description: t('about.helpDesc'), type: 'link' }
       ]
     }
   ];
@@ -618,7 +621,7 @@ export const SettingsView: React.FC = () => {
               className="flex items-center gap-1.5 px-3 py-1 text-sm text-green-700 bg-green-50 hover:bg-green-100 rounded-lg font-medium transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              {item.updateAvailable ? 'Update available' : 'Check for update'}
+              {item.updateAvailable ? t('appFeatures.updateAvailable') : t('appFeatures.checkUpdate')}
             </button>
           </div>
         );
@@ -650,7 +653,7 @@ export const SettingsView: React.FC = () => {
               className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
               onClick={item.onClick}
             >
-              Clear
+              {t('dataPrivacy.clearAll')}
             </button>
           </div>
         );
@@ -680,7 +683,7 @@ export const SettingsView: React.FC = () => {
       
       case 'sync': {
         const formattedSync = lastSyncTime
-          ? dayjs(lastSyncTime).format('M/D/YY h:mma')
+          ? dayjs(lastSyncTime).format(t('dateTimeFormat', { ns: 'common' }))
           : null;
         return (
           <div className="flex items-center justify-between pointer-events-none">
@@ -693,7 +696,7 @@ export const SettingsView: React.FC = () => {
               </div>
               <div className="text-sm text-gray-600">{item.description}</div>
               <div className="text-xs text-gray-400 mt-0.5">
-                {formattedSync ? `Last synced ${formattedSync}` : 'Never synced'}
+                {formattedSync ? t('dataPrivacy.lastSynced', { time: formattedSync }) : t('neverSynced', { ns: 'common' })}
               </div>
             </div>
             {item.loading ? (
@@ -720,11 +723,11 @@ export const SettingsView: React.FC = () => {
         return (
           <div className="space-y-4">
             <p className="text-sm text-gray-600 leading-relaxed">
-              Share the shape of your garden — patterns of care, frequency of visits, depth of growth — without sharing any names or private reflections.
+              {t('harvest.description')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('harvest.from')}</label>
                 <input
                   type="date"
                   value={harvestDateFrom}
@@ -733,7 +736,7 @@ export const SettingsView: React.FC = () => {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('harvest.to')}</label>
                 <input
                   type="date"
                   value={harvestDateTo}
@@ -755,7 +758,7 @@ export const SettingsView: React.FC = () => {
               ) : (
                 <Sprout className="w-4 h-4" />
               )}
-              {isGeneratingHarvest ? 'Preparing...' : 'Export Harvest Report'}
+              {isGeneratingHarvest ? t('loading', { ns: 'common' }) : t('harvest.generateBtn')}
             </button>
           </div>
         );
@@ -809,8 +812,8 @@ export const SettingsView: React.FC = () => {
                 <Tractor className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Settings</h1>
-                <p className="text-sm text-gray-600">Customize your garden experience</p>
+                <h1 className="text-xl font-bold text-gray-900">{t('title')}</h1>
+                <p className="text-sm text-gray-600">{t('subtitle')}</p>
               </div>
             </div>
           </div>
@@ -824,11 +827,28 @@ export const SettingsView: React.FC = () => {
           <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
             <Moon className="w-8 h-8 text-blue-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Coming Soon</h2>
-          <p className="text-gray-600 max-w-md mx-auto">
-            We're working on bringing you powerful customization options and advanced features 
-            to make your garden experience even better.
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('comingSoon')}</h2>
+        </div>
+
+        {/* Language Section */}
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-6">
+          <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                <Globe className="w-4 h-4 text-gray-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">{t('language')}</h3>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-gray-900">{t('language')}</div>
+                <div className="text-sm text-gray-600">{t('languageDesc')}</div>
+              </div>
+              <LanguageSwitcher variant="full" className="w-48" />
+            </div>
+          </div>
         </div>
 
         {/* Settings Sections */}
@@ -866,11 +886,7 @@ export const SettingsView: React.FC = () => {
 
         {/* Footer Note */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
-            Settings will be available in a future update. 
-            <br />
-            Your feedback helps us prioritize which features to build first.
-          </p>
+          <p className="text-sm text-gray-500">{t('comingSoonFooter')}</p>
         </div>
       </main>
 
@@ -890,8 +906,8 @@ export const SettingsView: React.FC = () => {
         onConfirm={confirmationModal.onConfirm}
         title={confirmationModal.title}
         message={confirmationModal.message}
-        confirmText="Clear All Data"
-        cancelText="Keep My Garden"
+        confirmText={t('dataPrivacy.clearAll')}
+        cancelText={t('dataPrivacy.keepGarden')}
         type="danger"
       />
 

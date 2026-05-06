@@ -1,0 +1,26 @@
+{
+  "title": "Résumé de Récolte",
+  "viewTitle": "Résumé de Récolte",
+  "momentum": "Élan",
+  "careIndex": "Indice de Soins",
+  "flowerRadar": "Radar des Fleurs",
+  "communityRhythm": "Rythme Communautaire",
+  "lifecycleVelocity": "Vélocité du Cycle de Vie",
+  "generateBtn": "Générer un Résumé de Récolte",
+  "downloadBtn": "Télécharger le Rapport",
+  "briefDocument": {
+    "title": "Résumé de Récolte du Jardin",
+    "period": "Période",
+    "generatedOn": "Généré le",
+    "totalPlants": "Total des Plantes",
+    "activePlants": "Plantes Actives",
+    "tendingActivities": "Activités de Soins",
+    "wateringActivities": "Activités d'Arrosage",
+    "prayerActivities": "Activités de Prière",
+    "fruitActivities": "Activités de Service",
+    "summary": "Résumé",
+    "plantHealth": "Aperçu de la Santé des Plantes",
+    "activityBreakdown": "Répartition des Activités",
+    "confidential": "Confidentiel — pour réflexion personnelle uniquement"
+  }
+}
