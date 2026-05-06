@@ -86,12 +86,20 @@ These files encode core security, identity, or data architecture decisions that 
 | `src/lib/cryptoService.ts` | Defines the encryption algorithm. Changing it breaks all existing backups. |
 | `src/lib/signatureService.ts` | Defines backup signature verification. Changing it breaks server-side validation. |
 | `src/lib/database.ts` — schema section | AlaSQL table definitions. Adding columns requires migration logic in `restoreBackupFromObject`. |
+| `src/lib/sharedGardenDatabase.ts` — schema section | AlaSQL table definitions for all shared garden databases. Changing table definitions breaks all synced shared gardens for all members. |
+| `src/lib/sharedGardenSyncService.ts` — encryption functions | `encryptGardenObject` / `decryptGardenObject` / invite handshake. Any change to key format or encryption algorithm makes existing shared gardens unreadable. |
+| `src/lib/plantLinkService.ts` — link format | The `sharedGardenLink` sub-field structure stored in `plants.additional_info`. Changing field names breaks existing linked plants silently. |
 | `public/custom-sw.js` | Service worker. Incorrect changes break offline support, notifications, and upload queue. |
 | `supabase/functions/update-backup/index.ts` | Server-side backup signature verification. Must stay in sync with `signatureService.ts`. |
 | `supabase/functions/upload-plant-image/index.ts` | Image upload security. Must stay in sync with image signing in `uploadService.ts` / `imageSync.ts`. |
 | `supabase/functions/get-plant-image/index.ts` | Image retrieval. Signature verification must match the scheme in `imageSync.ts`. |
 | `supabase/functions/delete-plant-image/index.ts` | Image deletion. Signature verification must match the scheme in `imageSync.ts`. |
-| Garden key file format (`garden-key.json` structure) | Changing the shape breaks restore for all existing users. |
+| `supabase/functions/sync-shared-garden/index.ts` | Shared garden read/write/remove-member. Signature scheme and optimistic concurrency must stay in sync with `sharedGardenSyncService.ts`. |
+| `supabase/functions/claim-garden-share/index.ts` | Garden invite redemption. Signature verification and `authorized_users` mutation must match the client invite flow. |
+| `supabase/functions/sync-shared-plant/index.ts` | Shared plant read/write. Must stay in sync with `sharedBackupService.ts`. |
+| `supabase/functions/claim-plant-share/index.ts` | Plant invite redemption. Must match the client invite flow in `sharedBackupService.ts`. |
+| Personal garden key file format (`garden-key.json`) | 5-field structure: `id`, `publicKey`, `privateKey`, `signingPublicKey`, `signingPrivateKey`. Changing the shape breaks restore for all existing users. |
+| Shared garden key file format (`{name}-garden-key.json`) | 7-field structure: `gardenId`, `sharedGardenId`, `gardenName`, `myUuid`, `myDisplayName`, `gardenPrivateKey`, `gardenPublicKey`. Changing the shape breaks restore from existing key files. |
 
 **Rule:** If a task requires modifying any of the above, confirm the full impact before proceeding.
 

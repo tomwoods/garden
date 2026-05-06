@@ -290,23 +290,89 @@ A person who maintains many relationships across multiple communities — perhap
 
 ---
 
-### F9. Plant Sharing (Planned)
+### F9. Plant Sharing
 
 **F9.1 Share a Plant**
-- Owner chooses a plant and enters a recipient's Garden user ID.
-- The app retrieves the recipient's public key from Supabase.
-- The plant's data is encrypted with the recipient's public key and stored in `shared_plants`.
-- Acceptance: Recipient can download and decrypt the shared plant's data.
+- Owner opens `SharePlantModal` from a personal plant's detail view.
+- The app generates a per-plant RSA key pair and creates an initial encrypted snapshot in `shared_plants`.
+- An invite claim is generated via `create-share-claim`: the plant private key is wrapped with an ephemeral RSA key and the ephemeral private key travels in the invite URL fragment (never touches the server).
+- Acceptance: An invite link is generated and the encrypted plant snapshot is uploaded to `shared_plants`.
 
 **F9.2 Accept a Share**
-- Recipient is notified (or manually checks) and accepts the share.
-- The shared plant appears in their garden, clearly marked as shared.
-- Acceptance: Activities logged by either party appear in the shared plant's timeline.
+- Recipient opens the invite link → `ReceivePlantShareView`.
+- The app calls `claim-plant-share` Edge Function with the short code and the invitee's RSA-PSS signature.
+- Server adds the invitee to `authorized_users` and returns the wrapped plant private key.
+- Invitee decrypts the plant key using the ephemeral private key from the URL fragment, fetches and decrypts the plant snapshot, and imports it locally.
+- The plant link is established via `plantLinkService.importPlantFromSharedGarden()`: only the invitee's own past activities are imported to their personal garden.
+- Acceptance: The shared plant appears in the invitee's garden. All activities from the owner are visible. Activities the invitee logs sync to both parties.
 
-**F9.3 Revoke Share**
-- Owner removes the recipient from the plant's authorized users.
-- On next sync, the recipient's copy of the plant is marked revoked and becomes read-only.
-- Acceptance: Revoked recipient can no longer add new activities to the shared plant.
+**F9.3 Activity Sync on a Shared Plant**
+- `syncSharedPlant()` in `sharedBackupService.ts` applies incoming deltas, mirrors the current user's own activities to their personal garden, appends local deltas, and pushes.
+- Owner compacts at 50 deltas. Co-tenders do not compact. Viewers skip the push.
+- Acceptance: An activity logged by one party appears in the other party's timeline after their next sync.
+
+**F9.4 Plant-to-Garden Linking**
+- A personal plant can be linked to a shared garden plant via `linkPlantToSharedGarden()`.
+- When linked, the user's own activities in the shared garden are automatically mirrored to their personal plant. Activities by other members are never mirrored.
+- Acceptance: A Tending logged by the current user in a shared garden appears in their personal plant's timeline. A Tending logged by another member does not.
+
+**F9.5 Revoke Share (Planned)**
+- Owner removes the co-tender from `authorized_users` via the shared plant's settings.
+- On the co-tender's next sync, the 403 response marks their local copy revoked (read-only).
+- Acceptance: Revoked co-tender can view past activities but cannot add new ones.
+
+---
+
+### F12. Shared Gardens
+
+**F12.1 Create Shared Garden**
+- User opens `CreateSharedGardenModal`, enters a garden name and display name, and taps "Create garden."
+- A per-garden RSA key pair is generated. An initial empty snapshot is encrypted and uploaded to `shared_gardens`.
+- The garden private key is stored locally in `localStorage['shared_garden_key_{gardenId}']`.
+- A garden key file (`{name}-garden-key.json`) containing the RSA key pair and member identity is offered for download immediately after creation. Users are strongly encouraged to save it.
+- Acceptance: The garden appears in `SharedGardensListView`. The creator is the only member. The garden is immediately navigable.
+
+**F12.2 Invite Members**
+- Any current member opens `ManageMembersModal` and taps "Invite member."
+- `InviteToSharedGardenModal` generates an invite URL via `create-garden-share-claim`: the garden private key is wrapped with an ephemeral RSA key; the ephemeral private key travels in the `#fragment` of the invite URL.
+- The invite is shared out-of-band. It expires after 72 hours.
+- Invitee opens the link → `JoinSharedGardenView` → claims the invite via `claim-garden-share`.
+- Server verifies the invitee's RSA-PSS signature, adds them to `authorized_users`, and returns the wrapped garden key.
+- Invitee decrypts the garden key, fetches and decrypts the current garden state, and populates their local database.
+- Acceptance: The invitee can see all plants and activities. New activities they log appear in all other members' gardens on next sync.
+
+**F12.3 Shared Garden Sync**
+- `syncSharedGarden(ref, user)` runs automatically on app focus, after any write, and on app load.
+- Incoming deltas are applied last-write-wins. Tombstone conflicts (activity added to deleted plant) are surfaced via `onConflict` callback.
+- The current user's own incoming activities are mirrored to their personal garden via `mirrorActivityToPersonalGarden()`.
+- Local changes since last sync are appended to the delta log. Compaction fires at 50 deltas.
+- All writes use optimistic concurrency (409 handled by re-fetch + retry).
+- Acceptance: Activity logged by one member appears in all other members' views after their next sync. Offline sync skips gracefully and retries on reconnect.
+
+**F12.4 Restore from Garden Key File**
+- User opens `CreateSharedGardenModal` → "Restore from key file" tab.
+- User selects their `{name}-garden-key.json` file. All 7 fields are validated.
+- If the garden is already on the device: shows "already on device" notice and offers to open it directly.
+- Otherwise: fetches the latest encrypted state from Supabase, decrypts, populates local database, and registers the garden ref.
+- Acceptance: All plants and activities from the garden are accessible after restore. The user appears in the member list with their stored display name.
+
+**F12.5 Remove a Member**
+- Any member can remove any other member via `ManageMembersModal`.
+- `removeMemberFromGarden()` writes a `remove_member` entry to the change log, then calls `sync-shared-garden` with `action: 'remove-member'` to remove the user from `authorized_users`.
+- On the removed member's next sync, a 403 response triggers `markGardenDisconnected()`. The garden becomes read-only in their app.
+- Acceptance: Removed member can view the garden's last known state locally but cannot push new changes. New sync attempts return 403.
+
+**F12.6 Shared Garden Plots**
+- Any member can create, edit, delete plots, and manage plot memberships.
+- Plots and memberships sync via the delta log to all members.
+- Bulk activity is supported from `SharedPlotDetailView`: one activity per plant in the plot, plus a single `bulk_{type}` change log entry.
+- Acceptance: A plot created by one member appears in all other members' gardens after sync. Bulk activity from a plot updates all selected plants.
+
+**F12.7 Garden Change Log**
+- Every meaningful action (plant added, activity logged, plot created, member added/removed, bulk operation) writes an entry to `garden_change_log`.
+- `GardenChangeLogCard` displays a paginated, reverse-chronological feed of these entries attributed to their author.
+- The change log is included in the snapshot and in deltas, so all members see the same history.
+- Acceptance: Any member can open the change log and see who logged what and when, back to the garden's creation.
 
 ---
 

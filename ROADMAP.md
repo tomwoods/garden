@@ -118,24 +118,44 @@
 
 ---
 
-## Phase 3 — Sharing, Reporting, and Localization (Planned)
+## Phase 3 — Sharing, Reporting, and Localization (In Progress)
+
+### Shared Gardens
+A fully collaborative garden where any number of members co-tend the same set of plants and log activities together. All garden data is E2EE — the server holds only ciphertext encrypted with the garden's RSA key pair. The garden private key is held locally by each member and never transmitted to the server (distributed via ephemeral RSA handshake at invite time).
+
+- [DONE] `shared_gardens` Supabase table with `authorized_users` JSONB access control
+- [DONE] `garden_share_claims` table — ephemeral invite claims (72-hour TTL short codes)
+- [DONE] `sharedGardenDatabase.ts` — per-garden AlaSQL database with 15 tables (13 standard + `garden_members` + `garden_change_log` + `garden_tombstones`)
+- [DONE] `sharedGardenSyncService.ts` — snapshot + delta log sync engine; compaction at 50 deltas; 409 conflict retry; tombstone-aware delta application
+- [DONE] `create-shared-garden` Edge Function
+- [DONE] `sync-shared-garden` Edge Function — `read`, `write`, `remove-member` actions
+- [DONE] `create-garden-share-claim` Edge Function — ephemeral key handshake
+- [DONE] `claim-garden-share` Edge Function — redeems invite, adds member to `authorized_users`
+- [DONE] `CreateSharedGardenModal` — two-tab UI: create new garden or restore from key file
+- [DONE] `JoinSharedGardenView` — invite claim redemption flow
+- [DONE] `SharedGardensListView` — list all joined gardens with stats
+- [DONE] `SharedGardenView` — main shared garden dashboard with plant list and member panel
+- [DONE] `SharedPlantDetailView` — full activity timeline for a shared plant
+- [DONE] `SharedPlotsView` + `SharedPlotDetailView` — plots and bulk activity in shared garden context
+- [DONE] `GardenChangeLogCard` — paginated audit log of all garden actions
+- [DONE] `ManageMembersModal` — list members, generate invites, remove members
+- [DONE] `InviteToSharedGardenModal` — invite generation with QR code and copy link
+- [DONE] Garden key file download and restore from key file
+- [DONE] Disconnected garden mode — read-only when removed
+- [PLANNED] Key rotation after member removal
 
 ### Plant Sharing
-A user may choose to share the care record of a specific plant with one or more other Garden users. When care activities are logged by either party for a shared plant, the other party's app receives the updates on next sync.
+A user may share the care record of a specific plant with one other Garden user. Both parties can view and log activities for the shared plant. Data is E2EE — each share has its own RSA key pair distributed via an ephemeral invite claim flow.
 
-Architecture constraints:
-- Shared data must remain E2EE. The shared plant's data is encrypted with the recipient's public key, not just the sender's.
-- Sharing is plant-level, not garden-level. No user can see another user's full garden.
-- Each share is an explicit opt-in action, initiated by the plant's owner.
-- The `shared_plants` table in Supabase holds the encrypted payload and the authorized user ID list.
-- Revoking access means removing the recipient from `authorized_users` and re-encrypting the data.
-
-Implementation steps:
-- [PLANNED] Share plant modal (owner selects a recipient by Garden ID or scan)
-- [PLANNED] Edge Function: create-share — encrypts plant data for recipient's public key
-- [PLANNED] Edge Function: accept-share — recipient downloads and decrypts the shared plant
-- [PLANNED] Activity merge on shared plant — conflict resolution strategy TBD
+- [DONE] `shared_plants` Supabase table with `authorized_users` JSONB and role model (owner / co-tender / viewer)
+- [DONE] `plant_share_claims` table — ephemeral invite claims
+- [DONE] `sharedBackupService.ts` — per-plant snapshot + delta log sync; owner-only compaction; viewer role skips push
+- [DONE] `create-shared-plant`, `sync-shared-plant`, `create-share-claim`, `claim-plant-share` Edge Functions
+- [DONE] `plantLinkService.ts` — bidirectional link between personal plant and shared plant; asymmetric activity mirroring
+- [DONE] `SharePlantModal` — share a plant via invite link
+- [DONE] `ReceivePlantShareView` — accept and import a shared plant
 - [PLANNED] Revoke share flow
+- [PLANNED] Share plant from `PlantDetailView` directly
 
 ### Anonymized Harvest Reports
 A user can generate a JSON report of their care activity over a specified time period. All identifying information is replaced with salted SHA-256 hashes — no real names, emails, or plant IDs appear in the exported file.

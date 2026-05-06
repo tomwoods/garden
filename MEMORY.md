@@ -357,3 +357,72 @@ When any schema change is made:
 **Trade-offs:**
 - If two devices edit the exact same record within the same timestamp resolution (unlikely in practice), the merge arbitrarily favors one version. There is no field-level merge — the whole record from the "newer" side wins. This is acceptable because the records are small and the conflict scenario is rare.
 - The merge does not detect deletions: if a record was deleted on one device and modified on the other, the modified version survives the merge. Deletion-aware merging would require tombstone records, which adds schema complexity not warranted at this stage.
+
+---
+
+## Decision 17: Shared Garden Architecture — Snapshot + Delta Log Per Garden
+
+**Date:** Phase 3 (shared gardens implementation)
+
+**Context:** Multiple users co-edit the same garden data. We needed a sync strategy that is conflict-tolerant, works offline, and does not require a real-time server.
+
+**Options considered:**
+- **Full snapshot replace on every write:** Simple — the writer serializes the whole garden and overwrites. But with N members writing independently, the last writer wins the entire garden, silently discarding concurrent writes by others.
+- **Event sourcing only (no snapshot):** The server holds only the delta log; clients replay from the beginning. Correct but the log grows unbounded and replaying thousands of events on join is expensive.
+- **Snapshot + rolling delta log (chosen):** The server holds a `SharedGardenObject` containing a base snapshot plus a bounded list of deltas. Each sync cycle, a client appends its local deltas and replays incoming ones. When the delta count exceeds 50, the first syncer to trigger compaction replaces the deltas with a fresh snapshot.
+
+**Why delta log over full replace:** Two members independently logging activities between sync cycles each produce their own deltas. When either member syncs, they get the other's deltas via the log and apply them locally. A full-replace strategy would erase one member's changes every time the other synced.
+
+**Why compaction at 50 deltas:** Each delta is a small JSON object (~200–500 bytes). At 50 deltas the log is ~10–25KB before encryption, which is manageable. Beyond that, the encrypted blob grows noticeably. 50 is conservative but appropriate for typical garden activity volumes.
+
+**Why first-syncer-wins compaction:** We considered requiring the garden creator to compact (like the `shared_plants` owner role). But gardens have no owner concept — all members are equal. Assigning compaction to any specific member creates a bottleneck. First-syncer is simpler and self-balancing.
+
+**Why one AlaSQL database per garden:** Shared garden data must not contaminate the user's personal GardenDB. Queries for personal plant IDs must not accidentally return shared plant IDs. The isolation also makes it safe to delete a shared garden locally (drop the whole database context) without touching personal data.
+
+**Why `sharedGardenId === gardenId`:** The server-assigned UUID is used as the local namespace too. Using a separate local ID would require a two-level mapping (local ID → server ID) everywhere. Since the server UUID is stable and globally unique, using it directly simplifies all lookup, routing, and localStorage key patterns.
+
+**Trade-offs:**
+- If a member is offline for a long time and then syncs, they may miss deltas that were compacted out of the log. All their effects are baked into the snapshot, but those entries may not appear in the change log display. Accepted — the change log is a display convenience, not a correctness mechanism.
+- The compaction race: if two members compact simultaneously, one gets a 409 and must re-fetch and retry. Since compaction produces identical content, the retry is idempotent.
+
+---
+
+## Decision 18: Shared Garden Encryption — Single RSA Key Pair Per Garden
+
+**Date:** Phase 3 (shared gardens implementation)
+
+**Context:** All members must be able to encrypt and decrypt the same ciphertext blob. We needed a key distribution model that is E2EE, does not require the server to hold any plaintext, and works offline after initial join.
+
+**Options considered:**
+- **Encrypt separately for each member's public key:** The server holds N ciphertext copies, one per member. Each member decrypts with their own key. Used by `shared_plants`. Scales poorly for gardens — every write must re-encrypt for all N members whose public keys the writer must know at write time.
+- **Symmetric key shared as a secret:** All members hold the same AES key. Simpler, but symmetric key distribution is hard to make E2EE — the key must be transmitted somehow, which requires an asymmetric step anyway.
+- **Single RSA key pair per garden, private key distributed via ephemeral handshake (chosen):** One RSA key pair is generated when the garden is created. All members hold the garden private key locally. The server holds only the garden public key and ciphertext. Any member can encrypt (using the garden public key) or decrypt (using the garden private key).
+
+**Why the garden key pair model wins:** A garden write always produces one ciphertext blob regardless of member count. No member needs to know anyone else's public key at write time. The same key is used by all members indefinitely.
+
+**Ephemeral handshake for key delivery:** When a member invites someone, they generate a one-time ephemeral RSA key pair, encrypt the garden private key with the ephemeral public key, and send the wrapped key to the server. The ephemeral private key travels in the invite URL `#fragment` — it never reaches the server. The invitee presents the short code, receives the wrapped garden key, decrypts it with the ephemeral private key from the URL, and now holds the garden private key locally. The server never holds the garden private key or the ephemeral private key.
+
+**Trade-offs:**
+- If a member's device is compromised, the attacker gains the garden private key, which can decrypt all past and future garden ciphertext. This is the same risk as a compromised personal garden key and is accepted.
+- Key rotation after member removal is not implemented. Removing a member from `authorized_users` prevents new server reads, but does not prevent decryption of ciphertext they already possess. This is a known limitation accepted for the current phase.
+
+---
+
+## Decision 19: Plant-to-Garden Linking via `additional_info` JSON
+
+**Date:** Phase 3 (shared gardens implementation)
+
+**Context:** A user may have a plant in their personal garden (GardenDB) and the same person represented as a plant in a shared garden. We needed a way to link these two records so that activities the user logs in the shared garden are automatically mirrored to their personal garden.
+
+**Options considered:**
+- **New `plant_links` table in GardenDB:** A separate table keyed by `(personal_plant_id, garden_id, shared_plant_id)`. Clean schema, but adds a table to every personal garden and requires migration logic in `restoreBackupFromObject()`.
+- **Foreign key columns on `plants`:** E.g., `shared_garden_id` and `shared_plant_id` columns. Clean, but adds two columns to the plants table and requires migration handling.
+- **JSON sub-field in `plants.additional_info` (chosen):** Store `sharedGardenLink: { gardenId, sharedPlantId, authorUuid, authorDisplayName }` inside the existing JSON column. The shared garden plant stores `linkedPersonalPlantId` in its own `additional_info`. No schema migration needed.
+
+**Why `additional_info`:** The link is optional metadata on an existing record. The `additional_info` field already serves this purpose for `image_id`, `age_info`, and `location`. Adding another optional sub-field is consistent with established practice and requires no AlaSQL schema change.
+
+**Asymmetric mirroring:** When a synced incoming delta contains an activity authored by the current user, `mirrorActivityToPersonalGarden()` copies it to the personal garden plant. Activities by other members are NOT mirrored. The personal garden is a first-person journal — a user should only see their own acts of care there, not others'.
+
+**Trade-offs:**
+- The JSON sub-field approach makes the link invisible to SQL queries — it cannot be indexed or joined. Link lookups are always done by known plant ID via `parseAdditionalInfo()`, not by scanning, so this is acceptable.
+- If `additional_info` JSON becomes corrupted, the link is silently lost. The recovery path is to re-link manually. Accepted as an edge case.

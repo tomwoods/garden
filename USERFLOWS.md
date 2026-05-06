@@ -496,3 +496,199 @@ The gardener can sow a new plant directly from an existing contact record, avoid
 - **Contact Picker not supported:** The "Import from Contacts" button is hidden on platforms where `navigator.contacts` is unavailable. Only the file import path is shown.
 - **Contact Picker returns no selection:** If the user dismisses the native picker without selecting a contact, no modal opens.
 - **Share target received while app is closed:** The vCard is held in IndexedDB by the service worker and processed the next time the app is opened.
+
+---
+
+## 17. Creating a Shared Garden
+
+### User Experience
+The user wants to start a garden that others can co-tend. They open the Shared Gardens list, tap "New garden," name the garden, and choose a display name visible to all members.
+
+### Flow
+1. User navigates to `/shared-gardens` via `SlidingMenu` → "Shared Gardens."
+2. `SharedGardensListView` shows existing gardens or an empty state.
+3. User taps "New garden" → `CreateSharedGardenModal` opens with the "New garden" tab selected.
+4. User enters:
+   - Garden name (e.g., "Ruhi Study Circle")
+   - Display name (how they appear to other members)
+5. User taps "Create garden" → `createSharedGarden(gardenName, displayName, user)`:
+   - Generates an RSA-OAEP key pair specific to this garden (`generateRSAKeyPair()`).
+   - Assigns a local `gardenId` (UUID).
+   - Creates a per-garden AlaSQL database via `SharedGardenDatabase.init(gardenId)`.
+   - Adds the creator as the first member in `garden_members`.
+   - Builds an initial empty snapshot via `SharedGardenDatabase.getFullSnapshot(gardenId)`.
+   - Wraps the snapshot in a `SharedGardenObject` with `schema_version: 1`.
+   - Encrypts the object with the garden public key.
+   - Signs the request with the user's RSA-PSS signing key.
+   - POSTs to `create-shared-garden` Edge Function.
+   - Receives `sharedGardenId` (the server-assigned UUID).
+   - Stores the garden private key in `localStorage['shared_garden_key_{gardenId}']`.
+   - Registers the garden in `shared_garden_refs_v1` via `addSharedGardenRef()`.
+6. Modal transitions to the "done" step.
+7. User is strongly encouraged to download the garden key file (7-field JSON containing the garden RSA key pair and member identity).
+8. User taps "Open garden" → navigates to `/shared-garden/{gardenId}`.
+
+### Edge Cases
+- **Offline during creation:** The `create-shared-garden` Edge Function call will fail. The user sees an error. No partial state is left — the local DB and ref are not created until the server responds successfully.
+- **Garden name in plaintext in the request:** The garden name is included in the `create-shared-garden` request body so the server can store a plaintext label for administrative purposes. This is intentional — garden names are not considered sensitive identifiers. All plant and activity data remains encrypted.
+- **Display name visible to all members:** Members see each other's display names. These are stored inside the encrypted garden object and in `garden_members`, so they are never exposed to the server in plaintext except briefly in the invite flow.
+
+---
+
+## 18. Inviting a Member to a Shared Garden
+
+### User Experience
+A garden member taps "Invite" in the garden's member panel. The app generates a shareable link. The invitee opens the link, which brings them to a join screen where they confirm their display name and accept.
+
+### Flow (Inviter)
+1. User opens a shared garden → taps the members icon → `ManageMembersModal`.
+2. User taps "Invite member" → `InviteToSharedGardenModal` opens.
+3. User enters the invitee's intended display name and taps "Generate invite."
+4. `createGardenInvite(gardenId, inviteeDisplayName, user)`:
+   - Generates a one-time ephemeral RSA key pair.
+   - Reads the garden private key from `localStorage['shared_garden_key_{gardenId}']`.
+   - Encrypts the garden private key with the ephemeral public key.
+   - Sends the wrapped key, garden public key, and invitee display name to `create-garden-share-claim`.
+   - Receives a `shortCode` (8 alphanumeric characters, 72-hour TTL).
+   - Builds the invite URL: `https://app/join-shared-garden/{sharedGardenId}?code={shortCode}#key={ephemeralPrivKeyBase64}`
+5. The invite link is shown as a QR code and copyable text. The user shares it out-of-band (message, email, etc.).
+
+### Flow (Invitee)
+1. Invitee opens the invite link in their browser.
+2. `JoinSharedGardenView` loads, parsing `sharedGardenId`, `shortCode`, and `ephemeralPrivKeyBase64` (from the URL fragment — never sent to the server).
+3. Invitee confirms or edits their display name and taps "Join garden."
+4. `claimGardenInvite(sharedGardenId, shortCode, ephemeralPrivKeyBase64, displayName, user)`:
+   - Signs a claim message (`claim-garden-share:{userId}:{shortCode}:{timestamp}`) with their RSA-PSS signing key.
+   - POSTs to `claim-garden-share` Edge Function with the short code and signature.
+   - Server verifies the signature, returns the `encryptedGardenKey` and `gardenPublicKey`, and adds the invitee to `authorized_users`.
+   - Decrypts the wrapped garden private key using the ephemeral private key from the URL fragment.
+   - Fetches the encrypted garden object via `fetchSharedGarden()`.
+   - Decrypts with the garden private key.
+   - Creates and populates a local AlaSQL database: `SharedGardenDatabase.init(gardenId)` + `applySnapshot()` + `applyDeltas()`.
+   - Upserts the invitee as a member in `garden_members`.
+   - Stores the garden private key in localStorage.
+   - Registers the garden ref.
+5. App navigates to the shared garden view.
+
+### Edge Cases
+- **Invite link opened by someone without a Garden account:** `JoinSharedGardenView` checks for `localStorage['garden-key']`. If absent, the user is shown the Welcome Screen first, then redirected back to the join flow.
+- **Invite link expired (>72 hours):** `claim-garden-share` returns 404. User sees an error and is asked to request a fresh invite.
+- **Invite already redeemed:** Returns 409. If the same user is trying to rejoin, they should use the garden key file restore flow instead.
+- **Invitee already a member:** `claimGardenInvite()` completes normally — the member record is upserted (idempotent). The garden state is refreshed from the latest snapshot.
+- **Ephemeral private key not in URL fragment:** If the user copies only the base URL without the fragment, the join fails with a clear error. The fragment is required for decryption.
+
+---
+
+## 19. Syncing a Shared Garden
+
+### User Experience
+Sync happens automatically. The user taps into a shared garden and sees activity from all members, including any that were added since their last visit. On slow connections, a subtle loading indicator may appear briefly.
+
+### Trigger Conditions
+- On app focus (`visibilitychange` event) for all non-disconnected shared gardens.
+- After any write operation in a shared garden (activity added, plant added, etc.).
+- On explicit pull-to-refresh in `SharedGardenView`.
+- Called as `syncAllSharedGardens(user)` on app load.
+
+### Sync Flow
+1. For each garden ref in `shared_garden_refs_v1` where `disconnected !== true`:
+2. `syncSharedGarden(ref, user)`:
+   a. Reads `gardenPrivKeyBase64` from `localStorage['shared_garden_key_{gardenId}']`.
+   b. Calls `fetchSharedGarden(sharedGardenId, user)` → `sync-shared-garden` Edge Function with `action: 'read'`.
+   c. Decrypts the response with the garden private key → `SharedGardenObject`.
+   d. Identifies new incoming deltas: `remoteObj.deltas.filter(d => d.ts > ref.lastSyncTs)`.
+   e. Calls `SharedGardenDatabase.applyDeltas(gardenId, newDeltas)` — last-write-wins per record, returns any `TombstoneConflict[]`.
+   f. For each incoming delta authored by the current user involving an activity table: calls `mirrorActivityToPersonalGarden()` to copy it to the personal GardenDB.
+   g. Collects local changes since `lastSyncTs` via `SharedGardenDatabase.getDeltasSince(gardenId, lastSyncTs)`.
+   h. Merges local deltas into the remote object's delta array.
+   i. If total deltas > 50: compaction — replaces the delta log with a fresh `getFullSnapshot()` and empty deltas array (`isCompaction: true`).
+   j. Re-encrypts the updated `SharedGardenObject` with the garden public key.
+   k. Calls `pushSharedGarden(sharedGardenId, encryptedData, remote.lastModified, isCompaction, user)` → `sync-shared-garden` with `action: 'write'`.
+   l. On 409 (concurrent write): re-fetches the server version, merges local deltas on top of the winner's state, and retries once.
+   m. On success: `setGardenSyncTs(gardenId, Date.now())` updates `lastSyncTs` in the ref.
+
+### Conflict Handling
+- **Activity on a deleted plant (TombstoneConflict):** If an incoming delta tries to INSERT/UPDATE a record whose `record_id` is in `garden_tombstones`, a `TombstoneConflict` is raised. The `onConflict` callback (if provided) surfaces this to the user. Default behavior: the delta is discarded.
+- **409 write conflict:** Automatically retried once after re-fetching. If the second attempt also gets a 409 (extreme edge case), the sync cycle fails silently and is retried on the next trigger.
+- **403 from read:** The user has been removed from the garden. `markGardenDisconnected(gardenId)` sets `ref.disconnected = true`. The garden becomes read-only in the UI.
+
+### Edge Cases
+- **Offline:** `navigator.onLine` check at the start of `syncSharedGarden()` returns false — function exits immediately with `{}`. No error is shown. Sync retries on next trigger.
+- **Garden private key missing from localStorage:** Sync exits early. This can happen if the user cleared localStorage. Recovery requires restoring from the garden key file.
+
+---
+
+## 20. Restoring a Shared Garden from Key File
+
+### User Experience
+A user who has lost their device data, switched devices, or cleared their browser storage can restore a shared garden using the garden key file they downloaded when they first created or joined the garden.
+
+### Flow
+1. User opens `SharedGardensListView` → taps "New garden" → `CreateSharedGardenModal` opens.
+2. User taps the "Restore from key file" tab.
+3. User taps the file drop zone and selects their `{name}-garden-key.json` file.
+4. `parseGardenKeyFile(rawText)` validates the JSON and checks all 7 required fields.
+5. On valid file: the garden name fills in the header card and the display name field is pre-populated from `myDisplayName` in the file (editable).
+6. User confirms or updates their display name and taps "Restore garden."
+7. `restoreSharedGardenFromKeyFile(keyFileData, user)`:
+   a. Checks `getSharedGardenRef(gardenId)` — if the garden is already on this device, returns immediately with a "already on device" result (no re-restore needed).
+   b. Stores `gardenPrivateKey` in `localStorage['shared_garden_key_{gardenId}']`.
+   c. Registers a preliminary garden ref with `lastSyncTs: 0`.
+   d. Calls `SharedGardenDatabase.init(gardenId)`.
+   e. Calls `fetchSharedGarden(sharedGardenId, user)` to retrieve the latest encrypted state.
+   f. If 403/404: the garden no longer exists or this user was removed. Cleans up the ref and private key. Shows error to user.
+   g. Decrypts with the garden private key → `SharedGardenObject`.
+   h. Calls `SharedGardenDatabase.applySnapshot(gardenId, gardenObj.snapshot)`.
+   i. Calls `SharedGardenDatabase.applyDeltas(gardenId, gardenObj.deltas)`.
+   j. Upserts the user's member record with the display name from the key file.
+   k. Updates the garden ref with `lastSyncTs: Date.now()` and the confirmed garden name.
+8. Modal transitions to the "done" step.
+9. User taps "Open garden" → navigates to the restored garden.
+
+### "Already on device" guard
+If the garden is already registered in `shared_garden_refs_v1`, the modal transitions to an amber "already on device" state showing the garden name. The user can tap "Open garden" to navigate directly, or "Choose a different file" to try a different key file.
+
+### Edge Cases
+- **Malformed key file:** `parseGardenKeyFile()` returns null. An inline error is shown. The file picker resets.
+- **Garden deleted on server:** `fetchSharedGarden()` returns null. The provisional ref and private key written in step (b)/(c) are cleaned up. User sees a clear error.
+- **Network unavailable during restore:** The fetch in step (e) fails. User is informed that connectivity is required to restore a shared garden.
+- **Display name change:** The user may update their display name in the form before restoring. The member record upserted in step (j) uses the updated name. Other members will see the new name on their next sync.
+
+---
+
+## 21. Shared Garden Plots
+
+### User Experience
+Shared gardens support the same plot organization as the personal garden. Any member can create, edit, or manage plots. Plots and their memberships sync to all members.
+
+### Viewing Plots
+1. User opens a shared garden → taps the plots icon (grid icon) in the header.
+2. `SharedPlotsView` lists all plots with member count and a preview of plant names.
+3. Tapping a plot opens `SharedPlotDetailView`.
+
+### Creating a Plot
+1. User taps "New plot" in `SharedPlotsView`.
+2. `AddEditPlotModal` opens (reused from personal garden).
+3. On submit: `SharedGardenDatabase.createPlot(gardenId, plotData)` inserts into `plots` and writes a `create_plot` entry to `garden_change_log`. A delta is emitted and picked up on the next sync cycle.
+
+### Managing Plot Membership
+1. In `SharedPlotDetailView`, user taps "Manage members."
+2. A checklist of all plants in the garden is shown.
+3. Changes call `SharedGardenDatabase.updatePlotMemberships(gardenId, plotId, plantIds)` which upserts/deletes `plot_memberships` rows.
+
+### Bulk Activity from a Plot
+1. In `SharedPlotDetailView`, user selects an activity type from the five-button bar (Tend, Water, Sunlight, Fruit, Notching).
+2. The activity modal opens. On submit:
+   - One individual activity record is written per plant in the plot.
+   - A single `bulk_{type}` entry is written to `garden_change_log` naming the plot and number of plants affected.
+   - All individual activity deltas plus the change log delta are emitted and synced.
+
+### Deleting a Plot
+1. User taps the delete icon in `SharedPlotDetailView` → confirmation modal.
+2. `SharedGardenDatabase.deletePlot(gardenId, plotId)` removes the plot and all its `plot_memberships`. Plants are unaffected.
+3. A `delete_plot` entry is written to `garden_change_log`.
+
+### Edge Cases
+- **Disconnected garden:** All create/edit/delete controls are hidden. The view is read-only.
+- **Two members create plots simultaneously:** Both plots survive — they have different UUIDs. No conflict.
+- **Member deletes a plot while another member is editing it:** The edit delta is applied server-side but the plot row no longer exists after the delete delta is applied. The edit is effectively orphaned but causes no error — AlaSQL UPDATE on a non-existent row is a no-op.
