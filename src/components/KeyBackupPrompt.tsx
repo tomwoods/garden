@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, X, Shield } from 'lucide-react';
 
 interface KeyBackupPromptProps {
@@ -6,6 +7,7 @@ interface KeyBackupPromptProps {
 }
 
 export const KeyBackupPrompt: React.FC<KeyBackupPromptProps> = ({ onDownloadGardenKey }) => {
+  const { t } = useTranslation('notifications');
   const [isDismissed, setIsDismissed] = useState(() => {
     // Check if prompt was dismissed OR if user restored from garden key
     return localStorage.getItem('garden-key-prompt-dismissed') === 'true' || 
@@ -32,11 +34,10 @@ export const KeyBackupPrompt: React.FC<KeyBackupPromptProps> = ({ onDownloadGard
         </div>
         <div className="ml-3 flex-1">
           <h3 className="text-sm font-medium text-amber-800">
-            Save Your Garden Key
+            {t('keyBackupTitle')}
           </h3>
           <p className="mt-1 text-sm text-amber-700">
-            Download your garden key to ensure you never lose access to your garden. 
-            Store it somewhere safe - this is the only way to recover your garden.
+            {t('keyBackupMessage')}
           </p>
           <div className="mt-3 flex gap-2">
             <button
@@ -44,13 +45,13 @@ export const KeyBackupPrompt: React.FC<KeyBackupPromptProps> = ({ onDownloadGard
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-medium rounded-md transition-colors"
             >
               <Download className="w-4 h-4" />
-              Download Garden Key
+              {t('downloadKey')}
             </button>
             <button
               onClick={handleDismiss}
               className="inline-flex items-center px-3 py-1.5 text-amber-700 hover:text-amber-800 text-sm font-medium transition-colors"
             >
-              Remind me later
+              {t('remindLater')}
             </button>
           </div>
         </div>
