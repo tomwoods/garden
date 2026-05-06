@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Users, Trash2, CreditCard as Edit, Plus } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef } from '../lib/sharedGardenDatabase';
 import { syncSharedGarden } from '../lib/sharedGardenSyncService';
@@ -38,6 +39,7 @@ export const SharedPlotDetailView: React.FC = () => {
   const [showNotchingModal, setShowNotchingModal] = useState(false);
   const [lastNotching, setLastNotching] = useState<{ book: string; end_unit: number; end_section: number } | undefined>(undefined);
 
+  const { t } = useTranslation('garden_shared');
   const ref_ = gardenId ? getSharedGardenRef(gardenId) : null;
   const user = getUser();
   const isDisconnected = ref_?.disconnected_at != null;
@@ -221,7 +223,7 @@ export const SharedPlotDetailView: React.FC = () => {
             <div>
               <h1 className="text-lg font-semibold text-gray-900">{plot.name}</h1>
               <p className="text-xs text-gray-500">
-                {members.length} {members.length === 1 ? 'plant' : 'plants'} · {ref_.gardenName}
+                {t('membersCount', { count: members.length })} · {ref_.gardenName}
               </p>
             </div>
           </div>
@@ -255,28 +257,28 @@ export const SharedPlotDetailView: React.FC = () => {
         {/* Members */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-900">Members</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t('membersCount', { count: members.length })}</h2>
             {!isDisconnected && (
               <button
                 onClick={() => setShowMembersModal(true)}
                 className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Users className="w-3.5 h-3.5" />
-                Manage
+                {t('manageMembers')}
               </button>
             )}
           </div>
 
           {members.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-sm text-gray-500 mb-3">No members yet</p>
+              <p className="text-sm text-gray-500 mb-3">{t('noMembers')}</p>
               {!isDisconnected && (
                 <button
                   onClick={() => setShowMembersModal(true)}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-xl transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Add plants
+                  {t('addPlants')}
                 </button>
               )}
             </div>
@@ -304,8 +306,8 @@ export const SharedPlotDetailView: React.FC = () => {
         {/* Bulk activities */}
         {members.length > 0 && !isDisconnected && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-1">Plot Activity</h2>
-            <p className="text-xs text-gray-500 mb-4">Log an activity for several plants at once.</p>
+            <h2 className="text-sm font-semibold text-gray-900 mb-1">{t('plotActivity')}</h2>
+            <p className="text-xs text-gray-500 mb-4">{t('plotActivityDesc')}</p>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <button
@@ -314,8 +316,8 @@ export const SharedPlotDetailView: React.FC = () => {
               >
                 <span className="text-xl">🪴</span>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Tend</p>
-                  <p className="text-xs opacity-70">Time together</p>
+                  <p className="text-sm font-medium">{t('plotActivities.tend')}</p>
+                  <p className="text-xs opacity-70">{t('plotActivities.tendDesc')}</p>
                 </div>
               </button>
 
@@ -325,8 +327,8 @@ export const SharedPlotDetailView: React.FC = () => {
               >
                 <span className="text-xl">🚿</span>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Water</p>
-                  <p className="text-xs opacity-70">Sacred study</p>
+                  <p className="text-sm font-medium">{t('plotActivities.water')}</p>
+                  <p className="text-xs opacity-70">{t('plotActivities.waterDesc')}</p>
                 </div>
               </button>
 
@@ -336,8 +338,8 @@ export const SharedPlotDetailView: React.FC = () => {
               >
                 <span className="text-xl">☀️</span>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Sunlight</p>
-                  <p className="text-xs opacity-70">Prayer</p>
+                  <p className="text-sm font-medium">{t('plotActivities.sunlight')}</p>
+                  <p className="text-xs opacity-70">{t('plotActivities.sunlightDesc')}</p>
                 </div>
               </button>
 
@@ -347,8 +349,8 @@ export const SharedPlotDetailView: React.FC = () => {
               >
                 <span className="text-xl">🍎</span>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Fruit</p>
-                  <p className="text-xs opacity-70">Service</p>
+                  <p className="text-sm font-medium">{t('plotActivities.fruit')}</p>
+                  <p className="text-xs opacity-70">{t('plotActivities.fruitDesc')}</p>
                 </div>
               </button>
 
@@ -358,8 +360,8 @@ export const SharedPlotDetailView: React.FC = () => {
               >
                 <span className="text-xl">📖</span>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Notching</p>
-                  <p className="text-xs opacity-70">Ruhi study</p>
+                  <p className="text-sm font-medium">{t('plotActivities.notching')}</p>
+                  <p className="text-xs opacity-70">{t('plotActivities.notchingDesc')}</p>
                 </div>
               </button>
             </div>
@@ -406,10 +408,10 @@ export const SharedPlotDetailView: React.FC = () => {
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeletePlot}
-        title="Delete Plot"
-        message={`Are you sure you want to delete "${plot.name}"? This removes the plot and its memberships but does not delete the individual plants. This cannot be undone.`}
-        confirmText="Delete Plot"
-        cancelText="Keep Plot"
+        title={t('deletePlotTitle')}
+        message={t('deletePlotMessage', { name: plot.name })}
+        confirmText={t('deletePlot')}
+        cancelText={t('keepPlot')}
         type="danger"
       />
 

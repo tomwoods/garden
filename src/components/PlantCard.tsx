@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Phone, Mail, MoreHorizontal, CalendarPlus, Trash2, Heart, Leaf, CreditCard as Edit, MapPin, Share2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -65,6 +66,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
   imageRefreshKey,
   authorName
 }) => {
+  const { t } = useTranslation('garden');
   const [plantState, setPlantState] = useState<any>(null);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -132,33 +134,31 @@ export const PlantCard: React.FC<PlantCardProps> = ({
 
   const formatLastInteraction = (timestamp: number) => {
     const date = dayjs(timestamp);
-    if (date.isToday()) return 'Today';
-    if (date.isYesterday()) return 'Yesterday';
+    if (date.isToday()) return t('today', { ns: 'common', defaultValue: 'Today' });
+    if (date.isYesterday()) return t('yesterday', { ns: 'common', defaultValue: 'Yesterday' });
     return date.fromNow();
   };
 
   const formatNextScheduledCare = (timestamp: number) => {
     const date = dayjs(timestamp);
     const now = dayjs();
-    
-    if (date.isToday()) return 'Today';
-    if (date.isTomorrow()) return 'Tomorrow';
-    
+
+    if (date.isToday()) return t('today', { ns: 'common', defaultValue: 'Today' });
+    if (date.isTomorrow()) return t('tomorrow', { ns: 'common', defaultValue: 'Tomorrow' });
+
     if (date.isBefore(now, 'day')) {
-      // Overdue
       const diffDays = now.diff(date, 'day');
-      return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} overdue`;
+      return t('daysOverdue', { ns: 'common', count: diffDays, defaultValue: '{{count}} days overdue' });
     } else {
-      // Future
       const diffDays = date.diff(now, 'day');
-      return `In ${diffDays} ${diffDays === 1 ? 'day' : 'days'}`;
+      return t('inDays', { ns: 'common', count: diffDays, defaultValue: 'In {{count}} days' });
     }
   };
 
   const formatLastCaredFor = (timestamp: number) => {
     const date = dayjs(timestamp);
-    if (date.isToday()) return 'Today';
-    if (date.isYesterday()) return 'Yesterday';
+    if (date.isToday()) return t('today', { ns: 'common', defaultValue: 'Today' });
+    if (date.isYesterday()) return t('yesterday', { ns: 'common', defaultValue: 'Yesterday' });
     return date.fromNow();
   };
 
@@ -285,7 +285,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                   if (info.is_shared && info.share_role !== 'owner') {
                     return (
                       <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                        Shared
+                        {t('sharedBadge')}
                       </span>
                     );
                   }
@@ -330,7 +330,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
               >
                 <Leaf className="w-4 h-4" />
-                Details
+                {t('detailsBtn')}
               </button>
               <button
                 onClick={(e) => {
@@ -340,7 +340,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
               >
                 <CalendarPlus className="w-4 h-4" />
-                Schedule care
+                {t('scheduleCarBtn')}
               </button>
               {onSharePlant && (
                 <button
@@ -351,7 +351,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                 >
                   <Share2 className="w-4 h-4" />
-                  Share
+                  {t('share', { ns: 'common' })}
                 </button>
               )}
               <button
@@ -362,7 +362,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
               >
                 <Edit className="w-4 h-4" />
-                Change
+                {t('changeBtn')}
               </button>
               <button
                 onClick={(e) => {
@@ -372,7 +372,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
-                Remove plant
+                {t('removePlantBtn')}
               </button>
             </div>
           )}
@@ -433,7 +433,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             onTend();
           }}
         >
-          🪴 Tend
+          🪴 {t('tendBtn')}
         </button>
         <button
           className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2.5 px-4 rounded-xl transition-colors duration-200 text-sm"
@@ -442,12 +442,12 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             onWater();
           }}
         >
-          🚿 Water
+          🚿 {t('waterBtn')}
         </button>
       </div>
       {authorName && (
         <p className="mt-2 text-xs text-gray-400">
-          Added by {authorName}
+          {t('addedBy', { name: authorName })}
         </p>
       )}
     </div>

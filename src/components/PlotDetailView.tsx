@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CreditCard as Edit, Users, Trash2, Plus } from 'lucide-react';
 import { AddEditPlotModal } from './AddEditPlotModal';
 import { ManageMembersModal } from './ManageMembersModal';
@@ -39,6 +40,7 @@ export const PlotDetailView: React.FC = () => {
     message: ''
   });
 
+  const { t } = useTranslation('garden_shared');
   const { toasts, success, error, removeToast } = useToast();
 
   useEffect(() => {
@@ -82,10 +84,10 @@ export const PlotDetailView: React.FC = () => {
     try {
       await DatabaseService.updatePlot(plot.id, plotData);
       await loadPlotData();
-      success('Plot updated', `${plotData.name} has been updated`);
+      success(t('toasts.plotUpdatedTitle'), t('toasts.plotUpdated', { name: plotData.name }));
     } catch (err) {
       console.error('Failed to update plot:', err);
-      error('Failed to update plot', 'Please try again');
+      error(t('toasts.plotUpdateFailed'), t('tryAgain', { ns: 'common' }));
     }
   };
 
@@ -94,16 +96,16 @@ export const PlotDetailView: React.FC = () => {
     
     setConfirmationModal({
       isOpen: true,
-      title: 'Delete Plot',
-      message: `Are you sure you want to delete "${plot.name}"? This will remove the plot and all its memberships, but will not delete the individual plants. This action cannot be undone.`,
+      title: t('deletePlotTitle'),
+      message: t('deletePlotMessage', { name: plot.name }),
       onConfirm: async () => {
         try {
           await DatabaseService.deletePlot(plot.id);
-          success('Plot deleted', `${plot.name} has been deleted`);
+          success(t('toasts.plotDeletedTitle'), t('toasts.plotDeleted', { name: plot.name }));
           navigate('/plots');
         } catch (err) {
           console.error('Failed to delete plot:', err);
-          error('Failed to delete plot', 'Please try again');
+          error(t('toasts.plotDeleteFailed'), t('tryAgain', { ns: 'common' }));
         }
       }
     });
@@ -115,16 +117,16 @@ export const PlotDetailView: React.FC = () => {
     try {
       await DatabaseService.updatePlotMemberships(plot.id, selectedPlantIds);
       await loadPlotData();
-      success('Members updated', 'Plot membership has been updated');
+      success(t('toasts.membersUpdatedTitle'), t('toasts.membersUpdated'));
     } catch (err) {
       console.error('Failed to update members:', err);
-      error('Failed to update members', 'Please try again');
+      error(t('toasts.membersFailed'), t('tryAgain', { ns: 'common' }));
     }
   };
 
   const handleBulkActivity = (type: 'tending' | 'watering' | 'sunlight' | 'fruit') => {
     if (!plot || plot.members.length === 0) {
-      error('No members', 'Add plants to this plot before logging activities');
+      error(t('toasts.noMembers'), t('toasts.noMembersDesc'));
       return;
     }
     
@@ -140,10 +142,10 @@ export const PlotDetailView: React.FC = () => {
     try {
       const timestamp = activityData.datetime || Date.now();
       await DatabaseService.logBulkActivity(bulkActivityModal.type, activityData, selectedPlantIds, timestamp);
-      success('Activity logged', `${bulkActivityModal.type} logged for ${selectedPlantIds.length} plants`);
+      success(t('toasts.activityLoggedTitle'), t('toasts.activityLogged', { type: bulkActivityModal.type, count: selectedPlantIds.length }));
     } catch (err) {
       console.error('Failed to log bulk activity:', err);
-      error('Failed to log activity', 'Please try again');
+      error(t('toasts.activityFailed'), t('tryAgain', { ns: 'common' }));
     }
   };
 
@@ -154,10 +156,10 @@ export const PlotDetailView: React.FC = () => {
       for (const plantId of selectedPlantIds) {
         await DatabaseService.addNotching({ plant_id: plantId, ...notchingData, datetime: timestamp });
       }
-      success('Notching logged', `Study session recorded for ${selectedPlantIds.length} plants`);
+      success(t('toasts.notchingLoggedTitle'), t('toasts.notchingLogged', { count: selectedPlantIds.length }));
     } catch (err) {
       console.error('Failed to log bulk notching:', err);
-      error('Failed to log notching', 'Please try again');
+      error(t('toasts.notchingFailed'), t('tryAgain', { ns: 'common' }));
     }
   };
 
@@ -209,7 +211,7 @@ export const PlotDetailView: React.FC = () => {
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{plot.name}</h1>
                 <p className="text-sm text-gray-600">
-                  {plot.members.length} {plot.members.length === 1 ? 'member' : 'members'}
+                  {t('membersCount', { count: plot.members.length })}
                 </p>
               </div>
             </div>
@@ -245,13 +247,13 @@ export const PlotDetailView: React.FC = () => {
           {/* Members Section */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Members</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('membersCount', { count: plot.members.length })}</h3>
               <button
                 onClick={() => setShowMembersModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg font-medium transition-colors"
               >
                 <img src="/plots_icon.svg" alt="Manage Members" className="w-4 h-4" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
-                Manage Members
+                {t('manageMembers')}
               </button>
             </div>
 
@@ -260,14 +262,14 @@ export const PlotDetailView: React.FC = () => {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <img src="/plots_icon.svg" alt="No members" className="w-8 h-8" style={{ filter: 'invert(60%) sepia(10%) saturate(200%) hue-rotate(180deg) brightness(95%) contrast(85%)' }} />
                 </div>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No members yet</h4>
-                <p className="text-gray-600 mb-4">Add plants to this plot to get started</p>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">{t('noMembers')}</h4>
+                <p className="text-gray-600 mb-4">{t('noMembersDesc')}</p>
                 <button
                   onClick={() => setShowMembersModal(true)}
                   className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Plants
+                  {t('addPlants')}
                 </button>
               </div>
             ) : (
@@ -294,9 +296,9 @@ export const PlotDetailView: React.FC = () => {
           {/* Group Activities Section */}
           {plot.members.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Plot Activity</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('plotActivity')}</h3>
               <p className="text-gray-600 mb-6">
-                Log activities for multiple plants at once. Each activity will be recorded individually for each selected plant.
+                {t('plotActivityDesc')}
               </p>
               
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -306,8 +308,8 @@ export const PlotDetailView: React.FC = () => {
                 >
                   <span className="text-2xl">🪴</span>
                   <div className="text-left">
-                    <div className="font-medium">Tend</div>
-                    <div className="text-sm opacity-80">Log plot interactions</div>
+                    <div className="font-medium">{t('plotActivities.tend')}</div>
+                    <div className="text-sm opacity-80">{t('plotActivities.tendDesc')}</div>
                   </div>
                 </button>
                 
@@ -317,8 +319,8 @@ export const PlotDetailView: React.FC = () => {
                 >
                   <span className="text-2xl">🚿</span>
                   <div className="text-left">
-                    <div className="font-medium">Water</div>
-                    <div className="text-sm opacity-80">Log plot learning activities</div>
+                    <div className="font-medium">{t('plotActivities.water')}</div>
+                    <div className="text-sm opacity-80">{t('plotActivities.waterDesc')}</div>
                   </div>
                 </button>
                 
@@ -328,8 +330,8 @@ export const PlotDetailView: React.FC = () => {
                 >
                   <span className="text-2xl">☀️</span>
                   <div className="text-left">
-                    <div className="font-medium">Sunlight</div>
-                    <div className="text-sm opacity-80">Log prayers for members of the plot</div>
+                    <div className="font-medium">{t('plotActivities.sunlight')}</div>
+                    <div className="text-sm opacity-80">{t('plotActivities.sunlightDesc')}</div>
                   </div>
                 </button>
                 
@@ -339,15 +341,15 @@ export const PlotDetailView: React.FC = () => {
                 >
                   <span className="text-2xl">🍎</span>
                   <div className="text-left">
-                    <div className="font-medium">Fruit</div>
-                    <div className="text-sm opacity-80">Log service by plot members</div>
+                    <div className="font-medium">{t('plotActivities.fruit')}</div>
+                    <div className="text-sm opacity-80">{t('plotActivities.fruitDesc')}</div>
                   </div>
                 </button>
 
                 <button
                   onClick={async () => {
                     if (!plot || plot.members.length === 0) {
-                      error('No members', 'Add plants to this plot before logging activities');
+                      error(t('toasts.noMembers'), t('toasts.noMembersDesc'));
                       return;
                     }
                     const allNotchings = (await Promise.all(
@@ -361,8 +363,8 @@ export const PlotDetailView: React.FC = () => {
                 >
                   <span className="text-2xl">📖</span>
                   <div className="text-left">
-                    <div className="font-medium">Notching</div>
-                    <div className="text-sm opacity-80">Log Ruhi study session</div>
+                    <div className="font-medium">{t('plotActivities.notching')}</div>
+                    <div className="text-sm opacity-80">{t('plotActivities.notchingDesc')}</div>
                   </div>
                 </button>
               </div>
@@ -412,8 +414,8 @@ export const PlotDetailView: React.FC = () => {
         onConfirm={confirmationModal.onConfirm}
         title={confirmationModal.title}
         message={confirmationModal.message}
-        confirmText="Delete Plot"
-        cancelText="Keep Plot"
+        confirmText={t('deletePlot')}
+        cancelText={t('keepPlot')}
         type="danger"
       />
 

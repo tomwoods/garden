@@ -64,5 +64,12 @@
   "day_one": "jou",
   "day_other": "jou",
   "plot_one": "parèl",
-  "plot_other": "parèl"
+  "plot_other": "parèl",
+  "today": "Jodi a",
+  "yesterday": "Yè",
+  "tomorrow": "Demen",
+  "daysOverdue_one": "{{count}} jou an reta",
+  "daysOverdue_other": "{{count}} jou an reta",
+  "inDays_one": "Nan {{count}} jou",
+  "inDays_other": "Nan {{count}} jou"
 }

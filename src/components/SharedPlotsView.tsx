@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef } from '../lib/sharedGardenDatabase';
 import { AddEditPlotModal } from './AddEditPlotModal';
@@ -31,6 +32,7 @@ export const SharedPlotsView: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const { toasts, success, error, removeToast } = useToast();
 
+  const { t } = useTranslation('garden_shared');
   const ref_ = gardenId ? getSharedGardenRef(gardenId) : null;
   const user = getUser();
   const isDisconnected = ref_?.disconnected_at != null;
@@ -111,7 +113,7 @@ export const SharedPlotsView: React.FC = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-gray-500">Loading plots...</p>
+            <p className="text-sm text-gray-500">{t('noPlots')}</p>
           </div>
         ) : plots.length === 0 ? (
           <div className="text-center py-20">
@@ -123,11 +125,9 @@ export const SharedPlotsView: React.FC = () => {
                 style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }}
               />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">No plots yet</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('noPlots')}</h2>
             <p className="text-sm text-gray-500 max-w-xs mx-auto">
-              {isDisconnected
-                ? 'This is a read-only copy. No plots were created before you left.'
-                : 'Create a plot to group plants and log activities for several people at once.'}
+              {isDisconnected ? t('noPlotsDesc') : t('noPlotsDesc')}
             </p>
             {!isDisconnected && (
               <button
@@ -135,7 +135,7 @@ export const SharedPlotsView: React.FC = () => {
                 className="mt-6 inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-xl transition-colors text-sm"
               >
                 <Plus className="w-4 h-4" />
-                Create first plot
+                {t('createFirstPlot')}
               </button>
             )}
           </div>
@@ -160,7 +160,7 @@ export const SharedPlotsView: React.FC = () => {
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{plot.name}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {plot.memberCount} {plot.memberCount === 1 ? 'plant' : 'plants'} · created {dayjs(plot.created_at).fromNow()}
+                        {t('membersCount', { count: plot.memberCount })} · {dayjs(plot.created_at).fromNow()}
                       </p>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Users, Leaf, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { getSharedGardenRefs, type SharedGardenRef, SharedGardenDatabase } from '../lib/sharedGardenDatabase';
 import { CreateSharedGardenModal } from './CreateSharedGardenModal';
@@ -22,6 +23,7 @@ interface GardenCardStats {
 
 export const SharedGardensListView: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('garden_shared');
   const [refs, setRefs] = useState<SharedGardenRef[]>([]);
   const [stats, setStats] = useState<Record<string, GardenCardStats>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -67,8 +69,8 @@ export const SharedGardensListView: React.FC = () => {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Shared Gardens</h1>
-              <p className="text-xs text-gray-500">Gardens tended together</p>
+              <h1 className="text-lg font-semibold text-gray-900">{t('sharedGardens')}</h1>
+              <p className="text-xs text-gray-500">{t('gardenersTogether')}</p>
             </div>
           </div>
           <button
@@ -76,7 +78,7 @@ export const SharedGardensListView: React.FC = () => {
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
-            New garden
+            {t('newGarden')}
           </button>
         </div>
       </div>
@@ -87,16 +89,16 @@ export const SharedGardensListView: React.FC = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Users className="w-8 h-8 text-green-600" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">No shared gardens yet</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">{t('noGardensYet')}</h2>
             <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed mb-6">
-              Create a garden to tend together with your team, or join one using an invitation link.
+              {t('noGardensDesc')}
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-xl transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Create a shared garden
+              {t('createSharedGarden')}
             </button>
           </div>
         ) : (
@@ -119,16 +121,16 @@ export const SharedGardensListView: React.FC = () => {
                         {ref.disconnected && (
                           <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
                             <AlertTriangle className="w-3 h-3" />
-                            Disconnected
+                            {t('disconnected')}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500">You as: {ref.myDisplayName}</p>
+                      <p className="text-sm text-gray-500">{t('youAs', { name: ref.myDisplayName })}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-gray-400">
                     <RefreshCw className="w-3 h-3" />
-                    {ref.lastSyncTs > 0 ? dayjs(ref.lastSyncTs).fromNow() : 'Never synced'}
+                    {ref.lastSyncTs > 0 ? dayjs(ref.lastSyncTs).fromNow() : t('neverSynced', { ns: 'common' })}
                   </div>
                 </div>
 
@@ -136,11 +138,11 @@ export const SharedGardensListView: React.FC = () => {
                   <div className="flex gap-4 mt-4 pt-4 border-t border-gray-50">
                     <div className="flex items-center gap-1.5 text-sm text-gray-600">
                       <Leaf className="w-4 h-4 text-green-500" />
-                      <span>{gardenStats.plantCount} {gardenStats.plantCount === 1 ? 'plant' : 'plants'}</span>
+                      <span>{t('membersCount', { count: gardenStats.plantCount })}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-sm text-gray-600">
                       <Users className="w-4 h-4 text-green-500" />
-                      <span>{gardenStats.memberCount} {gardenStats.memberCount === 1 ? 'gardener' : 'gardeners'}</span>
+                      <span>{gardenStats.memberCount} {gardenStats.memberCount === 1 ? t('gardener_one', { ns: 'common' }) : t('gardener_other', { ns: 'common' })}</span>
                     </div>
                   </div>
                 )}

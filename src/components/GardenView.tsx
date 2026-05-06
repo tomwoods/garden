@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { KeyBackupPrompt } from './KeyBackupPrompt';
 import { PlantCard } from './PlantCard';
 import { AddPlantModal } from './AddPlantModal';
@@ -20,6 +21,7 @@ import { SowingSeasonBanner } from './SowingSeasonBanner';
 
 export const GardenView: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('garden');
   const [plants, setPlants] = useState<Plant[]>([]);
   const [filteredPlants, setFilteredPlants] = useState<Plant[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -460,25 +462,20 @@ export const GardenView: React.FC = () => {
                 <Leaf className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">My Garden</h1>
+                <h1 className="text-xl font-bold text-gray-900">{t('myGarden')}</h1>
                 <p className="text-sm text-gray-600">
                   {searchTerm ? (
                     <>
-                      {filteredPlants.length} of {plants.length} plants
-                      {searchTerm && (
-                        <span className="ml-2">
-                          matching "{searchTerm}"
-                          <button
-                            onClick={handleClearSearch}
-                            className="ml-1 text-green-600 hover:text-green-700 underline"
-                          >
-                            clear
-                          </button>
-                        </span>
-                      )}
+                      {t('plantsMatching', { filtered: filteredPlants.length, total: plants.length, term: searchTerm })}
+                      <button
+                        onClick={handleClearSearch}
+                        className="ml-1 text-green-600 hover:text-green-700 underline"
+                      >
+                        {t('clearSearch')}
+                      </button>
                     </>
                   ) : (
-                    <>{`${plants.length} ${plants.length === 1 ? 'plant' : 'plants'} growing`}</>
+                    <>{t('plantsGrowing', { count: plants.length })}</>
                   )}
                 </p>
               </div>
@@ -524,15 +521,15 @@ export const GardenView: React.FC = () => {
               <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
                 <Search className="w-12 h-12 text-gray-400" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">No plants found</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('noResults')}</h2>
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                No plants match your search for "{searchTerm}". Try a different search term.
+                {t('noResultsDesc', { term: searchTerm })}
               </p>
               <button
                 onClick={handleClearSearch}
                 className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
               >
-                Clear Search
+                {t('clearSearch')}
               </button>
             </div>
           ) : plants.length === 0 ? (
@@ -540,17 +537,16 @@ export const GardenView: React.FC = () => {
             <div className="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
               <span className="text-4xl">🌱</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Your garden awaits</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('emptyGarden')}</h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Begin nurturing relationships by planting your first seed. 
-              Each person in your life can grow and flourish with care.
+              {t('emptyGardenDesc')}
             </p>
             <button
               onClick={() => setShowAddPlant(true)}
               className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               <Plus className="w-5 h-5" />
-              Sow Your First Seed
+              {t('sowFirstSeed')}
             </button>
           </div>
           ) : null
@@ -619,10 +615,10 @@ export const GardenView: React.FC = () => {
         isOpen={confirmationModal.isOpen}
         onClose={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
         onConfirm={handleConfirmRemove}
-        title="Remove Plant"
-        message={`Are you sure you want to remove ${confirmationModal.plantName} from your garden? This action cannot be undone.`}
-        confirmText="Remove Plant"
-        cancelText="Keep Plant"
+        title={t('removePlantTitle')}
+        message={t('removePlantMessage', { name: confirmationModal.plantName })}
+        confirmText={t('removePlant')}
+        cancelText={t('keepPlant')}
         type="danger"
       />
 

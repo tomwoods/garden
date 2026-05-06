@@ -64,5 +64,12 @@
   "day_one": "día",
   "day_other": "días",
   "plot_one": "parcela",
-  "plot_other": "parcelas"
+  "plot_other": "parcelas",
+  "today": "Hoy",
+  "yesterday": "Ayer",
+  "tomorrow": "Mañana",
+  "daysOverdue_one": "{{count}} día de retraso",
+  "daysOverdue_other": "{{count}} días de retraso",
+  "inDays_one": "En {{count}} día",
+  "inDays_other": "En {{count}} días"
 }

@@ -64,5 +64,12 @@
   "day_one": "day",
   "day_other": "days",
   "plot_one": "plot",
-  "plot_other": "plots"
+  "plot_other": "plots",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "tomorrow": "Tomorrow",
+  "daysOverdue_one": "{{count}} day overdue",
+  "daysOverdue_other": "{{count}} days overdue",
+  "inDays_one": "In {{count}} day",
+  "inDays_other": "In {{count}} days"
 }

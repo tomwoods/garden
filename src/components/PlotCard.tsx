@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type { PlotWithMembers } from '../lib/database';
@@ -12,6 +13,7 @@ interface PlotCardProps {
 }
 
 export const PlotCard: React.FC<PlotCardProps> = ({ plot, onClick }) => {
+  const { t } = useTranslation('garden_shared');
   const formatCreatedAt = (timestamp: number) => {
     return dayjs(timestamp).fromNow();
   };
@@ -32,7 +34,7 @@ export const PlotCard: React.FC<PlotCardProps> = ({ plot, onClick }) => {
               <div className="flex items-center gap-1">
                 <img src="/plots_icon.svg" alt="Members" className="w-3 h-3" style={{ filter: 'invert(60%) sepia(10%) saturate(200%) hue-rotate(180deg) brightness(95%) contrast(85%)' }} />
                 <span className="text-gray-500">
-                  {plot.members.length} {plot.members.length === 1 ? 'plant' : 'plants'}
+                  {t('membersCount', { count: plot.members.length })}
                 </span>
               </div>
               <div className="flex items-center gap-1">

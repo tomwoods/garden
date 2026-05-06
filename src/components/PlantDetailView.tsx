@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Calendar, Heart, Plus, MoreHorizontal, CreditCard as Edit, Trash2, CalendarPlus, Phone, Mail, MapPin } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -109,6 +110,7 @@ export const PlantDetailView: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const { t } = useTranslation('garden');
   const { toasts, success, error, removeToast } = useToast();
 
   useEffect(() => {
@@ -441,8 +443,8 @@ export const PlantDetailView: React.FC = () => {
 
   const formatRelativeTime = (timestamp: number) => {
     const date = dayjs(timestamp);
-    if (date.isToday()) return 'Today';
-    if (date.isYesterday()) return 'Yesterday';
+    if (date.isToday()) return t('today', { ns: 'common' });
+    if (date.isYesterday()) return t('yesterday', { ns: 'common' });
     return date.fromNow();
   };
 
@@ -496,18 +498,16 @@ export const PlantDetailView: React.FC = () => {
   const formatScheduledTime = (timestamp: number) => {
     const date = dayjs(timestamp);
     const now = dayjs();
-    
-    if (date.isToday()) return 'Today';
-    if (date.isTomorrow()) return 'Tomorrow';
-    
+
+    if (date.isToday()) return t('today', { ns: 'common' });
+    if (date.isTomorrow()) return t('tomorrow', { ns: 'common' });
+
     if (date.isBefore(now, 'day')) {
-      // Overdue
       const diffDays = now.diff(date, 'day');
-      return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} overdue`;
+      return t('daysOverdue', { ns: 'common', count: diffDays });
     } else {
-      // Future
       const diffDays = date.diff(now, 'day');
-      return `In ${diffDays} ${diffDays === 1 ? 'day' : 'days'}`;
+      return t('inDays', { ns: 'common', count: diffDays });
     }
   };
 
@@ -1078,21 +1078,21 @@ export const PlantDetailView: React.FC = () => {
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
                       <CalendarPlus className="w-4 h-4" />
-                      Schedule care
+                      {t('scheduleCarBtn')}
                     </button>
                     <button
                       onClick={handleEditPlant}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
-                      Change
+                      {t('changeBtn')}
                     </button>
                     <button
                       onClick={handleRemovePlant}
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Remove plant
+                      {t('removePlantBtn')}
                     </button>
                   </div>
                 )}

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSowingSeasonStatus } from '../lib/sowingSeasonService';
 
 const DISMISSED_KEY = 'sowing-season-approaching-dismissed';
 
 export const SowingSeasonBanner: React.FC = () => {
+  const { t } = useTranslation('garden');
   const [status] = useState(() => getSowingSeasonStatus());
   const [dismissed, setDismissed] = useState(false);
 
@@ -24,7 +26,7 @@ export const SowingSeasonBanner: React.FC = () => {
     return (
       <div className="flex items-center justify-between px-4 py-2 text-xs text-green-700 bg-green-50 border-b border-green-100">
         <span>
-          Sowing season begins in {status.daysUntilStart} {status.daysUntilStart === 1 ? 'day' : 'days'}.
+          {t('sowingSeasonStartsSoon', { count: status.daysUntilStart })}
         </span>
         <button
           onClick={() => {
@@ -43,7 +45,7 @@ export const SowingSeasonBanner: React.FC = () => {
   if (status.state === 'active') {
     return (
       <div className="px-4 py-2 text-xs text-green-700 bg-green-50 border-b border-green-100">
-        Sowing season — {status.daysRemaining} {status.daysRemaining === 1 ? 'day' : 'days'} remaining.
+        {t('sowingSeasonActive', { count: status.daysRemaining })}
       </div>
     );
   }

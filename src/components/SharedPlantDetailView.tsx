@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Calendar, Heart, Plus, MoreHorizontal,
   CreditCard as Edit, Trash2, CalendarPlus, Phone, Mail
@@ -39,40 +40,21 @@ function getUser() {
 
 type ActivityType = 'tending' | 'watering' | 'sunlight' | 'fruit' | 'pruning' | 'companion';
 
-const ACTIVITY_CONFIG: Record<ActivityType, {
-  title: string; color: string; bgColor: string; emptyMessage: string;
-}> = {
-  tending: {
-    title: 'Tending', color: 'text-green-600', bgColor: 'bg-green-50',
-    emptyMessage: 'True friendship is a bond that transcends superficial differences and endures through tests and trials.'
-  },
-  watering: {
-    title: 'Watering', color: 'text-blue-600', bgColor: 'bg-blue-50',
-    emptyMessage: 'The Water for these trees is the living water of the sacred Words. Report here any time you study the Sacred Writings with this soul.'
-  },
-  sunlight: {
-    title: 'Sunlight', color: 'text-yellow-600', bgColor: 'bg-yellow-50',
-    emptyMessage: 'Pray in behalf of the inhabitants of that city and beg for them the light of supreme guidance.'
-  },
-  fruit: {
-    title: 'Fruit', color: 'text-red-600', bgColor: 'bg-red-50',
-    emptyMessage: 'Man is like unto a tree. If he be adorned with fruit, he hath been and will ever be worthy of praise.'
-  },
-  pruning: {
-    title: 'Pruning Event', color: 'text-orange-600', bgColor: 'bg-orange-50',
-    emptyMessage: 'The more difficulties one sees in the world the more perfect one becomes.'
-  },
-  companion: {
-    title: 'Companions', color: 'text-teal-600', bgColor: 'bg-teal-50',
-    emptyMessage: 'Record here any relationship between your plants, such as them being family or being friends.'
-  },
-};
-
 export const SharedPlantDetailView: React.FC = () => {
   const { gardenId, plantId } = useParams<{ gardenId: string; plantId: string }>();
   const navigate = useNavigate();
   const user = getUser();
+  const { t } = useTranslation('garden');
   const { toasts, success, error, removeToast } = useToast();
+
+  const getActivityConfig = (type: ActivityType) => ({
+    tending: { title: t('activityTending', { defaultValue: 'Tending' }), color: 'text-green-600', bgColor: 'bg-green-50', emptyMessage: t('emptyTending', { ns: 'garden', defaultValue: 'True friendship is a bond that transcends superficial differences and endures through tests and trials. It is nurtured through acts of kindness, empathy, and understanding.' }) },
+    watering: { title: t('activityWatering', { defaultValue: 'Watering' }), color: 'text-blue-600', bgColor: 'bg-blue-50', emptyMessage: t('emptyWatering', { ns: 'garden', defaultValue: 'The Water for these trees is the living water of the sacred Words. Report here any time you study the Sacred Writings with this soul.' }) },
+    sunlight: { title: t('activitySunlight', { defaultValue: 'Sunlight' }), color: 'text-yellow-600', bgColor: 'bg-yellow-50', emptyMessage: t('emptySunlight', { ns: 'garden', defaultValue: 'Pray in behalf of the inhabitants of that city and beg for them the light of supreme guidance.' }) },
+    fruit: { title: t('activityFruit', { defaultValue: 'Fruit' }), color: 'text-red-600', bgColor: 'bg-red-50', emptyMessage: t('emptyFruit', { ns: 'garden', defaultValue: 'Man is like unto a tree. If he be adorned with fruit, he hath been and will ever be worthy of praise.' }) },
+    pruning: { title: t('activityPruning', { defaultValue: 'Pruning Event' }), color: 'text-orange-600', bgColor: 'bg-orange-50', emptyMessage: t('emptyPruning', { ns: 'garden', defaultValue: 'The more difficulties one sees in the world the more perfect one becomes.' }) },
+    companion: { title: t('activityCompanion', { defaultValue: 'Companions' }), color: 'text-teal-600', bgColor: 'bg-teal-50', emptyMessage: t('emptyCompanion', { ns: 'garden', defaultValue: 'Record here any relationship between your plants, such as them being family or being friends.' }) },
+  })[type];
 
   const [ref_, setRef_] = useState<SharedGardenRef | null>(null);
   const [plant, setPlant] = useState<Plant | null>(null);
@@ -194,22 +176,22 @@ export const SharedPlantDetailView: React.FC = () => {
 
   const formatRelativeTime = (ts: number) => {
     const d = dayjs(ts);
-    if (d.isToday()) return 'Today';
-    if (d.isYesterday()) return 'Yesterday';
+    if (d.isToday()) return t('today', { ns: 'common' });
+    if (d.isYesterday()) return t('yesterday', { ns: 'common' });
     return d.fromNow();
   };
 
   const formatScheduledTime = (ts: number) => {
     const d = dayjs(ts);
     const now = dayjs();
-    if (d.isToday()) return 'Today';
-    if (d.isTomorrow()) return 'Tomorrow';
+    if (d.isToday()) return t('today', { ns: 'common' });
+    if (d.isTomorrow()) return t('tomorrow', { ns: 'common' });
     if (d.isBefore(now, 'day')) {
       const diff = now.diff(d, 'day');
-      return `${diff} ${diff === 1 ? 'day' : 'days'} overdue`;
+      return t('daysOverdue', { ns: 'common', count: diff });
     }
     const diff = d.diff(now, 'day');
-    return `In ${diff} ${diff === 1 ? 'day' : 'days'}`;
+    return t('inDays', { ns: 'common', count: diff });
   };
 
   const getPlantDisplay = () => {
@@ -267,7 +249,7 @@ export const SharedPlantDetailView: React.FC = () => {
             SharedGardenDatabase.updateTending(gardenId, id, {}, uuid, displayName); // companion has no update method; treat as no-op
             break;
         }
-        success('Updated', `${ACTIVITY_CONFIG[activityModal.type].title} has been updated`);
+        success('Updated', `${getActivityConfig(activityModal.type).title} has been updated`);
       } else {
         const ts = data.datetime || Date.now();
         switch (activityModal.type) {
@@ -290,7 +272,7 @@ export const SharedPlantDetailView: React.FC = () => {
             SharedGardenDatabase.addCompanion(gardenId, { plant_a_id: plantId, relationship_descriptor: data.relationship_descriptor, plant_b_id: data.plant_b_id }, uuid, displayName);
             break;
         }
-        success('Recorded', `${ACTIVITY_CONFIG[activityModal.type].title} has been recorded`);
+        success('Recorded', `${getActivityConfig(activityModal.type).title} has been recorded`);
       }
       await loadData();
       triggerSync();
@@ -303,7 +285,7 @@ export const SharedPlantDetailView: React.FC = () => {
   const handleDeleteActivity = (type: ActivityType, item: any) => {
     setConfirmationModal({
       isOpen: true,
-      title: `Delete ${ACTIVITY_CONFIG[type].title}`,
+      title: `Delete ${getActivityConfig(type).title}`,
       message: `Are you sure you want to delete this ${type} activity? This action cannot be undone.`,
       onConfirm: async () => {
         if (!gardenId) return;
@@ -316,7 +298,7 @@ export const SharedPlantDetailView: React.FC = () => {
           case 'pruning': SharedGardenDatabase.deletePruning(gardenId, item.id, uuid, displayName); break;
           case 'companion': SharedGardenDatabase.deleteCompanion(gardenId, item.id, uuid, displayName); break;
         }
-        success('Deleted', `${ACTIVITY_CONFIG[type].title} removed`);
+        success('Deleted', `${getActivityConfig(type).title} removed`);
         await loadData();
         triggerSync();
       }
@@ -406,7 +388,7 @@ export const SharedPlantDetailView: React.FC = () => {
   // ─── Render helpers ───────────────────────────────────────────────────────
 
   const renderActivitySection = (type: ActivityType) => {
-    const config = ACTIVITY_CONFIG[type];
+    const config = getActivityConfig(type);
     const items = activities[type];
     const hasItems = items.length > 0;
     const displayItems = type === 'companion' ? items.slice(0, 10) : items.slice(0, 1);

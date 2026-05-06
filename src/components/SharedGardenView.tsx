@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Settings, Plus, Search, X, Users, Download,
   Trash2, UserMinus, AlertTriangle, Sun, LayoutGrid
@@ -85,6 +86,7 @@ interface MembersPanelProps {
 }
 
 const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClose, onInvite, onMemberRemoved }) => {
+  const { t } = useTranslation('garden_shared');
   const members = SharedGardenDatabase.getMembers(gardenId);
   const [removing, setRemoving] = useState<string | null>(null);
 
@@ -103,7 +105,7 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
       <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Gardeners</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t('gardeners')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -114,7 +116,7 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
             <div key={member.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
               <div>
                 <p className="text-sm font-medium text-gray-900">{member.display_name}</p>
-                <p className="text-xs text-gray-500">Joined {dayjs(member.joined_at).fromNow()}</p>
+                <p className="text-xs text-gray-500">{t('joinedTime', { time: dayjs(member.joined_at).fromNow() })}</p>
               </div>
               {member.user_uuid !== user?.userId && (
                 <button
@@ -139,14 +141,14 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
             className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-xl transition-colors text-sm"
           >
             <Download className="w-4 h-4" />
-            Download garden key
+            {t('downloadGardenKey')}
           </button>
           <button
             onClick={onInvite}
             className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-xl transition-colors text-sm"
           >
             <Plus className="w-4 h-4" />
-            Invite a gardener
+            {t('inviteGardener')}
           </button>
         </div>
       </div>
@@ -165,6 +167,7 @@ interface BulkSunlightPanelProps {
 }
 
 const BulkSunlightPanel: React.FC<BulkSunlightPanelProps> = ({ gardenId, plants, user, onClose, onDone }) => {
+  const { t } = useTranslation('garden_shared');
   const [topic, setTopic] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
   const [filter, setFilter] = useState('');
@@ -211,7 +214,7 @@ const BulkSunlightPanel: React.FC<BulkSunlightPanelProps> = ({ gardenId, plants,
             onChange={e => setTopic(e.target.value)}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
             rows={3}
-            placeholder="Prayer topic..."
+            placeholder={t('prayerTopicPlaceholder')}
           />
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -220,7 +223,7 @@ const BulkSunlightPanel: React.FC<BulkSunlightPanelProps> = ({ gardenId, plants,
               value={filter}
               onChange={e => setFilter(e.target.value)}
               className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-              placeholder="Filter plants..."
+              placeholder={t('filterPlantsPlaceholder')}
             />
           </div>
           <div className="border border-gray-200 rounded-xl max-h-64 overflow-y-auto divide-y divide-gray-100">
@@ -239,13 +242,13 @@ const BulkSunlightPanel: React.FC<BulkSunlightPanelProps> = ({ gardenId, plants,
           </div>
         </div>
         <div className="p-4 border-t border-gray-100 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors text-sm">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors text-sm">{t('cancel')}</button>
           <button
             onClick={handleSave}
             disabled={!topic.trim() || selectedIds.size === 0 || saving}
             className="flex-1 py-2.5 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-medium transition-colors text-sm"
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? t('saving') : t('save')}
           </button>
         </div>
       </div>
@@ -258,6 +261,7 @@ const BulkSunlightPanel: React.FC<BulkSunlightPanelProps> = ({ gardenId, plants,
 export const SharedGardenView: React.FC = () => {
   const { gardenId } = useParams<{ gardenId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation('garden_shared');
   const user = getUser();
   const { toasts, success, error, removeToast } = useToast();
 
@@ -414,7 +418,7 @@ export const SharedGardenView: React.FC = () => {
   if (!gardenId || !ref_) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
-        <p className="text-gray-500">Garden not found.</p>
+        <p className="text-gray-500">{t('gardenNotFound')}</p>
       </div>
     );
   }
@@ -478,7 +482,7 @@ export const SharedGardenView: React.FC = () => {
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-400"
-                placeholder="Search plants..."
+                placeholder={t('searchPlantsPlaceholder')}
                 autoFocus
               />
               {searchTerm && (
@@ -497,8 +501,8 @@ export const SharedGardenView: React.FC = () => {
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-800">You have been removed from this garden</p>
-              <p className="text-xs text-amber-700 mt-0.5">Your local copy is preserved and read-only.</p>
+              <p className="text-sm font-medium text-amber-800">{t('removedFromGarden')}</p>
+              <p className="text-xs text-amber-700 mt-0.5">{t('localCopyReadOnly')}</p>
             </div>
           </div>
         </div>
@@ -513,7 +517,7 @@ export const SharedGardenView: React.FC = () => {
             className="text-xs text-gray-400 hover:text-green-600 transition-colors flex items-center gap-1"
           >
             <span className={isSyncing ? 'animate-spin' : ''}>↻</span>
-            {isSyncing ? 'Syncing...' : ref_.lastSyncTs > 0 ? `Synced ${dayjs(ref_.lastSyncTs).fromNow()}` : 'Sync now'}
+            {isSyncing ? t('syncing') : ref_.lastSyncTs > 0 ? t('synced', { time: dayjs(ref_.lastSyncTs).fromNow() }) : t('syncNow')}
           </button>
         </div>
       )}
@@ -526,10 +530,10 @@ export const SharedGardenView: React.FC = () => {
               <Plus className="w-8 h-8 text-green-500" />
             </div>
             <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              {searchTerm ? 'No plants found' : 'Your garden awaits'}
+              {searchTerm ? t('noPlantsFound') : t('gardenAwaits')}
             </h2>
             {!searchTerm && !isDisconnected && (
-              <p className="text-sm text-gray-400 mb-6">Add the first plant to start tending together.</p>
+              <p className="text-sm text-gray-400 mb-6">{t('addFirstPlant')}</p>
             )}
           </div>
         ) : (

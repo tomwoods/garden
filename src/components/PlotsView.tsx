@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus, Users } from 'lucide-react';
 import { PlotCard } from './PlotCard';
 import { AddEditPlotModal } from './AddEditPlotModal';
@@ -9,6 +10,7 @@ import { useToast } from '../hooks/useToast';
 
 export const PlotsView: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('garden_shared');
   const [plots, setPlots] = useState<PlotWithMembers[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddPlotModal, setShowAddPlotModal] = useState(false);
@@ -63,7 +65,7 @@ export const PlotsView: React.FC = () => {
           <div className="w-16 h-16 mx-auto mb-4 animate-spin">
             <img src="/plots_icon.svg" alt="Loading plots" className="w-16 h-16" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
           </div>
-          <p className="text-gray-600">Loading plots...</p>
+          <p className="text-gray-600">{t('noPlots')}</p>
         </div>
       </div>
     );
@@ -86,9 +88,9 @@ export const PlotsView: React.FC = () => {
                 <img src="/plots_icon.svg" alt="Plots" className="w-6 h-6" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Manage Plots</h1>
+                <h1 className="text-xl font-bold text-gray-900">{t('managePlots')}</h1>
                 <p className="text-sm text-gray-600">
-                  {plots.length} {plots.length === 1 ? 'plot' : 'plots'} created
+                  {t('plotsCount', { count: plots.length })}
                 </p>
               </div>
             </div>
@@ -103,16 +105,16 @@ export const PlotsView: React.FC = () => {
             <div className="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
               <img src="/plots_icon.svg" alt="No plots" className="w-12 h-12" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No plots yet</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('noPlots')}</h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Create your first plot to group plants together and log activities for multiple plants at once.
+              {t('noPlotsDesc')}
             </p>
             <button
               onClick={() => setShowAddPlotModal(true)}
               className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               <Plus className="w-5 h-5" />
-              Create First Plot
+              {t('createFirstPlot')}
             </button>
           </div>
         ) : (

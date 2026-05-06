@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CreditCard as Edit, Trash2, Plus } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -47,6 +48,7 @@ export const ActivityListView: React.FC = () => {
     message: ''
   });
 
+  const { t } = useTranslation('garden');
   const { toasts, success, error, removeToast } = useToast();
 
   useEffect(() => {
@@ -168,10 +170,10 @@ export const ActivityListView: React.FC = () => {
   const formatDateTime = (timestamp: number) => {
     const date = dayjs(timestamp);
     const now = dayjs();
-    
-    if (date.isToday()) return `Today at ${date.format('h:mm A')}`;
-    if (date.isYesterday()) return `Yesterday at ${date.format('h:mm A')}`;
-    
+
+    if (date.isToday()) return `${t('today', { ns: 'common' })} at ${date.format('h:mm A')}`;
+    if (date.isYesterday()) return `${t('yesterday', { ns: 'common' })} at ${date.format('h:mm A')}`;
+
     const diffDays = now.diff(date, 'day');
     if (diffDays < 7) return `${diffDays} days ago`;
     
