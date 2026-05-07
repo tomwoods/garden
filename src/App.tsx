@@ -176,6 +176,22 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const updateManifest = (lang: string) => {
+      const supported = ['en', 'es', 'fr', 'ht'];
+      const resolved = supported.includes(lang) ? lang : 'en';
+      const href = resolved === 'en' ? '/manifest.json' : `/manifest.${resolved}.json`;
+      const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+      if (link && link.href !== new URL(href, window.location.origin).href) {
+        link.href = href;
+      }
+    };
+
+    updateManifest(i18n.language);
+    i18n.on('languageChanged', updateManifest);
+    return () => { i18n.off('languageChanged', updateManifest); };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('shared-contact') !== '1') return;
 
