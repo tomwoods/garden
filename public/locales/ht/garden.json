@@ -51,5 +51,26 @@
   "toastCareScheduleFailed": "Echèk pou pwograme swen",
   "toastPlantUpdatedTitle": "Plant mete ajou",
   "toastPlantUpdated": "Detay plant yo te chanje",
-  "toastPlantUpdateFailed": "Echèk pou mete ajou plant"
+  "toastPlantUpdateFailed": "Echèk pou mete ajou plant",
+  "menu": {
+    "title": "Meni Jaden",
+    "sunlightSeveral": "Limyè solèy pou plizyè plant",
+    "sunlightSeveralDesc": "Ajoute priyè pou plizyè plant",
+    "managePlots": "Jere Parèl Yo",
+    "managePlotsDesc": "Gwoup plant epi anrejistre aktivite",
+    "sharedGardens": "Jaden Pataje",
+    "sharedGardensDesc": "Travay ansanm ak lòt jedinatè",
+    "settings": "Paramèt",
+    "settingsDesc": "Preferans ak opsyon aplikasyon",
+    "sunlight": "Limyè Solèy",
+    "prayerTopicLabel": "Sijè priyè *",
+    "prayerTopicPlaceholder": "Ki sa priyè a te ye?",
+    "selectPlantsLabel": "Chwazi plant ({{count}} chwazi)",
+    "filterPlaceholder": "Filtre plant...",
+    "noMatch": "Okenn plant pa koresponn ak filtre a",
+    "noPlants": "Pa gen plant disponib",
+    "cancel": "Anile",
+    "saving": "Ap sove...",
+    "save": "Sove"
+  }
 }

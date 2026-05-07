@@ -51,5 +51,26 @@
   "toastCareScheduleFailed": "Error al programar el cuidado",
   "toastPlantUpdatedTitle": "Planta actualizada",
   "toastPlantUpdated": "Los detalles de la planta han sido cambiados",
-  "toastPlantUpdateFailed": "Error al actualizar la planta"
+  "toastPlantUpdateFailed": "Error al actualizar la planta",
+  "menu": {
+    "title": "Menú del Jardín",
+    "sunlightSeveral": "Luz solar para varias plantas",
+    "sunlightSeveralDesc": "Agregar oración por múltiples plantas",
+    "managePlots": "Gestionar Parcelas",
+    "managePlotsDesc": "Agrupar plantas y registrar actividades",
+    "sharedGardens": "Jardines Compartidos",
+    "sharedGardensDesc": "Cuidar juntos con otros jardineros",
+    "settings": "Configuración",
+    "settingsDesc": "Preferencias y opciones de la app",
+    "sunlight": "Luz Solar",
+    "prayerTopicLabel": "Tema de oración *",
+    "prayerTopicPlaceholder": "¿Por qué fue la oración?",
+    "selectPlantsLabel": "Seleccionar plantas ({{count}} seleccionadas)",
+    "filterPlaceholder": "Filtrar plantas...",
+    "noMatch": "Ninguna planta coincide con el filtro",
+    "noPlants": "No hay plantas disponibles",
+    "cancel": "Cancelar",
+    "saving": "Guardando...",
+    "save": "Guardar"
+  }
 }

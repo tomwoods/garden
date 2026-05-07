@@ -51,5 +51,26 @@
   "toastCareScheduleFailed": "Échec de la planification du soin",
   "toastPlantUpdatedTitle": "Plante mise à jour",
   "toastPlantUpdated": "Les détails de la plante ont été modifiés",
-  "toastPlantUpdateFailed": "Échec de la mise à jour de la plante"
+  "toastPlantUpdateFailed": "Échec de la mise à jour de la plante",
+  "menu": {
+    "title": "Menu du Jardin",
+    "sunlightSeveral": "Lumière pour plusieurs plantes",
+    "sunlightSeveralDesc": "Ajouter une prière pour plusieurs plantes",
+    "managePlots": "Gérer les Parcelles",
+    "managePlotsDesc": "Regrouper les plantes et enregistrer des activités",
+    "sharedGardens": "Jardins Partagés",
+    "sharedGardensDesc": "Cultiver ensemble avec d'autres jardiniers",
+    "settings": "Paramètres",
+    "settingsDesc": "Préférences et options de l'application",
+    "sunlight": "Lumière",
+    "prayerTopicLabel": "Sujet de prière *",
+    "prayerTopicPlaceholder": "Pour quoi était la prière ?",
+    "selectPlantsLabel": "Sélectionner des plantes ({{count}} sélectionnées)",
+    "filterPlaceholder": "Filtrer les plantes...",
+    "noMatch": "Aucune plante ne correspond au filtre",
+    "noPlants": "Aucune plante disponible",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "save": "Enregistrer"
+  }
 }

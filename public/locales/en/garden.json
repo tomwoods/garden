@@ -51,5 +51,26 @@
   "toastCareScheduleFailed": "Failed to schedule care",
   "toastPlantUpdatedTitle": "Plant updated",
   "toastPlantUpdated": "Plant details have been changed",
-  "toastPlantUpdateFailed": "Failed to update plant"
+  "toastPlantUpdateFailed": "Failed to update plant",
+  "menu": {
+    "title": "Garden Menu",
+    "sunlightSeveral": "Sunlight for several plants",
+    "sunlightSeveralDesc": "Add prayer for multiple plants",
+    "managePlots": "Manage Plots",
+    "managePlotsDesc": "Group plants and log bulk activities",
+    "sharedGardens": "Shared Gardens",
+    "sharedGardensDesc": "Tend together with other gardeners",
+    "settings": "Settings",
+    "settingsDesc": "App preferences and options",
+    "sunlight": "Sunlight",
+    "prayerTopicLabel": "Prayer topic *",
+    "prayerTopicPlaceholder": "What was the prayer for?",
+    "selectPlantsLabel": "Select plants ({{count}} selected)",
+    "filterPlaceholder": "Filter plants...",
+    "noMatch": "No plants match your filter",
+    "noPlants": "No plants available",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  }
 }

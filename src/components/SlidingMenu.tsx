@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Download, Sun, Search, Check, Key, Tractor, Users, TreePine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Plant } from '../lib/database';
@@ -19,6 +20,7 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
   onBulkSunlight
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation('garden');
   const [activeView, setActiveView] = useState<'menu' | 'bulk-sunlight'>('menu');
   const [bulkSunlightData, setBulkSunlightData] = useState({
     topic: '',
@@ -127,7 +129,7 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
           // Main Menu
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Garden Menu</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('menu.title')}</h2>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -146,8 +148,8 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                     <Sun className="w-5 h-5 text-yellow-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Sunlight for several plants</div>
-                    <div className="text-sm text-gray-600">Add prayer for multiple plants</div>
+                    <div className="font-medium text-gray-900">{t('menu.sunlightSeveral')}</div>
+                    <div className="text-sm text-gray-600">{t('menu.sunlightSeveralDesc')}</div>
                   </div>
                 </button>
                 
@@ -162,8 +164,8 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                     <img src="/plots_icon.svg" alt="Plots" className="w-5 h-5" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Manage Plots</div>
-                    <div className="text-sm text-gray-600">Group plants and log bulk activities</div>
+                    <div className="font-medium text-gray-900">{t('menu.managePlots')}</div>
+                    <div className="text-sm text-gray-600">{t('menu.managePlotsDesc')}</div>
                   </div>
                 </button>
 
@@ -178,8 +180,8 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                     <TreePine className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Shared Gardens</div>
-                    <div className="text-sm text-gray-600">Tend together with other gardeners</div>
+                    <div className="font-medium text-gray-900">{t('menu.sharedGardens')}</div>
+                    <div className="text-sm text-gray-600">{t('menu.sharedGardensDesc')}</div>
                   </div>
                 </button>
 
@@ -194,8 +196,8 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                     <Tractor className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Settings</div>
-                    <div className="text-sm text-gray-600">App preferences and options</div>
+                    <div className="font-medium text-gray-900">{t('menu.settings')}</div>
+                    <div className="text-sm text-gray-600">{t('menu.settingsDesc')}</div>
                   </div>
                 </button>
               </div>
@@ -214,7 +216,7 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                 </button>
                 <div className="flex items-center gap-2">
                   <Sun className="w-5 h-5 text-yellow-600" />
-                  <h2 className="text-lg font-semibold text-gray-900">Sunlight</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">{t('menu.sunlight')}</h2>
                 </div>
               </div>
             </div>
@@ -224,21 +226,21 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                 {/* Topic Input */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prayer topic *
+                    {t('menu.prayerTopicLabel')}
                   </label>
                   <textarea
                     value={bulkSunlightData.topic}
                     onChange={(e) => handleTopicChange(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-colors resize-none"
                     rows={3}
-                    placeholder="What was the prayer for?"
+                    placeholder={t('menu.prayerTopicPlaceholder')}
                   />
                 </div>
 
                 {/* Plant Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select plants ({bulkSunlightData.selectedPlantIds.size} selected)
+                    {t('menu.selectPlantsLabel', { count: bulkSunlightData.selectedPlantIds.size })}
                   </label>
                   
                   {/* Filter Input */}
@@ -249,7 +251,7 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                       value={bulkSunlightData.filter}
                       onChange={(e) => handleFilterChange(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-colors"
-                      placeholder="Filter plants..."
+                      placeholder={t('menu.filterPlaceholder')}
                     />
                   </div>
 
@@ -257,7 +259,7 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                   <div className="border border-gray-200 rounded-xl max-h-64 overflow-y-auto">
                     {filteredPlants.length === 0 ? (
                       <div className="p-4 text-center text-gray-500">
-                        {bulkSunlightData.filter ? 'No plants match your filter' : 'No plants available'}
+                        {bulkSunlightData.filter ? t('menu.noMatch') : t('menu.noPlants')}
                       </div>
                     ) : (
                       <div className="divide-y divide-gray-100">
@@ -298,14 +300,14 @@ export const SlidingMenu: React.FC<SlidingMenuProps> = ({
                   onClick={handleBackToMenu}
                   className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
                 >
-                  Cancel
+                  {t('menu.cancel')}
                 </button>
                 <button
                   onClick={handleBulkSunlightSubmit}
                   disabled={!isFormValid || isSubmitting}
                   className="flex-1 px-4 py-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save'}
+                  {isSubmitting ? t('menu.saving') : t('menu.save')}
                 </button>
               </div>
             </div>
