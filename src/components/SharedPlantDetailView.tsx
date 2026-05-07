@@ -48,12 +48,12 @@ export const SharedPlantDetailView: React.FC = () => {
   const { toasts, success, error, removeToast } = useToast();
 
   const getActivityConfig = (type: ActivityType) => ({
-    tending: { title: t('activityTending', { defaultValue: 'Tending' }), color: 'text-green-600', bgColor: 'bg-green-50', emptyMessage: t('emptyTending', { ns: 'garden', defaultValue: 'True friendship is a bond that transcends superficial differences and endures through tests and trials. It is nurtured through acts of kindness, empathy, and understanding.' }) },
-    watering: { title: t('activityWatering', { defaultValue: 'Watering' }), color: 'text-blue-600', bgColor: 'bg-blue-50', emptyMessage: t('emptyWatering', { ns: 'garden', defaultValue: 'The Water for these trees is the living water of the sacred Words. Report here any time you study the Sacred Writings with this soul.' }) },
-    sunlight: { title: t('activitySunlight', { defaultValue: 'Sunlight' }), color: 'text-yellow-600', bgColor: 'bg-yellow-50', emptyMessage: t('emptySunlight', { ns: 'garden', defaultValue: 'Pray in behalf of the inhabitants of that city and beg for them the light of supreme guidance.' }) },
-    fruit: { title: t('activityFruit', { defaultValue: 'Fruit' }), color: 'text-red-600', bgColor: 'bg-red-50', emptyMessage: t('emptyFruit', { ns: 'garden', defaultValue: 'Man is like unto a tree. If he be adorned with fruit, he hath been and will ever be worthy of praise.' }) },
-    pruning: { title: t('activityPruning', { defaultValue: 'Pruning Event' }), color: 'text-orange-600', bgColor: 'bg-orange-50', emptyMessage: t('emptyPruning', { ns: 'garden', defaultValue: 'The more difficulties one sees in the world the more perfect one becomes.' }) },
-    companion: { title: t('activityCompanion', { defaultValue: 'Companions' }), color: 'text-teal-600', bgColor: 'bg-teal-50', emptyMessage: t('emptyCompanion', { ns: 'garden', defaultValue: 'Record here any relationship between your plants, such as them being family or being friends.' }) },
+    tending: { title: t('activityTending'), color: 'text-green-600', bgColor: 'bg-green-50', emptyMessage: t('emptyTending') },
+    watering: { title: t('activityWatering'), color: 'text-blue-600', bgColor: 'bg-blue-50', emptyMessage: t('emptyWatering') },
+    sunlight: { title: t('activitySunlight'), color: 'text-yellow-600', bgColor: 'bg-yellow-50', emptyMessage: t('emptySunlight') },
+    fruit: { title: t('activityFruit'), color: 'text-red-600', bgColor: 'bg-red-50', emptyMessage: t('emptyFruit') },
+    pruning: { title: t('activityPruning'), color: 'text-orange-600', bgColor: 'bg-orange-50', emptyMessage: t('emptyPruning') },
+    companion: { title: t('activityCompanion'), color: 'text-teal-600', bgColor: 'bg-teal-50', emptyMessage: t('emptyCompanion') },
   })[type];
 
   const [ref_, setRef_] = useState<SharedGardenRef | null>(null);
@@ -420,13 +420,13 @@ export const SharedPlantDetailView: React.FC = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-gray-900">{formatRelativeTime(item.datetime)}</span>
                         {item.authored_by_display_name && (
-                          <span className="text-xs text-gray-400">added by {item.authored_by_display_name}</span>
+                          <span className="text-xs text-gray-400">{t('authoredBy', { name: item.authored_by_display_name })}</span>
                         )}
                       </div>
                     )}
                     <div className="text-sm text-gray-600">
-                      {type === 'tending' && <span>{item.type}: {item.summary || 'No summary'}</span>}
-                      {type === 'watering' && <span>{item.source}: {item.progress_description || 'No description'}</span>}
+                      {type === 'tending' && <span>{item.type}: {item.summary || t('noSummary')}</span>}
+                      {type === 'watering' && <span>{item.source}: {item.progress_description || t('noDescription')}</span>}
                       {type === 'sunlight' && <span>{item.topic}</span>}
                       {type === 'fruit' && (
                         <>
@@ -434,11 +434,10 @@ export const SharedPlantDetailView: React.FC = () => {
                           <span>{item.description}</span>
                         </>
                       )}
-                      {type === 'pruning' && <span>{item.description || 'No description'}</span>}
+                      {type === 'pruning' && <span>{item.description || t('noDescription')}</span>}
                       {type === 'companion' && (
                         <span>
-                          {item.relationship_descriptor} with{' '}
-                          {allPlants.find(p => p.id === (item.plant_b_id === plantId ? item.plant_a_id : item.plant_b_id))?.name || 'Unknown'}
+                          {t('companionWith', { descriptor: item.relationship_descriptor, name: allPlants.find(p => p.id === (item.plant_b_id === plantId ? item.plant_a_id : item.plant_b_id))?.name || t('unknownPlant') })}
                         </span>
                       )}
                     </div>
@@ -466,7 +465,7 @@ export const SharedPlantDetailView: React.FC = () => {
             ))}
             {showSeeMore && (
               <p className={`text-xs ${config.color} text-center pt-1`}>
-                +{items.length - displayItems.length} more
+                {t('moreCount', { count: items.length - displayItems.length })}
               </p>
             )}
           </div>
@@ -485,26 +484,26 @@ export const SharedPlantDetailView: React.FC = () => {
           <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
             <span className="text-xl">🌿</span>
           </div>
-          <h3 className="text-lg font-semibold text-amber-700">Branches</h3>
+          <h3 className="text-lg font-semibold text-amber-700">{t('branchesTitle')}</h3>
         </div>
 
         {!hasAny && (
           <p className="text-sm text-gray-500 italic leading-relaxed mb-4">
-            If we sow the seed, a mighty tree appears from it. Use Notches to track progress in the systematic effort to enhance capacity for service.
+            {t('branchesEmpty')}
           </p>
         )}
 
         {/* Buds */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Buds</span>
+            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">{t('budsSectionLabel')}</span>
             {!isDisconnected && (
               <button onClick={() => setBranchesModal({ isOpen: true, subType: 'bud' })} className="p-1 bg-amber-50 rounded-lg">
                 <Plus className="w-3.5 h-3.5 text-amber-600" />
               </button>
             )}
           </div>
-          {buds.length === 0 && <p className="text-xs text-gray-400 italic">Potentialities or Interests</p>}
+          {buds.length === 0 && <p className="text-xs text-gray-400 italic">{t('budsEmpty')}</p>}
           {buds.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {buds.map(bud => (
@@ -529,25 +528,25 @@ export const SharedPlantDetailView: React.FC = () => {
         {/* Notchings */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Notching</span>
+            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">{t('notchingSectionLabel')}</span>
             {!isDisconnected && (
               <button onClick={() => setBranchesModal({ isOpen: true, subType: 'notching' })} className="p-1 bg-amber-50 rounded-lg">
                 <Plus className="w-3.5 h-3.5 text-amber-700" />
               </button>
             )}
           </div>
-          {notchings.length === 0 && <p className="text-xs text-gray-400 italic">Studies to develop capacity</p>}
+          {notchings.length === 0 && <p className="text-xs text-gray-400 italic">{t('notchingEmpty')}</p>}
           {notchings.slice(0, 1).map(n => (
             <div key={n.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex-1">
                 <div className="text-xs text-gray-500 mb-0.5">
                   {formatRelativeTime(n.datetime)}
-                  {(n as any).authored_by_display_name && <span className="ml-1">by {(n as any).authored_by_display_name}</span>}
+                  {(n as any).authored_by_display_name && <span className="ml-1">{t('authoredBy', { name: (n as any).authored_by_display_name })}</span>}
                 </div>
                 <div className="text-sm font-medium text-gray-800">
                   {n.book.replace('ruhi_', 'Ruhi Book ').replace(/_/g, ' ')} &mdash; U{n.start_unit}S{n.start_section} to U{n.end_unit}S{n.end_section}
                 </div>
-                <div className="text-xs text-amber-600 mt-0.5">about {n.sections_studied} {n.sections_studied === 1 ? 'section' : 'sections'}</div>
+                <div className="text-xs text-amber-600 mt-0.5">{t('aboutSections', { count: n.sections_studied })}</div>
                 {n.progress_description && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{n.progress_description}</div>}
               </div>
               {!isDisconnected && (
@@ -563,21 +562,21 @@ export const SharedPlantDetailView: React.FC = () => {
             </div>
           ))}
           {notchings.length > 1 && (
-            <p className="text-xs text-amber-700 text-center pt-2">+{notchings.length - 1} more</p>
+            <p className="text-xs text-amber-700 text-center pt-2">{t('moreCount', { count: notchings.length - 1 })}</p>
           )}
         </div>
 
         {/* Capabilities */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Flowers</span>
+            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">{t('flowersSectionLabel')}</span>
             {!isDisconnected && (
               <button onClick={() => setBranchesModal({ isOpen: true, subType: 'capability' })} className="p-1 bg-emerald-50 rounded-lg">
                 <Plus className="w-3.5 h-3.5 text-emerald-600" />
               </button>
             )}
           </div>
-          {capabilities.length === 0 && <p className="text-xs text-gray-400 italic">Proven or developed capabilities</p>}
+          {capabilities.length === 0 && <p className="text-xs text-gray-400 italic">{t('flowersEmpty')}</p>}
           {capabilities.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {capabilities.map(cap => (
@@ -609,7 +608,7 @@ export const SharedPlantDetailView: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">Loading...</p>
+          <p className="text-gray-500 text-sm">{t('loading')}</p>
         </div>
       </div>
     );
@@ -652,11 +651,11 @@ export const SharedPlantDetailView: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mt-0.5">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-600">Next care: {formatScheduledTime(plant.next_scheduled_care)}</span>
+                    <span className="text-gray-600">{t('nextCare', { time: formatScheduledTime(plant.next_scheduled_care) })}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Heart className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-600">Last cared: {formatRelativeTime(plant.last_cared_for)}</span>
+                    <span className="text-gray-600">{t('lastCared', { time: formatRelativeTime(plant.last_cared_for) })}</span>
                   </div>
                 </div>
                 {getUpcomingCareDescription() && (
@@ -701,21 +700,21 @@ export const SharedPlantDetailView: React.FC = () => {
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
                       <CalendarPlus className="w-4 h-4" />
-                      Schedule care
+                      {t('scheduleCarBtn')}
                     </button>
                     <button
                       onClick={() => { setShowMenu(false); setEditPlantModal({ isOpen: true, plant }); }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
-                      Change
+                      {t('changeBtn')}
                     </button>
                     <button
                       onClick={handleRemovePlant}
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Remove plant
+                      {t('removePlantBtn')}
                     </button>
                   </div>
                 )}
@@ -764,8 +763,8 @@ export const SharedPlantDetailView: React.FC = () => {
         onConfirm={confirmationModal.onConfirm}
         title={confirmationModal.title}
         message={confirmationModal.message}
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('deleteBtn')}
+        cancelText={t('cancelBtn')}
         type="danger"
       />
 

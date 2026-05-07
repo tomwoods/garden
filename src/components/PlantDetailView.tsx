@@ -515,45 +515,45 @@ export const PlantDetailView: React.FC = () => {
     const configs = {
       tending: {
         emoji: '🪴',
-        title: 'Tending',
+        title: t('activityTending'),
         color: 'text-green-600',
         bgColor: 'bg-green-50',
-        emptyMessage: 'True friendship is a bond that transcends superficial differences and endures through tests and trials. It is nurtured through acts of kindness, empathy, and understanding.'
+        emptyMessage: t('emptyTending')
       },
       watering: {
         emoji: '🚿',
-        title: 'Watering',
+        title: t('activityWatering'),
         color: 'text-blue-600',
         bgColor: 'bg-blue-50',
-        emptyMessage: 'The Water for these trees is the living water of the sacred Words uttered by the Beloved of the world. Among them are upright character, virtuous deeds and a goodly utterance. Report here any time you study the Sacred Writings with this soul.'
+        emptyMessage: t('emptyWatering')
       },
       sunlight: {
         emoji: '☀️',
-        title: 'Sunlight',
+        title: t('activitySunlight'),
         color: 'text-yellow-600',
         bgColor: 'bg-yellow-50',
-        emptyMessage: 'Pray in behalf of the inhabitants of that city and beg for them the light of supreme guidance, that spirits may be illumined and hearts may be gladdened by the glad-tidings of God.'
+        emptyMessage: t('emptySunlight')
       },
       fruit: {
         emoji: '🍎',
-        title: 'Fruit',
+        title: t('activityFruit'),
         color: 'text-red-600',
         bgColor: 'bg-red-50',
-        emptyMessage: 'Man is like unto a tree. If he be adorned with fruit, he hath been and will ever be worthy of praise and commendation. Among them are upright character, virtuous deeds and a goodly utterance. Share here any acts of teaching or service that this soul arises to offer.'
+        emptyMessage: t('emptyFruit')
       },
       pruning: {
         emoji: '✂️',
-        title: 'Pruning Event',
+        title: t('activityPruning'),
         color: 'text-purple-600',
         bgColor: 'bg-purple-50',
-        emptyMessage: 'The more difficulties one sees in the world the more perfect one becomes. The more you cut the branches of a tree the higher and stronger it grows. Note here struggles and difficulties this blessed soul goes through for your future prayers and reference.'
+        emptyMessage: t('emptyPruning')
       },
       companion: {
         emoji: '🤝',
-        title: 'Companions',
-        color: 'text-indigo-600',
-        bgColor: 'bg-indigo-50',
-        emptyMessage: 'Record here any relationship between your plants, such as them being family or being friends.'
+        title: t('activityCompanion'),
+        color: 'text-teal-600',
+        bgColor: 'bg-teal-50',
+        emptyMessage: t('emptyCompanion')
       }
     };
     return configs[type as keyof typeof configs];
@@ -710,10 +710,10 @@ export const PlantDetailView: React.FC = () => {
                   )}
                   <div className="text-sm text-gray-600">
                     {type === 'tending' && (
-                      <span>{item.type}: {item.summary || 'No summary'}</span>
+                      <span>{item.type}: {item.summary || t('noSummary')}</span>
                     )}
                     {type === 'watering' && (
-                      <span>{item.source}: {item.progress_description || 'No description'}</span>
+                      <span>{item.source}: {item.progress_description || t('noDescription')}</span>
                     )}
                     {type === 'sunlight' && (
                       <span>{item.topic}</span>
@@ -729,12 +729,11 @@ export const PlantDetailView: React.FC = () => {
                       </>
                     )}
                     {type === 'pruning' && (
-                      <span>{item.description || 'No description'}</span>
+                      <span>{item.description || t('noDescription')}</span>
                     )}
                     {type === 'companion' && (
                       <span>
-                        {item.relationship_descriptor} with{' '}
-                        {allPlants.find(p => p.id === (item.plant_b_id === plantId ? item.plant_a_id : item.plant_b_id))?.name || 'Unknown plant'}
+                        {t('companionWith', { descriptor: item.relationship_descriptor, name: allPlants.find(p => p.id === (item.plant_b_id === plantId ? item.plant_a_id : item.plant_b_id))?.name || t('unknownPlant') })}
                       </span>
                     )}
                   </div>
@@ -761,7 +760,7 @@ export const PlantDetailView: React.FC = () => {
                 onClick={() => handleSeeMore(type)}
                 className={`w-full py-2 ${config.color} hover:opacity-80 text-sm font-medium transition-colors`}
               >
-                See more ({items.length - displayItems.length} more)
+                {t('seeMore', { count: items.length - displayItems.length })}
               </button>
             )}
           </div>
@@ -783,13 +782,13 @@ export const PlantDetailView: React.FC = () => {
             <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
               <span className="text-xl">🌿</span>
             </div>
-            <h3 className="text-lg font-semibold text-amber-700">Branches</h3>
+            <h3 className="text-lg font-semibold text-amber-700">{t('branchesTitle')}</h3>
           </div>
         </div>
 
         {!hasAny && (
           <p className="text-gray-500 text-sm italic leading-relaxed">
-            If we sow the seed, a mighty tree appears from it. The virtues of the seed are revealed in the tree; it puts forth branches, leaves, blossoms, and produces fruits. All these virtues were hidden and potential in the seed. Use Notches to track progress in the systematic effort to enhance capacity for service.
+            {t('branchesEmpty')}
           </p>
         )}
 
@@ -799,9 +798,9 @@ export const PlantDetailView: React.FC = () => {
             onClick={() => handleOpenBranchesModal('bud')}
             className="w-full flex items-center justify-between mb-2 -mx-1 px-1 py-1 rounded-lg hover:bg-amber-50 active:bg-amber-100 transition-colors"
           >
-            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Buds</span>
+            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">{t('budsSectionLabel')}</span>
             {buds.length === 0 && (
-              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">Potentialities or Interests</span>
+              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">{t('budsEmpty')}</span>
             )}
             <span className="p-1 bg-amber-50 rounded-lg">
               <Plus className="w-3.5 h-3.5 text-amber-600" />
@@ -841,9 +840,9 @@ export const PlantDetailView: React.FC = () => {
             onClick={() => handleOpenBranchesModal('notching')}
             className="w-full flex items-center justify-between mb-2 -mx-1 px-1 py-1 rounded-lg hover:bg-amber-50 active:bg-amber-100 transition-colors"
           >
-            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Notching</span>
+            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">{t('notchingSectionLabel')}</span>
             {notchings.length === 0 && (
-              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">Studies to develop capacity</span>
+              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">{t('notchingEmpty')}</span>
             )}
             <span className="p-1 bg-amber-50 rounded-lg">
               <Plus className="w-3.5 h-3.5 text-amber-700" />
@@ -858,7 +857,7 @@ export const PlantDetailView: React.FC = () => {
                     <div className="text-sm font-medium text-gray-800">
                       {n.book.replace('ruhi_', 'Ruhi Book ').replace(/_/g, ' ')} &mdash; U{n.start_unit}S{n.start_section} to U{n.end_unit}S{n.end_section}
                     </div>
-                    <div className="text-xs text-amber-600 mt-0.5">about {n.sections_studied} {n.sections_studied === 1 ? 'section' : 'sections'}</div>
+                    <div className="text-xs text-amber-600 mt-0.5">{t('aboutSections', { count: n.sections_studied })}</div>
                     {n.progress_description && (
                       <div className="text-xs text-gray-500 mt-1 line-clamp-2">{n.progress_description}</div>
                     )}
@@ -884,7 +883,7 @@ export const PlantDetailView: React.FC = () => {
                   onClick={() => handleSeeMore('notching')}
                   className="w-full py-2 text-amber-700 hover:opacity-80 text-sm font-medium transition-colors"
                 >
-                  See more ({notchings.length - 1} more)
+                  {t('seeMore', { count: notchings.length - 1 })}
                 </button>
               )}
             </div>
@@ -897,9 +896,9 @@ export const PlantDetailView: React.FC = () => {
             onClick={() => handleOpenBranchesModal('capability')}
             className="w-full flex items-center justify-between mb-2 -mx-1 px-1 py-1 rounded-lg hover:bg-emerald-50 active:bg-emerald-100 transition-colors"
           >
-            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Flowers</span>
+            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">{t('flowersSectionLabel')}</span>
             {capabilities.length === 0 && (
-              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">Proven or developed capabilities</span>
+              <span className="text-xs text-gray-400 italic flex-1 mx-3 text-left">{t('flowersEmpty')}</span>
             )}
             <span className="p-1 bg-emerald-50 rounded-lg">
               <Plus className="w-3.5 h-3.5 text-emerald-600" />
@@ -943,7 +942,7 @@ export const PlantDetailView: React.FC = () => {
           <div className="w-16 h-16 mx-auto mb-4 animate-spin">
             <span className="text-4xl">🌱</span>
           </div>
-          <p className="text-gray-600">Loading plant details...</p>
+          <p className="text-gray-600">{t('loadingPlant')}</p>
         </div>
       </div>
     );
@@ -953,12 +952,12 @@ export const PlantDetailView: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Plant not found</p>
+          <p className="text-gray-600">{t('plantNotFound')}</p>
           <button
             onClick={handleBack}
             className="mt-4 text-green-600 hover:text-green-700 font-medium"
           >
-            Return to Garden
+            {t('returnToGarden')}
           </button>
         </div>
       </div>
@@ -1000,13 +999,13 @@ export const PlantDetailView: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-gray-400" />
                     <span className="text-gray-600">
-                      Next care: {formatScheduledTime(plant.next_scheduled_care)}
+                      {t('nextCare', { time: formatScheduledTime(plant.next_scheduled_care) })}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Heart className="w-3 h-3 text-gray-400" />
                     <span className="text-gray-600">
-                      Last cared: {formatRelativeTime(plant.last_cared_for)}
+                      {t('lastCared', { time: formatRelativeTime(plant.last_cared_for) })}
                     </span>
                   </div>
                 </div>
@@ -1037,7 +1036,7 @@ export const PlantDetailView: React.FC = () => {
                     {getLocation() && (
                       <div className="flex items-center gap-1 text-green-600">
                         <MapPin className="w-3 h-3" />
-                        <span>Location set</span>
+                        <span>{t('locationSet')}</span>
                       </div>
                     )}
                   </div>
@@ -1141,8 +1140,8 @@ export const PlantDetailView: React.FC = () => {
         onConfirm={confirmationModal.onConfirm}
         title={confirmationModal.title}
         message={confirmationModal.message}
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('deleteBtn')}
+        cancelText={t('cancelBtn')}
         type="danger"
       />
 
