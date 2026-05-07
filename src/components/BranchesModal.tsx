@@ -7,7 +7,7 @@ import { SupabaseService } from '../lib/supabaseService';
 
 export type BranchesSubType = 'bud' | 'notching' | 'capability';
 
-const CAPABILITY_CACHE_KEY = 'proven_capacities_cache';
+const CAPABILITY_CACHE_PREFIX = 'proven_capacities_cache';
 
 const RUHI_BOOKS = [
   { value: 'ruhi_1', label: 'Ruhi Book 1: Reflections on the Life of the Spirit', sectionsPerUnit: 12 },
@@ -86,7 +86,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
   lastNotching,
   onSubmit
 }) => {
-  const { t } = useTranslation('modals');
+  const { t, i18n } = useTranslation('modals');
   const [budText, setBudText] = useState('');
   const [capabilityText, setCapabilityText] = useState('');
   const [notchingData, setNotchingData] = useState<NotchingFormData>({
@@ -107,12 +107,14 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
     if (!isOpen) return;
 
     if (subType === 'capability') {
-      const cached = readAutocompleteCache(CAPABILITY_CACHE_KEY);
+      const lang = i18n.language;
+      const cacheKey = `${CAPABILITY_CACHE_PREFIX}_${lang}`;
+      const cached = readAutocompleteCache(cacheKey);
       if (cached.length > 0) setProvenCapacities(cached);
-      SupabaseService.fetchTop200ProvenCapacities().then((fresh) => {
+      SupabaseService.fetchTop200ProvenCapacities(lang).then((fresh) => {
         if (fresh.length > 0) {
           setProvenCapacities(fresh);
-          writeAutocompleteCache(CAPABILITY_CACHE_KEY, fresh);
+          writeAutocompleteCache(cacheKey, fresh);
         }
       });
     }
@@ -169,7 +171,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
       setCustomDateTime(Date.now());
       setShowDateTimeMenu(false);
     }
-  }, [isOpen, subType, editingItem, lastNotching]);
+  }, [isOpen, subType, editingItem, lastNotching, i18n.language]);
 
   const sectionsStudied = computeSectionsStudied(
     notchingData.book,
@@ -233,7 +235,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
         await onSubmit('bud', { text: budText.trim() });
       } else if (subType === 'capability') {
         const userId = localStorage.getItem('user_id') || '';
-        SupabaseService.upsertProvenCapacity(capabilityText.trim(), userId);
+        SupabaseService.upsertProvenCapacity(capabilityText.trim(), userId, i18n.language);
         await onSubmit('capability', { text: capabilityText.trim() });
       } else if (subType === 'notching') {
         const datetime = showDateTimeField ? customDateTime : Date.now();

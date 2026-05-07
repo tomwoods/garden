@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const CACHE_KEY = 'learning_sources_cache';
+const CACHE_KEY_PREFIX = 'learning_sources_cache';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CachedSources {
@@ -8,9 +8,9 @@ interface CachedSources {
   fetchedAt: number;
 }
 
-function readCache(): Array<{ id: string; text: string; count: number }> {
+function readCache(language: string): Array<{ id: string; text: string; count: number }> {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(`${CACHE_KEY_PREFIX}_${language}`);
     if (!raw) return [];
     const parsed: CachedSources = JSON.parse(raw);
     if (Date.now() - parsed.fetchedAt > CACHE_TTL_MS) return [];
@@ -20,10 +20,10 @@ function readCache(): Array<{ id: string; text: string; count: number }> {
   }
 }
 
-function writeCache(sources: Array<{ id: string; text: string; count: number }>): void {
+function writeCache(sources: Array<{ id: string; text: string; count: number }>, language: string): void {
   try {
     const payload: CachedSources = { sources, fetchedAt: Date.now() };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    localStorage.setItem(`${CACHE_KEY_PREFIX}_${language}`, JSON.stringify(payload));
   } catch {
     // Storage quota exceeded — skip caching silently
   }

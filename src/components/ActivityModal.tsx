@@ -7,7 +7,7 @@ import { AutocompleteInput, readAutocompleteCache, writeAutocompleteCache } from
 import { SupabaseService } from '../lib/supabaseService';
 import type { Plant } from '../lib/database';
 
-const BASIC_ACTIVITY_CACHE_KEY = 'basic_activity_cache';
+const BASIC_ACTIVITY_CACHE_PREFIX = 'basic_activity_cache';
 const PRESET_BASIC_ACTIVITIES = [
   { value: "children's class", labelKey: 'activity.basicActivityTypes.childrenClass' },
   { value: 'prayer meeting', labelKey: 'activity.basicActivityTypes.prayerMeeting' },
@@ -48,33 +48,35 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
   const [basicActivityType, setBasicActivityType] = useState('');
   const [basicActivityOther, setBasicActivityOther] = useState('');
   const [basicActivities, setBasicActivities] = useState<Array<{ id: string; text: string; count: number }>>([]);
-  const { t } = useTranslation('modals');
+  const { t, i18n } = useTranslation('modals');
   const basicActivityOtherInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const lang = i18n.language;
     if (isOpen && activityType === 'watering') {
-      const cached = readCache();
+      const cached = readCache(lang);
       if (cached.length > 0) {
         setLearningSources(cached);
       }
-      SupabaseService.fetchTop200LearningSources().then((fresh) => {
+      SupabaseService.fetchTop200LearningSources(lang).then((fresh) => {
         if (fresh.length > 0) {
           setLearningSources(fresh);
-          writeCache(fresh);
+          writeCache(fresh, lang);
         }
       });
     }
     if (isOpen && activityType === 'fruit') {
-      const cached = readAutocompleteCache(BASIC_ACTIVITY_CACHE_KEY);
+      const cacheKey = `${BASIC_ACTIVITY_CACHE_PREFIX}_${lang}`;
+      const cached = readAutocompleteCache(cacheKey);
       if (cached.length > 0) setBasicActivities(cached);
-      SupabaseService.fetchTop200BasicActivities().then((fresh) => {
+      SupabaseService.fetchTop200BasicActivities(lang).then((fresh) => {
         if (fresh.length > 0) {
           setBasicActivities(fresh);
-          writeAutocompleteCache(BASIC_ACTIVITY_CACHE_KEY, fresh);
+          writeAutocompleteCache(cacheKey, fresh);
         }
       });
     }
-  }, [isOpen, activityType]);
+  }, [isOpen, activityType, i18n.language]);
 
   useEffect(() => {
     if (isOpen) {
@@ -177,12 +179,12 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
 
       if (activityType === 'watering' && submitData.source?.trim()) {
         const userId = localStorage.getItem('user_id') || '';
-        SupabaseService.upsertLearningSource(submitData.source.trim(), userId);
+        SupabaseService.upsertLearningSource(submitData.source.trim(), userId, i18n.language);
       }
 
       if (activityType === 'fruit' && basicActivityType === 'other' && resolvedOtherText) {
         const userId = localStorage.getItem('user_id') || '';
-        SupabaseService.upsertBasicActivity(resolvedOtherText, userId);
+        SupabaseService.upsertBasicActivity(resolvedOtherText, userId, i18n.language);
       }
 
       onClose();

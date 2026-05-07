@@ -178,17 +178,19 @@ export class SupabaseService {
   }
 
   /**
-   * Fetch the top 200 most-used autocomplete values of a given type.
+   * Fetch the top 200 most-used autocomplete values of a given type and language.
    * Returns an empty array on any failure (network down, timeout, etc.).
    */
   static async fetchTop200AutocompleteValues(
-    type: string
+    type: string,
+    language: string
   ): Promise<Array<{ id: string; text: string; count: number }>> {
     try {
       const { data, error } = await supabase
         .from('autocomplete_values')
         .select('id, text, count')
         .eq('type', type)
+        .eq('language', language)
         .order('count', { ascending: false })
         .limit(200);
 
@@ -200,20 +202,20 @@ export class SupabaseService {
   }
 
   /** Convenience wrapper for learning source autocomplete. */
-  static async fetchTop200LearningSources(): Promise<Array<{ id: string; text: string; count: number }>> {
-    return this.fetchTop200AutocompleteValues('learning_source');
+  static async fetchTop200LearningSources(language: string): Promise<Array<{ id: string; text: string; count: number }>> {
+    return this.fetchTop200AutocompleteValues('learning_source', language);
   }
 
   /** Convenience wrapper for proven capacity autocomplete. */
-  static async fetchTop200ProvenCapacities(): Promise<Array<{ id: string; text: string; count: number }>> {
-    return this.fetchTop200AutocompleteValues('proven_capacity');
+  static async fetchTop200ProvenCapacities(language: string): Promise<Array<{ id: string; text: string; count: number }>> {
+    return this.fetchTop200AutocompleteValues('proven_capacity', language);
   }
 
   /**
    * Upsert an autocomplete value — insert if new, increment count if it exists
    * and was last updated by a different user. Fire-and-forget; never throws.
    */
-  static async upsertAutocompleteValue(text: string, userId: string, type: string): Promise<void> {
+  static async upsertAutocompleteValue(text: string, userId: string, type: string, language: string): Promise<void> {
     try {
       const trimmed = text.trim();
       if (!trimmed) return;
@@ -223,6 +225,7 @@ export class SupabaseService {
         .select('id, count, last_updated_by')
         .eq('text', trimmed)
         .eq('type', type)
+        .eq('language', language)
         .maybeSingle();
 
       if (!existing) {
@@ -231,7 +234,7 @@ export class SupabaseService {
           count: 1,
           last_updated_by: userId,
           type,
-          language: 'en_US'
+          language
         });
       } else if (existing.last_updated_by !== userId) {
         await supabase
@@ -245,23 +248,23 @@ export class SupabaseService {
   }
 
   /** Convenience wrapper — upsert a learning source. */
-  static async upsertLearningSource(text: string, userId: string): Promise<void> {
-    return this.upsertAutocompleteValue(text, userId, 'learning_source');
+  static async upsertLearningSource(text: string, userId: string, language: string): Promise<void> {
+    return this.upsertAutocompleteValue(text, userId, 'learning_source', language);
   }
 
   /** Convenience wrapper — upsert a proven capacity. */
-  static async upsertProvenCapacity(text: string, userId: string): Promise<void> {
-    return this.upsertAutocompleteValue(text, userId, 'proven_capacity');
+  static async upsertProvenCapacity(text: string, userId: string, language: string): Promise<void> {
+    return this.upsertAutocompleteValue(text, userId, 'proven_capacity', language);
   }
 
   /** Convenience wrapper for basic activity autocomplete. */
-  static async fetchTop200BasicActivities(): Promise<Array<{ id: string; text: string; count: number }>> {
-    return this.fetchTop200AutocompleteValues('basic_activity');
+  static async fetchTop200BasicActivities(language: string): Promise<Array<{ id: string; text: string; count: number }>> {
+    return this.fetchTop200AutocompleteValues('basic_activity', language);
   }
 
   /** Convenience wrapper — upsert a basic activity. */
-  static async upsertBasicActivity(text: string, userId: string): Promise<void> {
-    return this.upsertAutocompleteValue(text, userId, 'basic_activity');
+  static async upsertBasicActivity(text: string, userId: string, language: string): Promise<void> {
+    return this.upsertAutocompleteValue(text, userId, 'basic_activity', language);
   }
 
   /**
