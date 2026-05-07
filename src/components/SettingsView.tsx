@@ -822,13 +822,14 @@ export const SettingsView: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* Coming Soon Banner */}
+        {/* Coming Soon Banner 
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
             <Moon className="w-8 h-8 text-blue-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('comingSoon')}</h2>
         </div>
+        //*/}
 
         {/* Language Section */}
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-6">
