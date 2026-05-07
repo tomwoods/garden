@@ -4,4 +4,6 @@ By default, this template supports JSX syntax with Tailwind CSS classes, React h
 
 Use icons from lucide-react for logos.
 
+This app is internationalized. Any new UI related text added should be have English, Spanish, French, and Hatian Creole translations. Any UI text that is modified should be modified in all languages. 
+
 When in Planning mode, if you have a questions, make sure to also offer what answer or option will be assumed if none is given by me and why.
