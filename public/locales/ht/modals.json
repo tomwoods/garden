@@ -27,6 +27,12 @@
   "activity": {
     "addTitle": "Ajoute {{type}}",
     "editTitle": "Modifye {{type}}",
+    "typeTending": "Swen",
+    "typeWatering": "Wouze",
+    "typeSunlight": "Limyè Solèy",
+    "typeFruit": "Fwi",
+    "typePruning": "Evènman Taye",
+    "typeCompanion": "Konpayon",
     "tendingDesc": "Anregistre yon entèraksyon oswa koneksyon",
     "wateringDesc": "Anregistre aprann oswa etid pataje",
     "sunlightDesc": "Anregistre lapriyè pou nanm sa a",
@@ -79,6 +85,17 @@
       "studyCircle": "sèk etid",
       "selectPlaceholder": "Seleksyone tip aktivite..."
     }
+  },
+  "additionalInfo": {
+    "setDateTime": "Fikse dat/lè",
+    "addLocation": "Ajoute kote",
+    "editLocation": "Modifye kote",
+    "addAge": "Ajoute laj",
+    "editAge": "Modifye laj",
+    "addImage": "Ajoute imaj",
+    "viewImages": "Wè imaj",
+    "importFile": "Enpòte depi fichye",
+    "importContacts": "Enpòte depi kontak"
   },
   "scheduleCare": {
     "title": "Pwograme Swen",
@@ -171,8 +188,8 @@
     "addBud": "Ajoute Boujon",
     "editBud": "Modifye Boujon",
     "addBudDesc": "Note yon kapasite oswa enterè nan {{name}}",
-    "recordNotching": "Anregistre Notching",
-    "editNotching": "Modifye Notching",
+    "recordNotching": "Anregistre Enkochi",
+    "editNotching": "Modifye Enkochi",
     "notchingDesc": "Anregistre yon sesyon etid Ruhi ak {{name}}",
     "recordCapability": "Anregistre Kapasite",
     "editCapability": "Modifye Kapasite",
@@ -201,7 +218,7 @@
     "savingBtn": "Ap sovgade..."
   },
   "bulkNotching": {
-    "title": "Notching Gwoup",
+    "title": "Enkochi Gwoup",
     "subtitle": "Anregistre sesyon etid Ruhi pou {{plotName}}",
     "dateTime": "Dat ak Lè",
     "sessionStart": "Kòmansman Sesyon",

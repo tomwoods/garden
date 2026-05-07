@@ -231,12 +231,12 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
 
   const getActivityConfig = () => {
     const configs = {
-      tending: { title: 'Tend', emoji: '🪴', description: t('activity.tendingDesc') },
-      watering: { title: 'Water', emoji: '🚿', description: t('activity.wateringDesc') },
-      sunlight: { title: 'Sunlight', emoji: '☀️', description: t('activity.sunlightDesc') },
-      fruit: { title: 'Fruit', emoji: '🍎', description: t('activity.fruitDesc') },
-      pruning: { title: 'Pruning Event', emoji: '✂️', description: t('activity.pruningDesc') },
-      companion: { title: 'Companion', emoji: '🤝', description: t('activity.companionDesc') }
+      tending: { title: t('activity.typeTending'), emoji: '🪴', description: t('activity.tendingDesc') },
+      watering: { title: t('activity.typeWatering'), emoji: '🚿', description: t('activity.wateringDesc') },
+      sunlight: { title: t('activity.typeSunlight'), emoji: '☀️', description: t('activity.sunlightDesc') },
+      fruit: { title: t('activity.typeFruit'), emoji: '🍎', description: t('activity.fruitDesc') },
+      pruning: { title: t('activity.typePruning'), emoji: '✂️', description: t('activity.pruningDesc') },
+      companion: { title: t('activity.typeCompanion'), emoji: '🤝', description: t('activity.companionDesc') }
     };
     return configs[activityType];
   };

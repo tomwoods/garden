@@ -27,6 +27,12 @@
   "activity": {
     "addTitle": "Agregar {{type}}",
     "editTitle": "Editar {{type}}",
+    "typeTending": "Cuidado",
+    "typeWatering": "Riego",
+    "typeSunlight": "Luz Solar",
+    "typeFruit": "Fruto",
+    "typePruning": "Evento de Poda",
+    "typeCompanion": "Compañero",
     "tendingDesc": "Registrar una interacción o conexión",
     "wateringDesc": "Registrar aprendizaje o estudio compartido",
     "sunlightDesc": "Registrar oraciones por esta alma",
@@ -79,6 +85,17 @@
       "studyCircle": "círculo de estudio",
       "selectPlaceholder": "Seleccionar tipo de actividad..."
     }
+  },
+  "additionalInfo": {
+    "setDateTime": "Establecer fecha/hora",
+    "addLocation": "Agregar ubicación",
+    "editLocation": "Editar ubicación",
+    "addAge": "Agregar edad",
+    "editAge": "Editar edad",
+    "addImage": "Agregar imagen",
+    "viewImages": "Ver imágenes",
+    "importFile": "Importar desde archivo",
+    "importContacts": "Importar desde contactos"
   },
   "scheduleCare": {
     "title": "Programar Cuidado",
@@ -171,8 +188,8 @@
     "addBud": "Agregar Brote",
     "editBud": "Editar Brote",
     "addBudDesc": "Nota una capacidad o interés en {{name}}",
-    "recordNotching": "Registrar Notching",
-    "editNotching": "Editar Notching",
+    "recordNotching": "Registrar Muesca",
+    "editNotching": "Editar Muesca",
     "notchingDesc": "Registrar una sesión de estudio Ruhi con {{name}}",
     "recordCapability": "Registrar Capacidad",
     "editCapability": "Editar Capacidad",
@@ -201,7 +218,7 @@
     "savingBtn": "Guardando..."
   },
   "bulkNotching": {
-    "title": "Notching Grupal",
+    "title": "Muesca Grupal",
     "subtitle": "Registrar sesión de estudio Ruhi para {{plotName}}",
     "dateTime": "Fecha y Hora",
     "sessionStart": "Inicio de Sesión",

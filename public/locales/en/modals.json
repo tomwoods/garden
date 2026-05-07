@@ -27,6 +27,12 @@
   "activity": {
     "addTitle": "Add {{type}}",
     "editTitle": "Edit {{type}}",
+    "typeTending": "Tending",
+    "typeWatering": "Watering",
+    "typeSunlight": "Sunlight",
+    "typeFruit": "Fruit",
+    "typePruning": "Pruning Event",
+    "typeCompanion": "Companion",
     "tendingDesc": "Log an interaction or connection",
     "wateringDesc": "Record shared learning or study",
     "sunlightDesc": "Record prayers for this soul",
@@ -79,6 +85,17 @@
       "studyCircle": "study circle",
       "selectPlaceholder": "Select activity type..."
     }
+  },
+  "additionalInfo": {
+    "setDateTime": "Set date/time",
+    "addLocation": "Add location",
+    "editLocation": "Edit location",
+    "addAge": "Add age",
+    "editAge": "Edit age",
+    "addImage": "Add image",
+    "viewImages": "View images",
+    "importFile": "Import from file",
+    "importContacts": "Import from contacts"
   },
   "scheduleCare": {
     "title": "Schedule Care",

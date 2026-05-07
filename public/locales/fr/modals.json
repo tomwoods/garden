@@ -27,6 +27,12 @@
   "activity": {
     "addTitle": "Ajouter {{type}}",
     "editTitle": "Modifier {{type}}",
+    "typeTending": "Soin",
+    "typeWatering": "Arrosage",
+    "typeSunlight": "Lumière",
+    "typeFruit": "Fruit",
+    "typePruning": "Événement de Taille",
+    "typeCompanion": "Compagnon",
     "tendingDesc": "Enregistrer une interaction ou connexion",
     "wateringDesc": "Enregistrer un apprentissage ou étude partagé",
     "sunlightDesc": "Enregistrer des prières pour cette âme",
@@ -79,6 +85,17 @@
       "studyCircle": "cercle d'étude",
       "selectPlaceholder": "Sélectionner le type d'activité..."
     }
+  },
+  "additionalInfo": {
+    "setDateTime": "Définir date/heure",
+    "addLocation": "Ajouter emplacement",
+    "editLocation": "Modifier emplacement",
+    "addAge": "Ajouter âge",
+    "editAge": "Modifier âge",
+    "addImage": "Ajouter image",
+    "viewImages": "Voir images",
+    "importFile": "Importer depuis fichier",
+    "importContacts": "Importer depuis contacts"
   },
   "scheduleCare": {
     "title": "Planifier les Soins",
@@ -171,8 +188,8 @@
     "addBud": "Ajouter un Bourgeon",
     "editBud": "Modifier le Bourgeon",
     "addBudDesc": "Noter une capacité ou un intérêt chez {{name}}",
-    "recordNotching": "Enregistrer un Notching",
-    "editNotching": "Modifier le Notching",
+    "recordNotching": "Enregistrer une Entaille",
+    "editNotching": "Modifier l'Entaille",
     "notchingDesc": "Enregistrer une session d'étude Ruhi avec {{name}}",
     "recordCapability": "Enregistrer une Capacité",
     "editCapability": "Modifier la Capacité",
@@ -201,7 +218,7 @@
     "savingBtn": "Enregistrement..."
   },
   "bulkNotching": {
-    "title": "Notching de Groupe",
+    "title": "Entaille de Groupe",
     "subtitle": "Enregistrer une session d'étude Ruhi pour {{plotName}}",
     "dateTime": "Date et Heure",
     "sessionStart": "Début de Session",

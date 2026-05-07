@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, MapPin, Camera, Milestone, BookUser, Upload } from 'lucide-react';
 
 interface AdditionalInfoMenuProps {
@@ -28,6 +29,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
   onClose,
   mode = 'datetime'
 }) => {
+  const { t } = useTranslation('modals');
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,7 +82,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
         >
           <Calendar className="w-4 h-4" />
-          Set date/time
+          {t('additionalInfo.setDateTime')}
         </button>
       )}
       {(mode === 'location' || mode === 'all') && (
@@ -90,7 +92,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
         >
           <MapPin className="w-4 h-4" />
-          {hasLocation ? 'Edit location' : 'Add location'}
+          {hasLocation ? t('additionalInfo.editLocation') : t('additionalInfo.addLocation')}
         </button>
       )}
       {mode === 'all' && (
@@ -100,7 +102,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
         >
           <Milestone className="w-4 h-4" />
-          {hasAge ? 'Edit age' : 'Add age'}
+          {hasAge ? t('additionalInfo.editAge') : t('additionalInfo.addAge')}
         </button>
       )}
       {mode === 'all' && (
@@ -110,7 +112,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
         >
           <Camera className="w-4 h-4" />
-          {hasImages ? 'View images' : 'Add image'}
+          {hasImages ? t('additionalInfo.viewImages') : t('additionalInfo.addImage')}
         </button>
       )}
       {mode === 'all' && onImportContact && (
@@ -120,7 +122,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
         >
           <Upload className="w-4 h-4" />
-          Import from file
+          {t('additionalInfo.importFile')}
         </button>
       )}
       {mode === 'all' && onImportFromPicker && (
@@ -130,7 +132,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
         >
           <BookUser className="w-4 h-4" />
-          Import from contacts
+          {t('additionalInfo.importContacts')}
         </button>
       )}
     </div>
