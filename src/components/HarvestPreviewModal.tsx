@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Sprout, Droplets, Sun, Apple, Scissors, Users, RefreshCw, Search, Check } from 'lucide-react';
 import { HarvestPreview, AgeGroupCounts, AgeGroup, resolveAgeGroup, parseAgeInfoFromPlant, generateHarvestPreview } from '../lib/harvestService';
 import type { Plant } from '../lib/database';
@@ -68,6 +69,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
   onConfirm,
   onClose,
 }) => {
+  const { t } = useTranslation('modals');
   const [includesAll, setIncludesAll] = useState(true);
   const [activeAgeGroups, setActiveAgeGroups] = useState<Set<AgeGroup>>(new Set(ALL_AGE_GROUPS));
   const [selectedPlantIds, setSelectedPlantIds] = useState<Set<string>>(new Set());
@@ -200,7 +202,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
             <Sprout className="w-6 h-6 text-green-700" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900">Your harvest, at a glance</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('harvestPreview.atAGlance')}</h3>
             <p className="text-sm text-gray-500 mt-0.5">{fromLabel} — {toLabel}</p>
           </div>
           <button
@@ -214,7 +216,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
         <div className="overflow-y-auto flex-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="px-6 pb-2">
             <p className="text-sm text-gray-600 leading-relaxed">
-              This report shares only patterns and counts — no names, no notes, no reflections. Once you share it, the identifiers inside cannot be traced back to anyone in your garden.
+              {t('harvestPreview.privacyNote')}
             </p>
           </div>
 
@@ -228,7 +230,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
               >
                 {includesAll && <Check className="w-3 h-3 text-white" />}
               </div>
-              <span className="text-sm text-gray-700">Includes all plants</span>
+              <span className="text-sm text-gray-700">{t('harvestPreview.includesAll')}</span>
             </label>
           </div>
 
@@ -260,14 +262,14 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
                   type="text"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  placeholder="Search plants..."
+                  placeholder={t('harvestPreview.searchPlants')}
                   className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
                 />
               </div>
 
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-500">
-                  {selectedPlantIds.size} of {allPlants.length} selected
+                  {t('harvestPreview.selectedOf', { selected: selectedPlantIds.size, total: allPlants.length })}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -275,7 +277,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
                     onClick={handleSelectVisible}
                     className="text-xs text-green-600 hover:text-green-700 font-medium"
                   >
-                    Select all
+                    {t('harvestPreview.selectAll')}
                   </button>
                   <span className="text-xs text-gray-300">|</span>
                   <button
@@ -283,7 +285,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
                     onClick={handleDeselectVisible}
                     className="text-xs text-gray-500 hover:text-gray-700 font-medium"
                   >
-                    Select none
+                    {t('harvestPreview.selectNone')}
                   </button>
                 </div>
               </div>
@@ -291,7 +293,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
               <div className="border border-gray-200 rounded-xl max-h-44 overflow-y-auto">
                 {visiblePlants.length === 0 ? (
                   <div className="p-4 text-center text-sm text-gray-400">
-                    {searchTerm ? 'No plants match your search' : 'No plants in this group'}
+                    {searchTerm ? t('harvestPreview.noSearchMatch') : t('harvestPreview.noPlants')}
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
@@ -322,37 +324,37 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
           <div className="px-6 py-3">
             <StatRow
               icon={<Sprout className="w-3.5 h-3.5 text-green-600" />}
-              label="Souls in your garden"
+              label={t('harvestPreview.soulsLabel')}
               value={preview.souls}
             />
             <StatRow
               icon={<Users className="w-3.5 h-3.5 text-green-600" />}
-              label="Plots"
+              label={t('harvestPreview.plotsLabel')}
               value={preview.plots}
             />
             <StatRow
               icon={<Sprout className="w-3.5 h-3.5 text-green-600" />}
-              label="Times tended"
+              label={t('harvestPreview.tendingsLabel')}
               value={preview.tendings}
             />
             <StatRow
               icon={<Droplets className="w-3.5 h-3.5 text-green-600" />}
-              label="Times watered"
+              label={t('harvestPreview.wateringsLabel')}
               value={preview.waterings}
             />
             <StatRow
               icon={<Sun className="w-3.5 h-3.5 text-green-600" />}
-              label="Times held in sunlight"
+              label={t('harvestPreview.sunlightLabel')}
               value={preview.sunlight}
             />
             <StatRow
               icon={<Apple className="w-3.5 h-3.5 text-green-600" />}
-              label="Fruits observed"
+              label={t('harvestPreview.fruitsLabel')}
               value={preview.fruits}
             />
             <StatRow
               icon={<Scissors className="w-3.5 h-3.5 text-green-600" />}
-              label="Pruning events recorded"
+              label={t('harvestPreview.pruningsLabel')}
               value={preview.prunings}
             />
           </div>
@@ -360,7 +362,7 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
           {showAgeDistribution && preview.ageGroups && (
             <div className="px-6 pb-3">
               <div className="border-t border-gray-100 pt-3">
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Age distribution</p>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">{t('harvestPreview.ageDistribution')}</p>
                 {preview.ageGroups.child > 0 && (
                   <AgeRow label="child" value={preview.ageGroups.child} />
                 )}
@@ -392,14 +394,14 @@ export const HarvestPreviewModal: React.FC<HarvestPreviewModalProps> = ({
             ) : (
               <Sprout className="w-4 h-4" />
             )}
-            {isGenerating ? 'Preparing...' : 'Export this harvest'}
+            {isGenerating ? t('harvestPreview.preparingBtn') : t('harvestPreview.exportBtn')}
           </button>
           <button
             onClick={onClose}
             disabled={isGenerating}
             className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-60 rounded-xl font-medium transition-colors text-sm"
           >
-            Go back
+            {t('harvestPreview.goBackBtn')}
           </button>
         </div>
       </div>

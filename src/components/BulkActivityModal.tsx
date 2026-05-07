@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus } from 'lucide-react';
 import { PlantSelectorChecklist } from './PlantSelectorChecklist';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
@@ -28,6 +29,7 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [showDateTimeField, setShowDateTimeField] = useState(false);
   const [customDateTime, setCustomDateTime] = useState<number>(Date.now());
+  const { t } = useTranslation('modals');
   const [showDateTimeMenu, setShowDateTimeMenu] = useState(false);
 
   React.useEffect(() => {
@@ -114,10 +116,10 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
 
   const getActivityConfig = () => {
     const configs = {
-      tending: { title: 'Group Tending', emoji: '🪴', description: 'Log group interaction or connection' },
-      watering: { title: 'Group Watering', emoji: '🚿', description: 'Record group learning or study' },
-      sunlight: { title: 'Group Sunlight', emoji: '☀️', description: 'Record group prayers' },
-      fruit: { title: 'Group Fruit', emoji: '🍎', description: 'Record group service or teaching' }
+      tending: { title: t('bulkActivity.groupTending'), emoji: '🪴', description: t('bulkActivity.groupTendingDesc') },
+      watering: { title: t('bulkActivity.groupWatering'), emoji: '🚿', description: t('bulkActivity.groupWateringDesc') },
+      sunlight: { title: t('bulkActivity.groupSunlight'), emoji: '☀️', description: t('bulkActivity.groupSunlightDesc') },
+      fruit: { title: t('bulkActivity.groupFruit'), emoji: '🍎', description: t('bulkActivity.groupFruitDesc') }
     };
     return configs[activityType];
   };
@@ -128,7 +130,7 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
     const dateTimeField = showDateTimeField && (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Date & Time
+          {t('bulkActivity.dateTime')}
         </label>
         <input
           type="datetime-local"
@@ -146,7 +148,7 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
             {dateTimeField}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type of interaction *
+                {t('bulkActivity.interactionTypeRequired')}
               </label>
               {!showCustomInput ? (
                 <select
@@ -155,12 +157,12 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                   required
                 >
-                  <option value="conversation">Group conversation</option>
-                  <option value="coffee">Group coffee/tea</option>
-                  <option value="meal">Group meal</option>
-                  <option value="call">Group call</option>
-                  <option value="activity">Group activity</option>
-                  <option value="other">Other</option>
+                  <option value="conversation">{t('bulkActivity.groupConversation')}</option>
+                  <option value="coffee">{t('bulkActivity.groupCoffee')}</option>
+                  <option value="meal">{t('bulkActivity.groupMeal')}</option>
+                  <option value="call">{t('bulkActivity.groupCall')}</option>
+                  <option value="activity">{t('bulkActivity.groupActivity')}</option>
+                  <option value="other">{t('activity.interactionTypes.other')}</option>
                 </select>
               ) : (
                 <input
@@ -168,7 +170,7 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
                   value={formData.type || ''}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, type: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                  placeholder="Enter custom interaction type"
+                  placeholder={t('bulkActivity.customPlaceholder')}
                   required
                 />
               )}
@@ -181,20 +183,20 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
                   }}
                   className="mt-2 text-sm text-gray-600 hover:text-gray-800 underline"
                 >
-                  ← Back to options
+                  {t('bulkActivity.backToOptions')}
                 </button>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Summary
+                {t('bulkActivity.summary')}
               </label>
               <textarea
                 value={formData.summary || ''}
                 onChange={(e) => handleChange('summary', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
                 rows={3}
-                placeholder="What did you talk about or do together?"
+                placeholder={t('bulkActivity.summaryPlaceholder')}
               />
             </div>
           </>
@@ -206,27 +208,27 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
             {dateTimeField}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Source of learning *
+                {t('bulkActivity.learningSourceRequired')}
               </label>
               <input
                 type="text"
                 value={formData.source || ''}
                 onChange={(e) => handleChange('source', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Book, article, course, group study..."
+                placeholder={t('bulkActivity.learningSourcePlaceholder')}
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Progress description
+                {t('bulkActivity.progressDesc')}
               </label>
               <textarea
                 value={formData.progress_description || ''}
                 onChange={(e) => handleChange('progress_description', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
                 rows={3}
-                placeholder="What did you learn or study together?"
+                placeholder={t('bulkActivity.progressPlaceholder')}
               />
             </div>
           </>
@@ -238,14 +240,14 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
             {dateTimeField}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prayer topic *
+                {t('bulkActivity.prayerTopicRequired')}
               </label>
             <textarea
               value={formData.topic || ''}
               onChange={(e) => handleChange('topic', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="What did you pray for regarding these souls?"
+              placeholder={t('bulkActivity.prayerTopicPlaceholder')}
               required
             />
             </div>
@@ -258,14 +260,14 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
             {dateTimeField}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description of service or teaching *
+                {t('bulkActivity.serviceDescRequired')}
               </label>
             <textarea
               value={formData.description || ''}
               onChange={(e) => handleChange('description', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="Describe the group service or teaching activity..."
+              placeholder={t('bulkActivity.serviceDescPlaceholder')}
               required
             />
             </div>
@@ -355,14 +357,14 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
               onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
             >
-              Cancel
+              {t('bulkActivity.cancelBtn')}
             </button>
             <button
               type="submit"
               disabled={!isFormValid() || isSubmitting}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
             >
-              {isSubmitting ? 'Saving...' : `Log for ${selectedPlantIds.size} plants`}
+              {isSubmitting ? t('bulkActivity.savingBtn') : t('bulkActivity.logForPlants', { count: selectedPlantIds.size })}
             </button>
           </div>
         </form>

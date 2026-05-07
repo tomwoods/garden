@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Image as ImageIcon, Info } from 'lucide-react';
 import { uploadService } from '../lib/uploadService';
 
@@ -7,6 +8,7 @@ interface ImageQuotaModalProps {
 }
 
 export const ImageQuotaModal: React.FC<ImageQuotaModalProps> = ({ onClose }) => {
+  const { t } = useTranslation('modals');
   const quotaInfo = uploadService.getQuotaInfo();
   const percentageUsed = (quotaInfo.imagesUsed / quotaInfo.maxImages) * 100;
 
@@ -18,7 +20,7 @@ export const ImageQuotaModal: React.FC<ImageQuotaModalProps> = ({ onClose }) => 
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
               <ImageIcon className="w-5 h-5 text-green-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">Image Quota</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('imageQuota.title')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -31,7 +33,7 @@ export const ImageQuotaModal: React.FC<ImageQuotaModalProps> = ({ onClose }) => 
         <div className="space-y-6">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Images</span>
+              <span className="text-sm font-medium text-gray-700">{t('imageQuota.images')}</span>
               <span className="text-sm text-gray-600">
                 {quotaInfo.imagesUsed} / {quotaInfo.maxImages}
               </span>
@@ -54,13 +56,13 @@ export const ImageQuotaModal: React.FC<ImageQuotaModalProps> = ({ onClose }) => 
             <div className="flex items-start gap-3">
               <Info className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-gray-700">
-                <p className="font-medium mb-2">About Images</p>
+                <p className="font-medium mb-2">{t('imageQuota.aboutTitle')}</p>
                 <ul className="space-y-1 text-xs">
-                  <li>• One image per plant</li>
-                  <li>• Maximum {quotaInfo.maxImages} images total</li>
-                  <li>• Images are encrypted before leaving your device</li>
-                  <li>• Thumbnails are cached locally; full images are fetched on demand</li>
-                  <li>• Delete a plant image to free up quota</li>
+                  <li>• {t('imageQuota.onePerPlant')}</li>
+                  <li>• {t('imageQuota.maxImages', { max: quotaInfo.maxImages })}</li>
+                  <li>• {t('imageQuota.encrypted')}</li>
+                  <li>• {t('imageQuota.cached')}</li>
+                  <li>• {t('imageQuota.deleteToFree')}</li>
                 </ul>
               </div>
             </div>
@@ -71,9 +73,9 @@ export const ImageQuotaModal: React.FC<ImageQuotaModalProps> = ({ onClose }) => 
               <div className="flex items-start gap-3">
                 <ImageIcon className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
-                  <p className="font-medium text-orange-900 mb-1">Quota Reached</p>
+                  <p className="font-medium text-orange-900 mb-1">{t('imageQuota.quotaReachedTitle')}</p>
                   <p className="text-xs text-orange-700">
-                    You have reached the maximum number of images. Delete an existing image to add a new one.
+                    {t('imageQuota.quotaReachedDesc')}
                   </p>
                 </div>
               </div>
@@ -85,7 +87,7 @@ export const ImageQuotaModal: React.FC<ImageQuotaModalProps> = ({ onClose }) => 
           onClick={onClose}
           className="mt-6 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors"
         >
-          Close
+          {t('imageQuota.closeBtn')}
         </button>
       </div>
     </div>

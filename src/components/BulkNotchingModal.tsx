@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { PlantSelectorChecklist } from './PlantSelectorChecklist';
@@ -64,6 +65,7 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
   const [customDateTime, setCustomDateTime] = useState<number>(Date.now());
   const [showDateTimeMenu, setShowDateTimeMenu] = useState(false);
   const [selectedPlantIds, setSelectedPlantIds] = useState<Set<string>>(new Set(plants.map(p => p.id)));
+  const { t } = useTranslation('modals');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
@@ -152,8 +154,8 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
               <span className="text-xl">📖</span>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Group Notching</h2>
-              <p className="text-sm text-gray-600">Log Ruhi study session for {plotName}</p>
+              <h2 className="text-xl font-semibold text-gray-900">{t('bulkNotching.title')}</h2>
+              <p className="text-sm text-gray-600">{t('bulkNotching.subtitle', { plotName })}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 relative">
@@ -180,7 +182,7 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {showDateTimeField && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date & Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bulkNotching.dateTime')}</label>
               <input
                 type="datetime-local"
                 value={timestampToDateTimeLocal(customDateTime)}
@@ -192,9 +194,9 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
 
           {/* Session Start */}
           <div className="bg-amber-50 rounded-xl p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-amber-800">Session Start</h3>
+            <h3 className="text-sm font-semibold text-amber-800">{t('bulkNotching.sessionStart')}</h3>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Book *</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.bookLabel')}</label>
               <select
                 value={book}
                 onChange={e => handleBookChange(e.target.value)}
@@ -207,13 +209,13 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Unit *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.unitLabel')}</label>
                 <input type="number" min={1} max={UNITS_PER_BOOK} value={startUnit}
                   onChange={e => handleStartChange('unit', parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Section *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.sectionLabel')}</label>
                 <input type="number" min={1} max={getSectionsPerUnit(book)} value={startSection}
                   onChange={e => handleStartChange('section', parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
@@ -223,24 +225,24 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
 
           {/* Session End */}
           <div className="bg-amber-50 rounded-xl p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-amber-800">Session End</h3>
+            <h3 className="text-sm font-semibold text-amber-800">{t('bulkNotching.sessionEnd')}</h3>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Book</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.bookLabelEnd')}</label>
               <select value={book} disabled
                 className="w-full px-3 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm text-gray-500 cursor-not-allowed">
                 {RUHI_BOOKS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Same book as session start</p>
+              <p className="text-xs text-gray-400 mt-1">{t('bulkNotching.sameBook')}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Unit *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.unitLabel')}</label>
                 <input type="number" min={startUnit} max={UNITS_PER_BOOK} value={endUnit}
                   onChange={e => setEndUnit(parseInt(e.target.value) || startUnit)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Section *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.sectionLabel')}</label>
                 <input type="number" min={endUnit === startUnit ? startSection : 1} max={getSectionsPerUnit(book)} value={endSection}
                   onChange={e => setEndSection(parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
@@ -251,20 +253,20 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
           {/* Summary */}
           {isComplete && (
             <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
-              <span className="text-amber-700 text-sm font-medium">Total sections studied:</span>
-              <span className="text-amber-900 font-semibold text-sm">about {sectionsStudied} {sectionsStudied === 1 ? 'section' : 'sections'}</span>
+              <span className="text-amber-700 text-sm font-medium">{t('bulkNotching.totalSections')}</span>
+              <span className="text-amber-900 font-semibold text-sm">{t('bulkNotching.aboutSections', { count: sectionsStudied, unit: sectionsStudied === 1 ? t('bulkNotching.section') : t('bulkNotching.sections') })}</span>
             </div>
           )}
 
           {/* Progress description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Progress description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('bulkNotching.progressLabel')}</label>
             <textarea
               value={progressDescription}
               onChange={e => setProgressDescription(e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="What was studied or discussed during this session?"
+              placeholder={t('bulkNotching.progressPlaceholder')}
             />
           </div>
 
@@ -278,11 +280,11 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors">
-              Cancel
+              {t('bulkNotching.cancelBtn')}
             </button>
             <button type="submit" disabled={!isComplete || isSubmitting}
               className="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors">
-              {isSubmitting ? 'Saving...' : `Log for ${selectedPlantIds.size} plants`}
+              {isSubmitting ? t('bulkNotching.savingBtn') : t('bulkNotching.logForPlants', { count: selectedPlantIds.size })}
             </button>
           </div>
         </form>

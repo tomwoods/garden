@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FixedCropper, FixedCropperRef } from 'react-advanced-cropper';
 import 'react-advanced-cropper/dist/style.css';
 import { X, ZoomIn, ZoomOut, Check } from 'lucide-react';
@@ -10,6 +11,7 @@ interface CropModalProps {
 }
 
 export const CropModal: React.FC<CropModalProps> = ({ imageSrc, onConfirm, onCancel }) => {
+  const { t } = useTranslation('modals');
   const cropperRef = useRef<FixedCropperRef>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -38,7 +40,7 @@ export const CropModal: React.FC<CropModalProps> = ({ imageSrc, onConfirm, onCan
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-80 p-4">
       <div className="flex flex-col w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl bg-gray-900">
         <div className="flex items-center justify-between px-5 py-4">
-          <span className="text-sm text-gray-300">Drag to reposition · Pinch to zoom</span>
+          <span className="text-sm text-gray-300">{t('crop.instructions')}</span>
           <button
             onClick={onCancel}
             className="text-gray-400 hover:text-white transition-colors p-1 rounded-full"
@@ -87,7 +89,7 @@ export const CropModal: React.FC<CropModalProps> = ({ imageSrc, onConfirm, onCan
             className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-green-800 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors text-sm"
           >
             <Check className="w-4 h-4" />
-            {isProcessing ? 'Saving...' : 'Use Photo'}
+            {isProcessing ? t('crop.processing') : t('crop.usePhoto')}
           </button>
         </div>
       </div>

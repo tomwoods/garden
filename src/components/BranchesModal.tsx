@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { AutocompleteInput, readAutocompleteCache, writeAutocompleteCache } from './AutocompleteInput';
@@ -85,6 +86,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
   lastNotching,
   onSubmit
 }) => {
+  const { t } = useTranslation('modals');
   const [budText, setBudText] = useState('');
   const [capabilityText, setCapabilityText] = useState('');
   const [notchingData, setNotchingData] = useState<NotchingFormData>({
@@ -261,9 +263,9 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
   };
 
   const getConfig = () => {
-    if (subType === 'bud') return { title: 'Add Bud', emoji: '🌿', description: `Note a capacity or interest in ${plantName}` };
-    if (subType === 'notching') return { title: 'Record Notching', emoji: '📖', description: `Log a Ruhi study session with ${plantName}` };
-    return { title: 'Record Capability', emoji: '✨', description: `Record an area of service for ${plantName}` };
+    if (subType === 'bud') return { title: t('branches.addBud'), emoji: '🌿', description: t('branches.addBudDesc', { name: plantName }) };
+    if (subType === 'notching') return { title: t('branches.recordNotching'), emoji: '📖', description: t('branches.notchingDesc', { name: plantName }) };
+    return { title: t('branches.recordCapability'), emoji: '✨', description: t('branches.capabilityDesc', { name: plantName }) };
   };
 
   if (!isOpen) return null;
@@ -281,7 +283,9 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                {editingItem ? config.title.replace('Add ', 'Edit ').replace('Record ', 'Edit ') : config.title}
+                {editingItem
+                  ? (subType === 'bud' ? t('branches.editBud') : subType === 'notching' ? t('branches.editNotching') : t('branches.editCapability'))
+                  : config.title}
               </h2>
               <p className="text-sm text-gray-600">{config.description}</p>
             </div>
@@ -316,14 +320,14 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
           {subType === 'bud' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Capacity, potential, or interest *
+                {t('branches.budLabel')}
               </label>
               <input
                 type="text"
                 value={budText}
                 onChange={e => setBudText(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
-                placeholder="e.g. Music, Teaching, Hospitality..."
+                placeholder={t('branches.budPlaceholder')}
                 required
                 autoFocus
               />
@@ -334,13 +338,13 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
           {subType === 'capability' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Area of service *
+                {t('branches.capabilityLabel')}
               </label>
               <AutocompleteInput
                 value={capabilityText}
                 onChange={setCapabilityText}
                 values={provenCapacities}
-                placeholder="e.g. Children's class teacher, Junior youth animator..."
+                placeholder={t('branches.capabilityPlaceholder')}
                 accentColor="emerald"
                 required
               />
@@ -352,7 +356,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
             <>
               {showDateTimeField && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date & Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('branches.dateTime')}</label>
                   <input
                     type="datetime-local"
                     value={timestampToDateTimeLocal(customDateTime)}
@@ -364,9 +368,9 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
 
               {/* Session Start */}
               <div className="bg-amber-50 rounded-xl p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-amber-800">Session Start</h3>
+                <h3 className="text-sm font-semibold text-amber-800">{t('branches.sessionStart')}</h3>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Book *</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.bookLabel')}</label>
                   <select
                     value={notchingData.book}
                     onChange={e => handleBookChange(e.target.value)}
@@ -379,7 +383,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Unit *</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.unitLabel')}</label>
                     <input
                       type="number"
                       min={1}
@@ -390,7 +394,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Section *</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.sectionLabel')}</label>
                     <input
                       type="number"
                       min={1}
@@ -405,9 +409,9 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
 
               {/* Session End */}
               <div className="bg-amber-50 rounded-xl p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-amber-800">Session End</h3>
+                <h3 className="text-sm font-semibold text-amber-800">{t('branches.sessionEnd')}</h3>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Book *</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.bookLabelEnd')}</label>
                   <select
                     value={notchingData.book}
                     disabled
@@ -417,11 +421,11 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                       <option key={b.value} value={b.value}>{b.label}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1">Same book as session start</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('branches.sameBook')}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Unit *</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.unitLabel')}</label>
                     <input
                       type="number"
                       min={notchingData.startUnit}
@@ -432,7 +436,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Section *</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.sectionLabel')}</label>
                     <input
                       type="number"
                       min={notchingData.endUnit === notchingData.startUnit ? notchingData.startSection : 1}
@@ -448,20 +452,20 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
               {/* Summary */}
               {isNotchingComplete && (
                 <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
-                  <span className="text-amber-700 text-sm font-medium">Total sections studied:</span>
-                  <span className="text-amber-900 font-semibold text-sm">about {sectionsStudied} {sectionsStudied === 1 ? 'section' : 'sections'}</span>
+                  <span className="text-amber-700 text-sm font-medium">{t('branches.totalSections')}</span>
+                  <span className="text-amber-900 font-semibold text-sm">{t('branches.aboutSections', { count: sectionsStudied, unit: sectionsStudied === 1 ? t('branches.section') : t('branches.sections') })}</span>
                 </div>
               )}
 
               {/* Progress description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Progress description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('branches.progressLabel')}</label>
                 <textarea
                   value={notchingData.progress_description}
                   onChange={e => setNotchingData(prev => ({ ...prev, progress_description: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none"
                   rows={3}
-                  placeholder="What was studied or discussed during this session?"
+                  placeholder={t('branches.progressPlaceholder')}
                 />
               </div>
             </>
@@ -474,14 +478,14 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
               onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
             >
-              Cancel
+              {t('branches.cancelBtn')}
             </button>
             <button
               type="submit"
               disabled={!isFormValid() || isSubmitting}
               className="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
             >
-              {isSubmitting ? 'Saving...' : (editingItem ? 'Update' : 'Save')}
+              {isSubmitting ? t('branches.savingBtn') : (editingItem ? t('branches.updateBtn') : t('branches.saveBtn'))}
             </button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Users } from 'lucide-react';
 import { PlantSelectorChecklist } from './PlantSelectorChecklist';
 import type { Plant } from '../lib/database';
@@ -20,6 +21,7 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
   currentMemberIds,
   onSave
 }) => {
+  const { t } = useTranslation('modals');
   const [selectedPlantIds, setSelectedPlantIds] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,10 +58,10 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                Manage Members
+                {t('manageMembers.title')}
               </h2>
               <p className="text-sm text-gray-600">
-                Add or remove plants from {plotName}
+                {t('manageMembers.subtitle', { plotName })}
               </p>
             </div>
           </div>
@@ -86,14 +88,14 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
               onClick={onClose}
               className="text-xs text-green-600 hover:text-green-700 font-medium"
             >
-              Cancel
+              {t('manageMembers.cancelBtn')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
             >
-              {isSubmitting ? 'Saving...' : 'Update Members'}
+              {isSubmitting ? t('manageMembers.savingBtn') : t('manageMembers.updateBtn')}
             </button>
           </div>
         </form>

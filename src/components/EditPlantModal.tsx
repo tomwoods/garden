@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, User, Phone, FileText, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { LocationPicker } from './LocationPicker';
@@ -35,6 +36,7 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
     care_frequency_multiplier: 2,
     care_frequency_unit: 'weeks' as 'days' | 'weeks'
   });
+  const { t } = useTranslation('modals');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdditionalInfoMenu, setShowAdditionalInfoMenu] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -134,7 +136,7 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
               <span className="text-xl">🌱</span>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">Change Plant Details</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('editPlant.title')}</h2>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -181,14 +183,14 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <User className="w-4 h-4 inline mr-1" />
-              Name *
+              {t('addPlant.nameLabel')}
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-              placeholder="Enter their name"
+              placeholder={t('addPlant.namePlaceholder')}
               required
             />
           </div>
@@ -197,20 +199,20 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Phone className="w-4 h-4 inline mr-1" />
-                Phone
+                {t('addPlant.phone')}
               </label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                placeholder="+1 (555) 123-4567"
+                placeholder={t('addPlant.phonePlaceholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Care frequency
+                {t('addPlant.careFrequency')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -232,8 +234,8 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
                   }))}
                   className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                 >
-                  <option value="days">days</option>
-                  <option value="weeks">weeks</option>
+                  <option value="days">{t('addPlant.days')}</option>
+                  <option value="weeks">{t('addPlant.weeks')}</option>
                 </select>
               </div>
             </div>
@@ -242,13 +244,13 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <FileText className="w-4 h-4 inline mr-1" />
-              Description
+              {t('addPlant.description')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
-              placeholder="Notes about this person or relationship..."
+              placeholder={t('addPlant.descriptionPlaceholder')}
               rows={3}
             />
           </div>
@@ -257,7 +259,7 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
           {location && (
             <div className="p-3 bg-blue-50 rounded-xl">
               <div className="flex items-center gap-2 text-blue-700">
-                <span className="text-sm font-medium">📍 Location added</span>
+                <span className="text-sm font-medium">📍 {t('addPlant.locationAdded')}</span>
               </div>
               <div className="text-xs text-blue-600 mt-1">
                 {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
@@ -270,7 +272,7 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
             <div className="p-3 bg-green-50 rounded-xl">
               <div className="flex items-center gap-2 text-green-700">
                 <span className="text-sm font-medium">
-                  {ageInfo.is_over_21 ? 'Age: older than 21' : `Age: ${ageInfo.age}`}
+                  {ageInfo.is_over_21 ? t('addPlant.ageOlder') : t('addPlant.age', { age: ageInfo.age })}
                 </span>
               </div>
             </div>
@@ -290,7 +292,7 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
                   <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    Edit
+                    {t('addPlant.editImage')}
                   </span>
                 </div>
               </div>
@@ -304,14 +306,14 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
               onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
             >
-              Cancel
+              {t('editPlant.cancelBtn')}
             </button>
             <button
               type="submit"
               disabled={!formData.name.trim() || isSubmitting}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
             >
-              {isSubmitting ? 'Changing...' : 'Change'}
+              {isSubmitting ? t('editPlant.submittingBtn') : t('editPlant.submitBtn')}
             </button>
           </div>
         </form>

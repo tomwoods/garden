@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { LearningSourceInput, readCache, writeCache } from './LearningSourceInput';
@@ -8,10 +9,10 @@ import type { Plant } from '../lib/database';
 
 const BASIC_ACTIVITY_CACHE_KEY = 'basic_activity_cache';
 const PRESET_BASIC_ACTIVITIES = [
-  { value: "children's class", label: "Children's class" },
-  { value: 'prayer meeting', label: 'Prayer meeting' },
-  { value: 'pre-youth group', label: 'Pre-youth group' },
-  { value: 'study circle', label: 'Study circle' },
+  { value: "children's class", labelKey: 'activity.basicActivityTypes.childrenClass' },
+  { value: 'prayer meeting', labelKey: 'activity.basicActivityTypes.prayerMeeting' },
+  { value: 'pre-youth group', labelKey: 'activity.basicActivityTypes.preYouth' },
+  { value: 'study circle', labelKey: 'activity.basicActivityTypes.studyCircle' },
 ];
 
 interface ActivityModalProps {
@@ -47,6 +48,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
   const [basicActivityType, setBasicActivityType] = useState('');
   const [basicActivityOther, setBasicActivityOther] = useState('');
   const [basicActivities, setBasicActivities] = useState<Array<{ id: string; text: string; count: number }>>([]);
+  const { t } = useTranslation('modals');
   const basicActivityOtherInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -229,12 +231,12 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
 
   const getActivityConfig = () => {
     const configs = {
-      tending: { title: 'Tend', emoji: '🪴', description: 'Log an interaction or connection' },
-      watering: { title: 'Water', emoji: '🚿', description: 'Record shared learning or study' },
-      sunlight: { title: 'Sunlight', emoji: '☀️', description: 'Record prayers for this soul' },
-      fruit: { title: 'Fruit', emoji: '🍎', description: 'Record acts of service or teaching' },
-      pruning: { title: 'Pruning Event', emoji: '✂️', description: 'Record struggles and difficulties' },
-      companion: { title: 'Companion', emoji: '🤝', description: 'Record relationships with other plants' }
+      tending: { title: 'Tend', emoji: '🪴', description: t('activity.tendingDesc') },
+      watering: { title: 'Water', emoji: '🚿', description: t('activity.wateringDesc') },
+      sunlight: { title: 'Sunlight', emoji: '☀️', description: t('activity.sunlightDesc') },
+      fruit: { title: 'Fruit', emoji: '🍎', description: t('activity.fruitDesc') },
+      pruning: { title: 'Pruning Event', emoji: '✂️', description: t('activity.pruningDesc') },
+      companion: { title: 'Companion', emoji: '🤝', description: t('activity.companionDesc') }
     };
     return configs[activityType];
   };
@@ -248,7 +250,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
     const dateTimeField = showDateTimeField && (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Date & Time
+          {t('activity.dateTime')}
         </label>
         <input
           type="datetime-local"
@@ -266,7 +268,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             {dateTimeField}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type of interaction *
+                {t('activity.interactionTypeRequired')}
               </label>
               {!showCustomInput ? (
                 <select
@@ -275,13 +277,13 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                   required
                 >
-                  <option value="conversation">Conversation</option>
-                  <option value="coffee">Coffee/Tea</option>
-                  <option value="meal">Shared meal</option>
-                  <option value="call">Phone call</option>
-                  <option value="message">Text/Message</option>
-                  <option value="activity">Activity together</option>
-                  <option value="other">Other</option>
+                  <option value="conversation">{t('activity.interactionTypes.conversation')}</option>
+                  <option value="coffee">{t('activity.interactionTypes.coffee')}</option>
+                  <option value="meal">{t('activity.interactionTypes.meal')}</option>
+                  <option value="call">{t('activity.interactionTypes.call')}</option>
+                  <option value="message">{t('activity.interactionTypes.message')}</option>
+                  <option value="activity">{t('activity.interactionTypes.activity')}</option>
+                  <option value="other">{t('activity.interactionTypes.other')}</option>
                 </select>
               ) : (
                 <input
@@ -289,7 +291,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                   value={formData.type || ''}
                   onChange={(e) => setFormData((prev: any) => ({ ...prev, type: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                  placeholder="Enter custom interaction type"
+                  placeholder={t('activity.interactionTypes.customPlaceholder')}
                   required
                 />
               )}
@@ -302,20 +304,20 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                   }}
                   className="mt-2 text-sm text-gray-600 hover:text-gray-800 underline"
                 >
-                  ← Back to options
+                  {t('activity.interactionTypes.backToOptions')}
                 </button>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Summary
+                {t('activity.summary')}
               </label>
               <textarea
                 value={formData.summary || ''}
                 onChange={(e) => handleChange('summary', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
                 rows={3}
-                placeholder="What did you talk about or do together?"
+                placeholder={t('activity.summaryPlaceholder')}
               />
             </div>
           </>
@@ -327,7 +329,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             {dateTimeField}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Source of learning *
+                {t('activity.learningSourceRequired')}
               </label>
               <LearningSourceInput
                 value={formData.source || ''}
@@ -338,14 +340,14 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Progress description
+                {t('activity.progressDesc')}
               </label>
               <textarea
                 value={formData.progress_description || ''}
                 onChange={(e) => handleChange('progress_description', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
                 rows={3}
-                placeholder="What did you learn or study together?"
+                placeholder={t('activity.progressPlaceholder')}
               />
             </div>
           </>
@@ -357,14 +359,14 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             {dateTimeField}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prayer topic *
+                {t('activity.prayerTopicRequired')}
               </label>
             <textarea
               value={formData.topic || ''}
               onChange={(e) => handleChange('topic', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="What did you pray for regarding this soul?"
+              placeholder={t('activity.prayerTopicPlaceholder')}
               required
             />
             </div>
@@ -390,7 +392,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                 className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
               />
               <label htmlFor="is-basic-activity" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
-                Is basic activity?
+                {t('activity.isBasicActivity')}
               </label>
             </div>
             {isBasicActivity && (
@@ -403,9 +405,9 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                   }}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
                 >
-                  <option value="">Select activity type...</option>
+                  <option value="">{t('activity.basicActivityTypes.selectPlaceholder')}</option>
                   {PRESET_BASIC_ACTIVITIES.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
                   ))}
                   <option value="other">Other</option>
                 </select>
@@ -426,14 +428,14 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description of service or teaching *
+                {t('activity.serviceDescRequired')}
               </label>
             <textarea
               value={formData.description || ''}
               onChange={(e) => handleChange('description', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="Describe the act of service or teaching this soul performed..."
+              placeholder={t('activity.serviceDescPlaceholder')}
               required
             />
             </div>
@@ -451,14 +453,14 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
+                {t('activity.pruningDescLabel')}
               </label>
               <textarea
                 value={formData.description || ''}
                 onChange={(e) => handleChange('description', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
                 rows={3}
-                placeholder="Describe the struggle or difficulty..."
+                placeholder={t('activity.pruningDescPlaceholder')}
               />
             </div>
           </>
@@ -469,7 +471,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
           <>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Related plant *
+                {t('activity.relatedPlantRequired')}
               </label>
               <select
                 value={formData.plant_b_id || ''}
@@ -477,7 +479,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                 required
               >
-                <option value="">Select a plant...</option>
+                <option value="">{t('activity.selectPlant')}</option>
                 {allPlants.filter(p => p.id !== plantId).map(plant => (
                   <option key={plant.id} value={plant.id}>{plant.name}</option>
                 ))}
@@ -485,14 +487,14 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Relationship *
+                {t('activity.relationshipRequired')}
               </label>
               <input
                 type="text"
                 value={formData.relationship_descriptor || ''}
                 onChange={(e) => handleChange('relationship_descriptor', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                placeholder="e.g., siblings, friends, colleagues..."
+                placeholder={t('activity.relationshipPlaceholder')}
                 required
               />
             </div>
@@ -544,7 +546,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                {editingItem ? 'Edit' : 'Add'} {config.title}
+                {editingItem ? t('activity.editTitle', { type: config.title }) : t('activity.addTitle', { type: config.title })}
               </h2>
               <p className="text-sm text-gray-600">
                 {config.description}
@@ -590,14 +592,14 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
               onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
             >
-              Cancel
+              {t('activity.cancelBtn')}
             </button>
             <button
               type="submit"
               disabled={!isFormValid() || isSubmitting}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
             >
-              {isSubmitting ? 'Saving...' : (editingItem ? 'Update' : 'Save')}
+              {isSubmitting ? t('activity.savingBtn') : (editingItem ? t('activity.updateBtn') : t('activity.saveBtn'))}
             </button>
           </div>
         </form>

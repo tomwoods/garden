@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Users, Copy, Check, Share2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { createGardenInvite } from '../lib/sharedGardenSyncService';
@@ -23,6 +24,7 @@ export const InviteToSharedGardenModal: React.FC<InviteToSharedGardenModalProps>
   gardenName,
   user,
 }) => {
+  const { t } = useTranslation('modals');
   const [inviteeName, setInviteeName] = useState('');
   const [step, setStep] = useState<Step>('form');
   const [inviteUrl, setInviteUrl] = useState('');
@@ -93,8 +95,8 @@ export const InviteToSharedGardenModal: React.FC<InviteToSharedGardenModalProps>
               <Users className="w-4 h-4 text-green-700" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Invite Gardener</h2>
-              <p className="text-xs text-gray-500">to {gardenName}</p>
+              <h2 className="text-base font-semibold text-gray-900">{t('inviteToSharedGarden.title')}</h2>
+              <p className="text-xs text-gray-500">{t('inviteToSharedGarden.subtitle', { gardenName })}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
@@ -106,18 +108,18 @@ export const InviteToSharedGardenModal: React.FC<InviteToSharedGardenModalProps>
           {step === 'form' && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600 leading-relaxed">
-                Generate a personal invitation link for a specific gardener. The link expires in 7 days.
+                {t('inviteToSharedGarden.intro')}
               </p>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Gardener's name or nickname
+                  {t('inviteToSharedGarden.nameLabel')}
                 </label>
                 <input
                   type="text"
                   value={inviteeName}
                   onChange={e => setInviteeName(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-sm"
-                  placeholder="How they'll appear to others"
+                  placeholder={t('inviteToSharedGarden.namePlaceholder')}
                   autoFocus
                   onKeyDown={e => { if (e.key === 'Enter') handleGenerate(); }}
                 />
@@ -132,14 +134,14 @@ export const InviteToSharedGardenModal: React.FC<InviteToSharedGardenModalProps>
                   onClick={onClose}
                   className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors text-sm"
                 >
-                  Cancel
+                  {t('inviteToSharedGarden.cancelBtn')}
                 </button>
                 <button
                   onClick={handleGenerate}
                   disabled={!inviteeName.trim()}
                   className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-medium transition-colors text-sm"
                 >
-                  Generate link
+                  {t('inviteToSharedGarden.generateBtn')}
                 </button>
               </div>
             </div>
@@ -148,13 +150,13 @@ export const InviteToSharedGardenModal: React.FC<InviteToSharedGardenModalProps>
           {step === 'generating' && (
             <div className="flex flex-col items-center py-8 gap-3">
               <div className="w-10 h-10 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-gray-500">Preparing secure link...</p>
+              <p className="text-sm text-gray-500">{t('inviteToSharedGarden.generating')}</p>
             </div>
           )}
 
           {step === 'ready' && (
             <div className="space-y-4">
-              <p className="text-xs text-gray-500 text-center">Invitation for <span className="font-medium text-gray-700">{inviteeName}</span></p>
+              <p className="text-xs text-gray-500 text-center">{t('inviteToSharedGarden.invitationFor', { name: inviteeName })}</p>
 
               {qrDataUrl && (
                 <div className="flex justify-center">
@@ -165,7 +167,7 @@ export const InviteToSharedGardenModal: React.FC<InviteToSharedGardenModalProps>
               )}
 
               <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-xs text-gray-500 mb-1">Share message</p>
+                <p className="text-xs text-gray-500 mb-1">{t('inviteToSharedGarden.shareMessage')}</p>
                 <p className="text-xs text-gray-700 leading-relaxed break-all">{shareText}</p>
               </div>
 
@@ -175,24 +177,24 @@ export const InviteToSharedGardenModal: React.FC<InviteToSharedGardenModalProps>
                   className="flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
                 >
                   {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                  Copy link
+                  {t('inviteToSharedGarden.copyLink')}
                 </button>
                 <button
                   onClick={handleCopyMessage}
                   className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
                 >
                   <Share2 className="w-4 h-4" />
-                  Copy message
+                  {t('inviteToSharedGarden.copyMessage')}
                 </button>
               </div>
 
-              <p className="text-xs text-gray-400 text-center">Expires in 7 days if unclaimed.</p>
+              <p className="text-xs text-gray-400 text-center">{t('inviteToSharedGarden.linkExpiry')}</p>
 
               <button
                 onClick={handleReset}
                 className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors py-1"
               >
-                Invite another gardener
+                {t('inviteToSharedGarden.inviteAnother')}
               </button>
             </div>
           )}

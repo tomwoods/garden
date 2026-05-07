@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Calendar, Clock, FileText } from 'lucide-react';
 
 interface ScheduleCareModalProps {
@@ -19,6 +20,7 @@ export const ScheduleCareModal: React.FC<ScheduleCareModalProps> = ({
     time: '',
     description: ''
   });
+  const { t } = useTranslation('modals');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Set default date to tomorrow and time to 9:00 AM when modal opens
@@ -79,10 +81,10 @@ export const ScheduleCareModal: React.FC<ScheduleCareModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                Schedule Care
+                {t('scheduleCare.title')}
               </h2>
               <p className="text-sm text-gray-600">
-                Set a reminder for {plantName}
+                {t('scheduleCare.subtitle', { name: plantName })}
               </p>
             </div>
           </div>
@@ -100,7 +102,7 @@ export const ScheduleCareModal: React.FC<ScheduleCareModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Calendar className="w-4 h-4 inline mr-1" />
-                Date *
+                {t('scheduleCare.dateLabel')}
               </label>
               <input
                 type="date"
@@ -113,7 +115,7 @@ export const ScheduleCareModal: React.FC<ScheduleCareModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
-                Time *
+                {t('scheduleCare.timeLabel')}
               </label>
               <input
                 type="time"
@@ -128,14 +130,14 @@ export const ScheduleCareModal: React.FC<ScheduleCareModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <FileText className="w-4 h-4 inline mr-1" />
-              Note (optional)
+              {t('scheduleCare.noteLabel')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="Add a note about what care is needed..."
+              placeholder={t('scheduleCare.notePlaceholder')}
             />
           </div>
 
@@ -146,14 +148,14 @@ export const ScheduleCareModal: React.FC<ScheduleCareModalProps> = ({
               onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
             >
-              Cancel
+              {t('scheduleCare.cancelBtn')}
             </button>
             <button
               type="submit"
               disabled={!isFormValid || isSubmitting}
               className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
             >
-              {isSubmitting ? 'Scheduling...' : 'Schedule Care'}
+              {isSubmitting ? t('scheduleCare.submittingBtn') : t('scheduleCare.submitBtn')}
             </button>
           </div>
         </form>

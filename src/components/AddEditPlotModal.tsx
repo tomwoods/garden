@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Users, FileText } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { LocationPicker } from './LocationPicker';
@@ -21,6 +22,7 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
     name: '',
     description: ''
   });
+  const { t } = useTranslation('modals');
   const [additionalInfo, setAdditionalInfo] = useState<any>({});
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,7 +108,7 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
               <img src="/plots_icon.svg" alt="Plot" className="w-5 h-5" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {isEditing ? 'Edit Plot' : 'Create New Plot'}
+              {isEditing ? t('addEditPlot.editTitle') : t('addEditPlot.createTitle')}
             </h2>
           </div>
           <div className="flex items-center gap-2">
@@ -128,14 +130,14 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <img src="/plots_icon.svg" alt="Plot" className="w-4 h-4 inline mr-1" style={{ filter: 'invert(25%) sepia(85%) saturate(1500%) hue-rotate(90deg) brightness(95%) contrast(105%)' }} />
-              Plot Name *
+              {t('addEditPlot.plotNameLabel')}
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-              placeholder="Enter plot name"
+              placeholder={t('addEditPlot.plotNamePlaceholder')}
               required
             />
           </div>
@@ -143,13 +145,13 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <FileText className="w-4 h-4 inline mr-1" />
-              Description
+              {t('addEditPlot.descriptionLabel')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
-              placeholder="Describe this plot..."
+              placeholder={t('addEditPlot.descriptionPlaceholder')}
               rows={3}
             />
           </div>
@@ -158,7 +160,7 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
           {additionalInfo.location && (
             <div className="p-3 bg-blue-50 rounded-xl">
               <div className="flex items-center gap-2 text-blue-700">
-                <span className="text-sm font-medium">📍 Location added</span>
+                <span className="text-sm font-medium">📍 {t('addEditPlot.locationAdded')}</span>
               </div>
               <div className="text-xs text-blue-600 mt-1">
                 {additionalInfo.location.lat.toFixed(6)}, {additionalInfo.location.lng.toFixed(6)}
@@ -173,14 +175,16 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
               onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
             >
-              Cancel
+              {t('addEditPlot.cancelBtn')}
             </button>
             <button
               type="submit"
               disabled={!formData.name.trim() || isSubmitting}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
             >
-              {isSubmitting ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Plot' : 'Create Plot')}
+              {isSubmitting
+                ? (isEditing ? t('addEditPlot.updatingBtn') : t('addEditPlot.creatingBtn'))
+                : (isEditing ? t('addEditPlot.updateBtn') : t('addEditPlot.createBtn'))}
             </button>
           </div>
         </form>

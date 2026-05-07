@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, User, Phone, Mail, FileText, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { CropModal } from './CropModal';
 import { uploadService } from '../lib/uploadService';
@@ -52,6 +53,7 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
   const [croppedPhoto, setCroppedPhoto] = useState<string | null>(null);
   const [showCrop, setShowCrop] = useState<boolean>(() => !!contacts[0]?.photoDataUrl);
 
+  const { t } = useTranslation('modals');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const quotaInfo = uploadService.getQuotaInfo();
@@ -124,9 +126,9 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
                 <User className="w-5 h-5 text-green-700" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Sow from Contact</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t('importContact.title')}</h2>
                 {contacts.length > 1 && (
-                  <p className="text-xs text-gray-500">{contacts.length} contacts found</p>
+                  <p className="text-xs text-gray-500">{t('importContact.contactsFound', { count: contacts.length })}</p>
                 )}
               </div>
             </div>
@@ -185,13 +187,13 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Photo from contact.{' '}
+                  {t('importContact.photoFromContact')}{' '}
                   <button
                     type="button"
                     onClick={handleRemovePhoto}
                     className="text-red-500 hover:text-red-700 underline"
                   >
-                    Remove
+                    {t('importContact.removePhoto')}
                   </button>
                 </p>
               </div>
@@ -200,21 +202,21 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
             {/* Quota warning if photo present but quota full */}
             {pendingPhotoSrc && !effectivePhoto && !showCrop && quotaInfo.hasReachedLimit && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-                Image quota full — photo will not be imported.
+                {t('importContact.imageQuotaFull')}
               </div>
             )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <User className="w-4 h-4 inline mr-1" />
-                Name *
+                {t('importContact.nameLabel')}
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                placeholder="Enter their name"
+                placeholder={t('importContact.namePlaceholder')}
                 required
               />
             </div>
@@ -222,48 +224,48 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Phone className="w-4 h-4 inline mr-1" />
-                Phone
+                {t('importContact.phoneLabel')}
               </label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                placeholder="+1 (555) 123-4567"
+                placeholder={t('importContact.phonePlaceholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Mail className="w-4 h-4 inline mr-1" />
-                Email
+                {t('importContact.emailLabel')}
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                placeholder="email@example.com"
+                placeholder={t('importContact.emailPlaceholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="w-4 h-4 inline mr-1" />
-                Notes
+                {t('importContact.notesLabel')}
               </label>
               <textarea
                 value={formData.description}
                 onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
-                placeholder="Notes about this person or relationship..."
+                placeholder={t('importContact.notesPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Care frequency
+                {t('importContact.careFrequency')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -285,8 +287,8 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
                   }))}
                   className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                 >
-                  <option value="days">days</option>
-                  <option value="weeks">weeks</option>
+                  <option value="days">{t('addPlant.days')}</option>
+                  <option value="weeks">{t('addPlant.weeks')}</option>
                 </select>
               </div>
             </div>
@@ -297,14 +299,14 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
                 onClick={onClose}
                 className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
               >
-                Discard
+                {t('importContact.discardBtn')}
               </button>
               <button
                 type="submit"
                 disabled={!formData.name.trim() || isSubmitting}
                 className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
               >
-                {isSubmitting ? 'Sowing...' : 'Sow into Garden'}
+                {isSubmitting ? t('importContact.submittingBtn') : t('importContact.submitBtn')}
               </button>
             </div>
           </form>

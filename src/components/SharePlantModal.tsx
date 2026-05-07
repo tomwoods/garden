@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Share2, Download, Users, Eye, Pencil, Copy, Check, QrCode, Leaf, TreePine } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Plant } from '../lib/database';
@@ -62,6 +63,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
   plant,
   user,
 }) => {
+  const { t } = useTranslation('modals');
   const [activeTab, setActiveTab] = useState<Tab>('contact');
   const [shareMode, setShareMode] = useState<ShareMode>('view');
   const [shareStep, setShareStep] = useState<ShareStep>('configure');
@@ -250,8 +252,8 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
               <Share2 className="w-4 h-4 text-green-700" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Share {plant.name}</h2>
-              <p className="text-xs text-gray-500">Choose how to share this plant</p>
+              <h2 className="text-base font-semibold text-gray-900">{t('sharePlant.title', { name: plant.name })}</h2>
+              <p className="text-xs text-gray-500">{t('sharePlant.subtitle')}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
@@ -269,7 +271,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Export Contact
+            {t('sharePlant.exportContactTab')}
           </button>
           <button
             onClick={() => setActiveTab('share')}
@@ -279,7 +281,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Share with Gardener
+            {t('sharePlant.shareGardenerTab')}
           </button>
           {gardenRefs.length > 0 && (
             <button
@@ -290,7 +292,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Add to Garden
+              {t('sharePlant.addToGardenTab')}
             </button>
           )}
         </div>
@@ -302,13 +304,12 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
           {activeTab === 'contact' && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600 leading-relaxed">
-                Download a vCard contact file with {plant.name}'s name, phone, email, and notes.
-                Activity records are not included.
+                {t('sharePlant.exportDesc', { name: plant.name })}
               </p>
               <div className="bg-green-50 rounded-xl p-4 flex items-start gap-3">
                 <Leaf className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-green-800">
-                  The contact file can be imported into any phone's contacts app or address book.
+                  {t('sharePlant.exportHint')}
                 </p>
               </div>
               <button
@@ -316,7 +317,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                 className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-xl transition-colors"
               >
                 <Download className="w-4 h-4" />
-                Download .vcf contact
+                {t('sharePlant.downloadVcf')}
               </button>
             </div>
           )}
@@ -327,7 +328,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
               {gardenLinkStep === 'select' && (
                 <>
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    Copy {plant.name}'s profile to a shared garden so others can tend together. Your activity records stay private.
+                    {t('sharePlant.gardenDesc', { name: plant.name })}
                   </p>
                   <div className="space-y-2">
                     {gardenRefs.map(ref => (
@@ -350,7 +351,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                             {ref.gardenName}
                           </p>
                           {ref.disconnected && (
-                            <p className="text-xs text-amber-600">Disconnected</p>
+                            <p className="text-xs text-amber-600">{t('sharePlant.disconnected')}</p>
                           )}
                         </div>
                       </button>
@@ -365,7 +366,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                     className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-medium py-3 px-4 rounded-xl transition-colors"
                   >
                     <TreePine className="w-4 h-4" />
-                    Add to shared garden
+                    {t('sharePlant.addToGardenBtn')}
                   </button>
                 </>
               )}
@@ -373,7 +374,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
               {gardenLinkStep === 'linking' && (
                 <div className="flex flex-col items-center py-8 gap-3">
                   <div className="w-10 h-10 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-gray-500">Adding to garden...</p>
+                  <p className="text-sm text-gray-500">{t('sharePlant.addingToGarden')}</p>
                 </div>
               )}
 
@@ -383,14 +384,14 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <TreePine className="w-6 h-6 text-green-700" />
                     </div>
-                    <p className="font-medium text-green-900 text-sm">{plant.name} added to the garden</p>
-                    <p className="text-xs text-green-700 mt-1">Profile copied. Your activities remain private.</p>
+                    <p className="font-medium text-green-900 text-sm">{t('sharePlant.addedToGarden', { name: plant.name })}</p>
+                    <p className="text-xs text-green-700 mt-1">{t('sharePlant.profileCopied')}</p>
                   </div>
                   <button
                     onClick={onClose}
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-xl transition-colors text-sm"
                   >
-                    Done
+                    {t('sharePlant.doneBtn')}
                   </button>
                 </div>
               )}
@@ -404,14 +405,13 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
               {shareStep === 'configure' && (
                 <>
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    Share {plant.name} with another gardener using a secure, end-to-end encrypted link.
-                    The link expires in 7 days if unclaimed.
+                    {t('sharePlant.gardenDesc', { name: plant.name })}
                   </p>
 
                   {/* Permission selector */}
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                      Permission
+                      {t('sharePlant.permissionLabel')}
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -424,8 +424,8 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                       >
                         <Eye className="w-4 h-4 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium">View only</p>
-                          <p className="text-xs opacity-70">Can see, not tend</p>
+                          <p className="text-sm font-medium">{t('sharePlant.viewOnly')}</p>
+                          <p className="text-xs opacity-70">{t('sharePlant.viewOnlyDesc')}</p>
                         </div>
                       </button>
                       <button
@@ -438,8 +438,8 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                       >
                         <Pencil className="w-4 h-4 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium">Can tend</p>
-                          <p className="text-xs opacity-70">Full co-care access</p>
+                          <p className="text-sm font-medium">{t('sharePlant.canTend')}</p>
+                          <p className="text-xs opacity-70">{t('sharePlant.canTendDesc')}</p>
                         </div>
                       </button>
                     </div>
@@ -454,7 +454,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                     className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-xl transition-colors"
                   >
                     <Users className="w-4 h-4" />
-                    Generate share link
+                    {t('sharePlant.generateLink')}
                   </button>
                 </>
               )}
@@ -462,7 +462,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
               {shareStep === 'generating' && (
                 <div className="flex flex-col items-center py-8 gap-3">
                   <div className="w-10 h-10 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-gray-500">Preparing secure link...</p>
+                  <p className="text-sm text-gray-500">{t('sharePlant.generatingLink')}</p>
                 </div>
               )}
 
@@ -479,7 +479,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
 
                   {/* Share text */}
                   <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">Share message</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('sharePlant.shareMessage')}</p>
                     <p className="text-sm text-gray-700 leading-relaxed break-all">{shareText}</p>
                   </div>
 
@@ -489,19 +489,19 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                       className="flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
                     >
                       {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                      Copy link
+                      {t('sharePlant.copyLink')}
                     </button>
                     <button
                       onClick={handleCopyLink}
                       className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
                     >
                       <Share2 className="w-4 h-4" />
-                      Copy message
+                      {t('sharePlant.copyMessage')}
                     </button>
                   </div>
 
                   <p className="text-xs text-gray-400 text-center">
-                    This link expires in 7 days if unclaimed.
+                    {t('sharePlant.linkExpiry')}
                   </p>
 
                   <button
@@ -512,7 +512,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
                     }}
                     className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors py-1"
                   >
-                    Generate a new link
+                    {t('sharePlant.generateNew')}
                   </button>
                 </div>
               )}
