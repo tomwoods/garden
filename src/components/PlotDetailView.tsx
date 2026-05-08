@@ -308,6 +308,39 @@ export const PlotDetailView: React.FC = () => {
               
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                 <button
+                  onClick={() => handleBulkActivity('sunlight')}
+                  className="flex items-center gap-3 p-4 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl transition-colors"
+                >
+                  <span className="text-2xl">☀️</span>
+                  <div className="text-left">
+                    <div className="font-medium">{t('plotActivities.sunlight')}</div>
+                    <div className="text-sm opacity-80">{t('plotActivities.sunlightDesc')}</div>
+                  </div>
+                </button>
+                                
+                <button
+                  onClick={async () => {
+                    if (!plot || plot.members.length === 0) {
+                      error(t('toasts.noMembers'), t('toasts.noMembersDesc'));
+                      return;
+                    }
+                    const allNotchings = (await Promise.all(
+                      plot.members.map(m => DatabaseService.getNotchingsForPlant(m.id))
+                    )).flat();
+                    const mostRecent = allNotchings.sort((a, b) => b.datetime - a.datetime)[0];
+                    setLastPlotNotching(mostRecent ? { book: mostRecent.book, end_unit: mostRecent.end_unit, end_section: mostRecent.end_section } : undefined);
+                    setBulkNotchingModal(true);
+                  }}
+                  className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
+                >
+                  <span className="text-2xl">📖</span>
+                  <div className="text-left">
+                    <div className="font-medium">{t('plotActivities.notching')}</div>
+                    <div className="text-sm opacity-80">{t('plotActivities.notchingDesc')}</div>
+                  </div>
+                </button>
+                
+                <button
                   onClick={() => handleBulkActivity('tending')}
                   className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-colors"
                 >
@@ -330,17 +363,6 @@ export const PlotDetailView: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={() => handleBulkActivity('sunlight')}
-                  className="flex items-center gap-3 p-4 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl transition-colors"
-                >
-                  <span className="text-2xl">☀️</span>
-                  <div className="text-left">
-                    <div className="font-medium">{t('plotActivities.sunlight')}</div>
-                    <div className="text-sm opacity-80">{t('plotActivities.sunlightDesc')}</div>
-                  </div>
-                </button>
-                
-                <button
                   onClick={() => handleBulkActivity('fruit')}
                   className="flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl transition-colors"
                 >
@@ -351,27 +373,6 @@ export const PlotDetailView: React.FC = () => {
                   </div>
                 </button>
 
-                <button
-                  onClick={async () => {
-                    if (!plot || plot.members.length === 0) {
-                      error(t('toasts.noMembers'), t('toasts.noMembersDesc'));
-                      return;
-                    }
-                    const allNotchings = (await Promise.all(
-                      plot.members.map(m => DatabaseService.getNotchingsForPlant(m.id))
-                    )).flat();
-                    const mostRecent = allNotchings.sort((a, b) => b.datetime - a.datetime)[0];
-                    setLastPlotNotching(mostRecent ? { book: mostRecent.book, end_unit: mostRecent.end_unit, end_section: mostRecent.end_section } : undefined);
-                    setBulkNotchingModal(true);
-                  }}
-                  className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
-                >
-                  <span className="text-2xl">📖</span>
-                  <div className="text-left">
-                    <div className="font-medium">{t('plotActivities.notching')}</div>
-                    <div className="text-sm opacity-80">{t('plotActivities.notchingDesc')}</div>
-                  </div>
-                </button>
               </div>
             </div>
           )}
