@@ -512,7 +512,7 @@ export const SettingsView: React.FC = () => {
         }
       ]
     },
-    {
+    /*{
       title: t('sections.gardenManagement'),
       icon: Database,
       items: [
@@ -520,7 +520,7 @@ export const SettingsView: React.FC = () => {
         { label: t('gardenMgmt.autoSchedule'), description: t('gardenMgmt.autoScheduleDesc'), type: 'toggle' },
         { label: t('gardenMgmt.bulkOps'), description: t('gardenMgmt.bulkOpsDesc'), type: 'action' }
       ]
-    },
+    },*/
     {
       title: t('sections.appFeatures'),
       icon: Smartphone,
