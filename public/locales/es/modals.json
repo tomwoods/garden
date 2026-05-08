@@ -25,7 +25,7 @@
     "submittingBtn": "Cambiando..."
   },
   "activity": {
-    "addTitle": "Agregar {{type}}",
+    "addTitle": "Registrar un {{type}}",
     "editTitle": "Editar {{type}}",
     "typeTending": "Cuidado",
     "typeWatering": "Riego",
