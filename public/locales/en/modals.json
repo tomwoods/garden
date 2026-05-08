@@ -25,7 +25,7 @@
     "submittingBtn": "Changing..."
   },
   "activity": {
-    "addTitle": "Add {{type}}",
+    "addTitle": "Log a {{type}}",
     "editTitle": "Edit {{type}}",
     "typeTending": "Tending",
     "typeWatering": "Watering",
