@@ -317,6 +317,29 @@ export const SharedPlotDetailView: React.FC = () => {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <button
+                onClick={() => handleBulkActivity('sunlight')}
+                className="flex items-center gap-3 p-4 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl transition-colors"
+              >
+                <span className="text-xl">☀️</span>
+                <div className="text-left">
+                  <p className="text-sm font-medium">{t('plotActivities.sunlight')}</p>
+                  <p className="text-xs opacity-70">{t('plotActivities.sunlightDesc')}</p>
+                </div>
+              </button>
+
+
+              <button
+                onClick={handleOpenNotching}
+                className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
+              >
+                <span className="text-xl">📖</span>
+                <div className="text-left">
+                  <p className="text-sm font-medium">{t('plotActivities.notching')}</p>
+                  <p className="text-xs opacity-70">{t('plotActivities.notchingDesc')}</p>
+                </div>
+              </button>
+              
+              <button
                 onClick={() => handleBulkActivity('tending')}
                 className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-colors"
               >
@@ -338,17 +361,7 @@ export const SharedPlotDetailView: React.FC = () => {
                 </div>
               </button>
 
-              <button
-                onClick={() => handleBulkActivity('sunlight')}
-                className="flex items-center gap-3 p-4 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl transition-colors"
-              >
-                <span className="text-xl">☀️</span>
-                <div className="text-left">
-                  <p className="text-sm font-medium">{t('plotActivities.sunlight')}</p>
-                  <p className="text-xs opacity-70">{t('plotActivities.sunlightDesc')}</p>
-                </div>
-              </button>
-
+              
               <button
                 onClick={() => handleBulkActivity('fruit')}
                 className="flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl transition-colors"
@@ -360,16 +373,6 @@ export const SharedPlotDetailView: React.FC = () => {
                 </div>
               </button>
 
-              <button
-                onClick={handleOpenNotching}
-                className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
-              >
-                <span className="text-xl">📖</span>
-                <div className="text-left">
-                  <p className="text-sm font-medium">{t('plotActivities.notching')}</p>
-                  <p className="text-xs opacity-70">{t('plotActivities.notchingDesc')}</p>
-                </div>
-              </button>
             </div>
           </div>
         )}
