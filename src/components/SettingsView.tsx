@@ -427,8 +427,8 @@ export const SettingsView: React.FC = () => {
       icon: Bell,
       items: [
         { label: t('notifications.push'), description: t('notifications.pushDesc'), type: 'notification-toggle', enabled: notificationsEnabled, onToggle: handleToggleNotifications },
-        { label: t('notifications.sound'), description: t('notifications.soundDesc'), type: 'toggle' },
-        { label: t('notifications.quietHours'), description: t('notifications.quietHoursDesc'), type: 'action' }
+        //{ label: t('notifications.sound'), description: t('notifications.soundDesc'), type: 'toggle' },
+        //{ label: t('notifications.quietHours'), description: t('notifications.quietHoursDesc'), type: 'action' }
       ]
     },
     {
