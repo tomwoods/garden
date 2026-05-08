@@ -25,7 +25,7 @@
     "submittingBtn": "Ap chanje..."
   },
   "activity": {
-    "addTitle": "Ajoute {{type}}",
+    "addTitle": "Anregistre yon {{type}}",
     "editTitle": "Modifye {{type}}",
     "typeTending": "Swen",
     "typeWatering": "Wouze",
