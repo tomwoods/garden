@@ -315,7 +315,7 @@ export const SharedPlotDetailView: React.FC = () => {
             <h2 className="text-sm font-semibold text-gray-900 mb-1">{t('plotActivity')}</h2>
             <p className="text-xs text-gray-500 mb-4">{t('plotActivityDesc')}</p>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <button
                 onClick={() => handleBulkActivity('tending')}
                 className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-colors"
