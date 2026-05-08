@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Bell, Shield, Palette, Database, Info, Smartphone, Globe, Moon, Tractor, Image as ImageIcon, RefreshCw, Sprout, BookUser, FileUp } from 'lucide-react';
+import { ArrowLeft, Bell, Shield, Palette, Database, Info, Smartphone, Globe, Moon, Tractor, Image as ImageIcon, RefreshCw, Sprout, BookUser, FileUp, Users } from 'lucide-react';
+import { getPhoneAction, setPhoneAction, type PhoneAction } from '../hooks/usePhoneAction';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
@@ -50,6 +51,7 @@ export const SettingsView: React.FC = () => {
     const stored = localStorage.getItem('background_sync_enabled');
     return stored === null ? true : stored === 'true';
   });
+  const [phoneAction, setPhoneActionState] = React.useState<PhoneAction>(getPhoneAction);
   const [updateAvailable, setUpdateAvailable] = React.useState(false);
   const [isGeneratingHarvest, setIsGeneratingHarvest] = React.useState(false);
   const [harvestDateFrom, setHarvestDateFrom] = React.useState(() => {
@@ -330,6 +332,11 @@ export const SettingsView: React.FC = () => {
     }
   };
 
+  const handlePhoneActionChange = (action: PhoneAction) => {
+    setPhoneActionState(action);
+    setPhoneAction(action);
+  };
+
   const handleCheckForUpdate = () => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(registration => {
@@ -532,6 +539,13 @@ export const SettingsView: React.FC = () => {
       ]
     },
     {
+      title: t('sections.contacts'),
+      icon: Users,
+      items: [
+        { label: t('contacts.phoneAction'), description: t('contacts.phoneActionDesc'), type: 'phone-action', value: phoneAction, onChange: handlePhoneActionChange }
+      ]
+    },
+    {
       title: t('sections.about'),
       icon: Info,
       items: [
@@ -642,6 +656,38 @@ export const SettingsView: React.FC = () => {
           </div>
         );
       
+      case 'phone-action': {
+        const options: { value: PhoneAction; label: string }[] = [
+          { value: 'whatsapp', label: t('contacts.whatsapp') },
+          { value: 'sms', label: t('contacts.sms') },
+          { value: 'call', label: t('contacts.call') },
+        ];
+        return (
+          <div>
+            <div className="mb-3">
+              <div className="font-medium text-gray-900">{item.label}</div>
+              <div className="text-sm text-gray-600">{item.description}</div>
+            </div>
+            <div className="flex gap-2">
+              {options.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => item.onChange(opt.value)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    item.value === opt.value
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
       case 'danger':
         return (
           <div className="flex items-center justify-between">
@@ -649,7 +695,7 @@ export const SettingsView: React.FC = () => {
               <div className="font-medium text-red-600">{item.label}</div>
               <div className="text-sm text-red-500">{item.description}</div>
             </div>
-            <button 
+            <button
               className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
               onClick={item.onClick}
             >
@@ -873,8 +919,8 @@ export const SettingsView: React.FC = () => {
                   {section.items.map((item, index) => (
                     <div
                       key={index}
-                      className={`p-6 ${item.type === 'danger' ? 'bg-red-50' : 'hover:bg-gray-50'} transition-colors ${item.type === 'danger' || item.type === 'install' || item.type === 'functional-toggle' || item.type === 'notification-toggle' || item.type === 'version' || item.type === 'sync' || item.type === 'harvest-form' || item.type === 'harvest-brief-link' || (item.type === 'action' && item.onClick) ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
-                      onClick={item.type === 'functional-toggle' || item.type === 'notification-toggle' || item.type === 'version' ? undefined : item.type === 'harvest-brief-link' ? () => navigate('/harvest-brief') : (item.onClick || undefined)}
+                      className={`p-6 ${item.type === 'danger' ? 'bg-red-50' : 'hover:bg-gray-50'} transition-colors ${item.type === 'danger' || item.type === 'install' || item.type === 'functional-toggle' || item.type === 'notification-toggle' || item.type === 'version' || item.type === 'sync' || item.type === 'harvest-form' || item.type === 'harvest-brief-link' || item.type === 'phone-action' || (item.type === 'action' && item.onClick) ? 'cursor-default' : 'cursor-not-allowed opacity-60'}`}
+                      onClick={item.type === 'functional-toggle' || item.type === 'notification-toggle' || item.type === 'version' || item.type === 'phone-action' ? undefined : item.type === 'harvest-brief-link' ? () => navigate('/harvest-brief') : (item.onClick || undefined)}
                     >
                       {renderSettingItem(item)}
                     </div>

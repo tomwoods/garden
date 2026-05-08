@@ -5,6 +5,7 @@ import { ArrowLeft, Users, Trash2, CreditCard as Edit, Plus } from 'lucide-react
 import { SharedGardenDatabase, getSharedGardenRef } from '../lib/sharedGardenDatabase';
 import { syncSharedGarden } from '../lib/sharedGardenSyncService';
 import { AddEditPlotModal } from './AddEditPlotModal';
+import { PhoneLink } from './PhoneLink';
 import { ManageMembersModal } from './ManageMembersModal';
 import { BulkActivityModal } from './BulkActivityModal';
 import { BulkNotchingModal } from './BulkNotchingModal';
@@ -294,7 +295,12 @@ export const SharedPlotDetailView: React.FC = () => {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
                     {member.phone && (
-                      <p className="text-xs text-gray-500 truncate">{member.phone}</p>
+                      <PhoneLink
+                        phone={member.phone}
+                        className="text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                        iconClassName="w-3 h-3"
+                        stopPropagation
+                      />
                     )}
                   </div>
                 </button>

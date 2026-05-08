@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Phone, Mail, MoreHorizontal, CalendarPlus, Trash2, Heart, Leaf, CreditCard as Edit, MapPin, Share2 } from 'lucide-react';
+import { Calendar, Mail, MoreHorizontal, CalendarPlus, Trash2, Heart, Leaf, CreditCard as Edit, MapPin, Share2 } from 'lucide-react';
+import { PhoneLink } from './PhoneLink';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import isToday from 'dayjs/plugin/isToday';
@@ -389,16 +390,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             </div>
           )}
           {plant.phone && (
-            <div className="flex items-center gap-1">
-              <Phone className="w-3 h-3" />
-              <a
-                href={`tel:${plant.phone}`}
-                className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {plant.phone}
-              </a>
-            </div>
+            <PhoneLink phone={plant.phone} stopPropagation />
           )}
           {location && onShowMap && (
             <button

@@ -13,7 +13,15 @@
     "imageManagement": "Image Management",
     "gardenManagement": "Garden Management",
     "appFeatures": "App Features",
+    "contacts": "Contacts",
     "about": "About"
+  },
+  "contacts": {
+    "phoneAction": "Phone Number Action",
+    "phoneActionDesc": "What happens when you tap a phone number",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS",
+    "call": "Phone Call"
   },
   "notifications": {
     "push": "Push Notifications",

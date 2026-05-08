@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CreditCard as Edit, Users, Trash2, Plus } from 'lucide-react';
 import { AddEditPlotModal } from './AddEditPlotModal';
+import { PhoneLink } from './PhoneLink';
 import { ManageMembersModal } from './ManageMembersModal';
 import { BulkActivityModal } from './BulkActivityModal';
 import { BulkNotchingModal } from './BulkNotchingModal';
@@ -284,7 +285,11 @@ export const PlotDetailView: React.FC = () => {
                     <div>
                       <div className="font-medium text-gray-900">{member.name}</div>
                       {member.phone && (
-                        <div className="text-sm text-gray-600">{member.phone}</div>
+                        <PhoneLink
+                          phone={member.phone}
+                          className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                          stopPropagation
+                        />
                       )}
                     </div>
                   </div>

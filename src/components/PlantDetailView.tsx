@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Calendar, Heart, Plus, MoreHorizontal, CreditCard as Edit, Trash2, CalendarPlus, Phone, Mail, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Heart, Plus, MoreHorizontal, CreditCard as Edit, Trash2, CalendarPlus, Mail, MapPin } from 'lucide-react';
+import { PhoneLink } from './PhoneLink';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import isToday from 'dayjs/plugin/isToday';
@@ -1023,15 +1024,7 @@ export const PlantDetailView: React.FC = () => {
                       </div>
                     )}
                     {plant.phone && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        <a
-                          href={`tel:${plant.phone}`}
-                          className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-                        >
-                          {plant.phone}
-                        </a>
-                      </div>
+                      <PhoneLink phone={plant.phone} />
                     )}
                     {getLocation() && (
                       <div className="flex items-center gap-1 text-green-600">

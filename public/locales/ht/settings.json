@@ -13,7 +13,15 @@
     "imageManagement": "Jesyon Imaj",
     "gardenManagement": "Jesyon Jaden",
     "appFeatures": "Fonksyon Aplikasyon",
+    "contacts": "Kontakte",
     "about": "Sou"
+  },
+  "contacts": {
+    "phoneAction": "Aksyon sou Nimewo Telefòn",
+    "phoneActionDesc": "Sa ki pase lè ou tape yon nimewo telefòn",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS",
+    "call": "Rele pa Telefòn"
   },
   "notifications": {
     "push": "Notifikasyon Push",
