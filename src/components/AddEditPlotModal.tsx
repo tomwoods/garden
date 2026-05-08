@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Users, FileText } from 'lucide-react';
+import { X, Users, FileText, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { LocationPicker } from './LocationPicker';
 import type { Plot } from '../lib/database';
@@ -25,11 +25,13 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
   const { t } = useTranslation('modals');
   const [additionalInfo, setAdditionalInfo] = useState<any>({});
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showAdditionalInfoMenu, setShowAdditionalInfoMenu] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Populate form when plot changes
   useEffect(() => {
     if (isOpen) {
+      setShowAdditionalInfoMenu(false);
       if (plot) {
         setFormData({
           name: plot.name || '',
@@ -111,17 +113,32 @@ export const AddEditPlotModal: React.FC<AddEditPlotModalProps> = ({
               {isEditing ? t('addEditPlot.editTitle') : t('addEditPlot.createTitle')}
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <AdditionalInfoMenu
-              onAddLocation={() => setShowLocationPicker(true)}
-              hasLocation={!!additionalInfo.location}
-            />
+          <div className="flex items-center gap-2 relative">
             <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+              type="button"
+              onClick={() => setShowAdditionalInfoMenu(!showAdditionalInfoMenu)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            {showAdditionalInfoMenu && (
+              <AdditionalInfoMenu
+                mode="location"
+                onAddLocation={() => {
+                  setShowLocationPicker(true);
+                  setShowAdditionalInfoMenu(false);
+                }}
+                hasLocation={!!additionalInfo.location}
+                onClose={() => setShowAdditionalInfoMenu(false)}
+              />
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
