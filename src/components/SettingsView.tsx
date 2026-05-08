@@ -431,7 +431,7 @@ export const SettingsView: React.FC = () => {
         //{ label: t('notifications.quietHours'), description: t('notifications.quietHoursDesc'), type: 'action' }
       ]
     },
-    {
+    /*{
       title: t('sections.appearance'),
       icon: Palette,
       items: [
@@ -439,7 +439,7 @@ export const SettingsView: React.FC = () => {
         { label: t('appearance.plantDisplay'), description: t('appearance.plantDisplayDesc'), type: 'action' },
         { label: t('appearance.cardLayout'), description: t('appearance.cardLayoutDesc'), type: 'action' }
       ]
-    },
+    },*/
     {
       title: t('sections.dataPrivacy'),
       icon: Shield,
