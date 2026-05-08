@@ -94,7 +94,7 @@ export const SharedPlotsView: React.FC = () => {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Plots</h1>
+              <h1 className="text-lg font-semibold text-gray-900">{t('managePlots')}</h1>
               <p className="text-xs text-gray-500">{ref_.gardenName}</p>
             </div>
           </div>
