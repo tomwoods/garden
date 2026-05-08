@@ -25,7 +25,7 @@
     "submittingBtn": "Modification..."
   },
   "activity": {
-    "addTitle": "Ajouter {{type}}",
+    "addTitle": "Enregistrer une {{type}}",
     "editTitle": "Modifier {{type}}",
     "typeTending": "Soin",
     "typeWatering": "Arrosage",
