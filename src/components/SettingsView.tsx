@@ -492,11 +492,11 @@ export const SettingsView: React.FC = () => {
           description: t('images.quotaDesc', { used: imageQuota.imagesUsed, max: imageQuota.maxImages }),
           type: 'info'
         },
-        {
+        /*{
           label: t('images.storage'),
           description: t('images.storageDesc', { used: (imageQuota.storageUsed / 1024 / 1024).toFixed(2), max: (imageQuota.maxStorage / 1024 / 1024).toFixed(2) }),
           type: 'info'
-        },
+        },*/
         {
           label: t('images.sync'),
           description: t('images.syncDesc'),
