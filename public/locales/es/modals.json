@@ -358,6 +358,18 @@
     "linkExpiry": "Expira en 7 días si no se reclama.",
     "inviteAnother": "Invitar otro jardinero"
   },
+  "ruhiBooks": {
+    "ruhi_1": "Ruhi Libro 1: Reflexiones sobre la Vida del Espíritu",
+    "ruhi_2": "Ruhi Libro 2: Levantarse para Servir",
+    "ruhi_3": "Ruhi Libro 3: Enseñanza de Clases para Niños, Grado 1",
+    "ruhi_4": "Ruhi Libro 4: Las Dos Manifestaciones",
+    "ruhi_5": "Ruhi Libro 5: Liberando los Poderes de la Juventud Intermedia",
+    "ruhi_6": "Ruhi Libro 6: Enseñando la Causa",
+    "ruhi_7": "Ruhi Libro 7: Caminando Juntos en un Sendero de Servicio",
+    "ruhi_8": "Ruhi Libro 8: El Pacto de Bahá'u'lláh",
+    "ruhi_9": "Ruhi Libro 9: Obteniendo una Perspectiva Histórica",
+    "ruhi_10": "Ruhi Libro 10: Construyendo Comunidades Vibrantes"
+  },
   "agePicker": {
     "title": "Registrar edad",
     "olderThan21": "Mayor de 21",

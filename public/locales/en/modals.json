@@ -358,6 +358,18 @@
     "linkExpiry": "Expires in 7 days if unclaimed.",
     "inviteAnother": "Invite another gardener"
   },
+  "ruhiBooks": {
+    "ruhi_1": "Ruhi Book 1: Reflections on the Life of the Spirit",
+    "ruhi_2": "Ruhi Book 2: Arising to Serve",
+    "ruhi_3": "Ruhi Book 3: Teaching Children's Classes, Grade 1",
+    "ruhi_4": "Ruhi Book 4: The Twin Manifestations",
+    "ruhi_5": "Ruhi Book 5: Releasing the Powers of Junior Youth",
+    "ruhi_6": "Ruhi Book 6: Teaching the Cause",
+    "ruhi_7": "Ruhi Book 7: Walking Together on a Path of Service",
+    "ruhi_8": "Ruhi Book 8: The Covenant of Bahá'u'lláh",
+    "ruhi_9": "Ruhi Book 9: Gaining an Historical Perspective",
+    "ruhi_10": "Ruhi Book 10: Building Vibrant Communities"
+  },
   "agePicker": {
     "title": "Record age",
     "olderThan21": "Older than 21",

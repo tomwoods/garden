@@ -358,6 +358,18 @@
     "linkExpiry": "Ekspire nan 7 jou si li pa reklame.",
     "inviteAnother": "Envite yon lòt jediné"
   },
+  "ruhiBooks": {
+    "ruhi_1": "Ruhi Liv 1: Refleksyon sou Lavi Lespri a",
+    "ruhi_2": "Ruhi Liv 2: Leve pou Sèvi",
+    "ruhi_3": "Ruhi Liv 3: Ansèyman Klas Timoun, Nivo 1",
+    "ruhi_4": "Ruhi Liv 4: De Manifestasyon yo",
+    "ruhi_5": "Ruhi Liv 5: Libere Pouvwa Jèn Entèmedyè yo",
+    "ruhi_6": "Ruhi Liv 6: Anseye Kòz la",
+    "ruhi_7": "Ruhi Liv 7: Mache Ansanm sou yon Chemen Sèvis",
+    "ruhi_8": "Ruhi Liv 8: Kontra Bahá'u'lláh",
+    "ruhi_9": "Ruhi Liv 9: Jwenn yon Pèspektiv Istorik",
+    "ruhi_10": "Ruhi Liv 10: Bati Kominote Dinamik"
+  },
   "agePicker": {
     "title": "Anrejistre laj",
     "olderThan21": "Plis pase 21 an",

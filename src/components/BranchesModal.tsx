@@ -4,30 +4,13 @@ import { X, Plus } from 'lucide-react';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { AutocompleteInput, readAutocompleteCache, writeAutocompleteCache } from './AutocompleteInput';
 import { SupabaseService } from '../lib/supabaseService';
+import { RUHI_BOOKS, getSectionsPerUnit } from '../lib/ruhiBooks';
 
 export type BranchesSubType = 'bud' | 'notching' | 'capability';
 
 const CAPABILITY_CACHE_PREFIX = 'proven_capacities_cache';
 
-const RUHI_BOOKS = [
-  { value: 'ruhi_1', label: 'Ruhi Book 1: Reflections on the Life of the Spirit', sectionsPerUnit: 12 },
-  { value: 'ruhi_2', label: 'Ruhi Book 2: Arising to Serve', sectionsPerUnit: 12 },
-  { value: 'ruhi_3', label: 'Ruhi Book 3: Teaching Children\'s Classes, Grade 1', sectionsPerUnit: 12 },
-  { value: 'ruhi_4', label: 'Ruhi Book 4: The Twin Manifestations', sectionsPerUnit: 12 },
-  { value: 'ruhi_5', label: 'Ruhi Book 5: Releasing the Powers of Junior Youth', sectionsPerUnit: 12 },
-  { value: 'ruhi_6', label: 'Ruhi Book 6: Teaching the Cause', sectionsPerUnit: 12 },
-  { value: 'ruhi_7', label: 'Ruhi Book 7: Walking Together on a Path of Service', sectionsPerUnit: 12 },
-  { value: 'ruhi_8', label: 'Ruhi Book 8: The Covenant of Bahá\'u\'lláh', sectionsPerUnit: 18 },
-  { value: 'ruhi_9', label: 'Ruhi Book 9: Gaining an Historical Perspective', sectionsPerUnit: 18 },
-  { value: 'ruhi_10', label: 'Ruhi Book 10: Building Vibrant Communities', sectionsPerUnit: 18 },
-];
-
 const UNITS_PER_BOOK = 3;
-
-function getSectionsPerUnit(bookValue: string): number {
-  const book = RUHI_BOOKS.find(b => b.value === bookValue);
-  return book?.sectionsPerUnit ?? 12;
-}
 
 function getBookIndex(bookValue: string): number {
   return RUHI_BOOKS.findIndex(b => b.value === bookValue);
@@ -379,7 +362,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm"
                   >
                     {RUHI_BOOKS.map(b => (
-                      <option key={b.value} value={b.value}>{b.label}</option>
+                      <option key={b.value} value={b.value}>{t(`ruhiBooks.${b.value}`)}</option>
                     ))}
                   </select>
                 </div>
@@ -420,7 +403,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     className="w-full px-3 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm text-gray-500 cursor-not-allowed"
                   >
                     {RUHI_BOOKS.map(b => (
-                      <option key={b.value} value={b.value}>{b.label}</option>
+                      <option key={b.value} value={b.value}>{t(`ruhiBooks.${b.value}`)}</option>
                     ))}
                   </select>
                   <p className="text-xs text-gray-400 mt-1">{t('branches.sameBook')}</p>
