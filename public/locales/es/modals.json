@@ -325,7 +325,7 @@
     "createBtn": "Crear jardín",
     "creating": "Preparando tu jardín compartido...",
     "gardenReady": "{{name}} está listo",
-    "saveKeyHint": "Guarda tu clave de jardín para restaurar el acceso más tarde.",
+    "saveKeyHint": "Guarda la llave de tu jardín para restaurar el acceso más tarde.",
     "downloadKey": "Descargar clave del jardín",
     "openGarden": "Abrir jardín",
     "restoreHint": "Sube el archivo garden-key.json que descargaste cuando creaste o te uniste a este jardín.",
