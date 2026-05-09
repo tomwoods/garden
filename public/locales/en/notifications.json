@@ -9,7 +9,7 @@
   "installNow": "Install Now",
   "notNow": "Not Now",
   "keyBackupTitle": "Save Your Garden Key",
-  "keyBackupMessage": "Download your garden key to ensure you never lose access to your garden. Store it somewhere safe - this is the only way to recover your garden.",
+  "keyBackupMessage": "Download your garden key to ensure you can always open your garden. Store it somewhere safe - this is the only way to regain access to your garden if you delete the app.",
   "downloadKey": "Download Garden Key",
   "remindLater": "Remind me later",
   "swTendTime": "It's time to tend to {{name}}",
