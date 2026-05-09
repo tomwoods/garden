@@ -210,13 +210,13 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.unitLabel')}</label>
-                <input type="number" min={1} max={UNITS_PER_BOOK} value={startUnit}
+                <input type="number" inputMode="numeric" max={UNITS_PER_BOOK} value={startUnit}
                   onChange={e => handleStartChange('unit', parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.sectionLabel')}</label>
-                <input type="number" min={1} max={getSectionsPerUnit(book)} value={startSection}
+                <input type="number" inputMode="numeric" max={getSectionsPerUnit(book)} value={startSection}
                   onChange={e => handleStartChange('section', parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
               </div>
@@ -237,13 +237,13 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.unitLabel')}</label>
-                <input type="number" min={startUnit} max={UNITS_PER_BOOK} value={endUnit}
+                <input type="number" inputMode="numeric" max={UNITS_PER_BOOK} value={endUnit}
                   onChange={e => setEndUnit(parseInt(e.target.value) || startUnit)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{t('bulkNotching.sectionLabel')}</label>
-                <input type="number" min={endUnit === startUnit ? startSection : 1} max={getSectionsPerUnit(book)} value={endSection}
+                <input type="number" inputMode="numeric" max={getSectionsPerUnit(book)} value={endSection}
                   onChange={e => setEndSection(parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-sm" />
               </div>

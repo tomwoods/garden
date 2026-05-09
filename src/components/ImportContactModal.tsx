@@ -270,7 +270,7 @@ export const ImportContactModal: React.FC<ImportContactModalProps> = ({
               <div className="flex gap-2">
                 <input
                   type="number"
-                  min="1"
+                  inputMode="numeric"
                   max="52"
                   value={formData.care_frequency_multiplier}
                   onChange={e => setFormData(p => ({

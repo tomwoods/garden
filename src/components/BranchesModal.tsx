@@ -388,7 +388,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.unitLabel')}</label>
                     <input
                       type="number"
-                      min={1}
+                      inputMode="numeric"
                       max={UNITS_PER_BOOK}
                       value={notchingData.startUnit}
                       onChange={e => handleStartChange('unit', parseInt(e.target.value) || 1)}
@@ -399,7 +399,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.sectionLabel')}</label>
                     <input
                       type="number"
-                      min={1}
+                      inputMode="numeric"
                       max={getSectionsPerUnit(notchingData.book)}
                       value={notchingData.startSection}
                       onChange={e => handleStartChange('section', parseInt(e.target.value) || 1)}
@@ -430,7 +430,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.unitLabel')}</label>
                     <input
                       type="number"
-                      min={notchingData.startUnit}
+                      inputMode="numeric"
                       max={UNITS_PER_BOOK}
                       value={notchingData.endUnit}
                       onChange={e => setNotchingData(prev => ({ ...prev, endUnit: parseInt(e.target.value) || prev.startUnit }))}
@@ -441,7 +441,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
                     <label className="block text-xs font-medium text-gray-600 mb-1">{t('branches.sectionLabel')}</label>
                     <input
                       type="number"
-                      min={notchingData.endUnit === notchingData.startUnit ? notchingData.startSection : 1}
+                      inputMode="numeric"
                       max={getSectionsPerUnit(notchingData.book)}
                       value={notchingData.endSection}
                       onChange={e => setNotchingData(prev => ({ ...prev, endSection: parseInt(e.target.value) || 1 }))}
