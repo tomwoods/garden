@@ -358,6 +358,14 @@
     "linkExpiry": "Expires in 7 days if unclaimed.",
     "inviteAnother": "Invite another gardener"
   },
+  "agePicker": {
+    "title": "Record age",
+    "olderThan21": "Older than 21",
+    "currentAge": "Current age",
+    "enterAge": "Enter age",
+    "ageHint": "Age will be computed forward over time from this date.",
+    "removeAge": "Remove age"
+  },
   "ios": {
     "title": "Install Garden",
     "subtitle": "Add to your home screen",

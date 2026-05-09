@@ -358,6 +358,14 @@
     "linkExpiry": "Ekspire nan 7 jou si li pa reklame.",
     "inviteAnother": "Envite yon lòt jediné"
   },
+  "agePicker": {
+    "title": "Anrejistre laj",
+    "olderThan21": "Plis pase 21 an",
+    "currentAge": "Laj aktyèl",
+    "enterAge": "Antre laj",
+    "ageHint": "Laj la ap kalkile avanse nan tan soti nan dat sa a.",
+    "removeAge": "Retire laj"
+  },
   "ios": {
     "title": "Enstale Garden",
     "subtitle": "Ajoute nan ekran akèy ou",

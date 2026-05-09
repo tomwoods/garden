@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Milestone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { AgeInfo } from '../lib/harvestService';
 
 interface AgePickerProps {
@@ -9,6 +10,7 @@ interface AgePickerProps {
 }
 
 export const AgePicker: React.FC<AgePickerProps> = ({ ageInfo, onAgeChange, onClose }) => {
+  const { t } = useTranslation('modals');
   const hasExisting = !!ageInfo;
   const [isOver21, setIsOver21] = useState(ageInfo ? ageInfo.is_over_21 : true);
   const [ageInput, setAgeInput] = useState(
@@ -41,7 +43,7 @@ export const AgePicker: React.FC<AgePickerProps> = ({ ageInfo, onAgeChange, onCl
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
               <Milestone className="w-5 h-5 text-green-700" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">Record age</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('agePicker.title')}</h2>
           </div>
           <button
             type="button"
@@ -63,12 +65,12 @@ export const AgePicker: React.FC<AgePickerProps> = ({ ageInfo, onAgeChange, onCl
               }}
               className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
             />
-            <span className="text-sm font-medium text-gray-700">Older than 21</span>
+            <span className="text-sm font-medium text-gray-700">{t('agePicker.olderThan21')}</span>
           </label>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Current age
+              {t('agePicker.currentAge')}
             </label>
             <input
               type="number"
@@ -79,12 +81,12 @@ export const AgePicker: React.FC<AgePickerProps> = ({ ageInfo, onAgeChange, onCl
               value={ageInput}
               disabled={isOver21}
               onChange={(e) => setAgeInput(e.target.value)}
-              placeholder="Enter age"
+              placeholder={t('agePicker.enterAge')}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
             />
             {!isOver21 && (
               <p className="text-xs text-gray-500 mt-1.5">
-                Age will be computed forward over time from this date.
+                {t('agePicker.ageHint')}
               </p>
             )}
           </div>
@@ -95,7 +97,7 @@ export const AgePicker: React.FC<AgePickerProps> = ({ ageInfo, onAgeChange, onCl
               onClick={onClose}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors text-sm"
             >
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </button>
             <button
               type="button"
@@ -103,7 +105,7 @@ export const AgePicker: React.FC<AgePickerProps> = ({ ageInfo, onAgeChange, onCl
               disabled={!canSave}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors text-sm"
             >
-              Save
+              {t('save', { ns: 'common' })}
             </button>
           </div>
 
@@ -113,7 +115,7 @@ export const AgePicker: React.FC<AgePickerProps> = ({ ageInfo, onAgeChange, onCl
               onClick={handleRemove}
               className="w-full text-sm text-red-500 hover:text-red-700 transition-colors py-1"
             >
-              Remove age
+              {t('agePicker.removeAge')}
             </button>
           )}
         </div>

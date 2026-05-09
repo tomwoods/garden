@@ -358,6 +358,14 @@
     "linkExpiry": "Expira en 7 días si no se reclama.",
     "inviteAnother": "Invitar otro jardinero"
   },
+  "agePicker": {
+    "title": "Registrar edad",
+    "olderThan21": "Mayor de 21",
+    "currentAge": "Edad actual",
+    "enterAge": "Ingresar edad",
+    "ageHint": "La edad se calculará hacia adelante en el tiempo desde esta fecha.",
+    "removeAge": "Eliminar edad"
+  },
   "ios": {
     "title": "Instalar Garden",
     "subtitle": "Agregar a tu pantalla de inicio",

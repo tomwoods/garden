@@ -358,6 +358,14 @@
     "linkExpiry": "Expire dans 7 jours si non réclamé.",
     "inviteAnother": "Inviter un autre jardinier"
   },
+  "agePicker": {
+    "title": "Enregistrer l'âge",
+    "olderThan21": "Plus de 21 ans",
+    "currentAge": "Âge actuel",
+    "enterAge": "Saisir l'âge",
+    "ageHint": "L'âge sera calculé en avançant dans le temps à partir de cette date.",
+    "removeAge": "Supprimer l'âge"
+  },
   "ios": {
     "title": "Installer Garden",
     "subtitle": "Ajouter à votre écran d'accueil",
