@@ -324,7 +324,7 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".json,application/json"
+                    accept=".gardenkey,.json,application/json"
                     className="hidden"
                     onChange={handleFileChange}
                   />

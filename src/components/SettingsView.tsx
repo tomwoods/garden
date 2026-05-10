@@ -467,11 +467,11 @@ export const SettingsView: React.FC = () => {
             created: new Date().toISOString()
           };
 
-          const blob = new Blob([JSON.stringify(gardenKeyData, null, 2)], { type: 'application/json' });
+          const blob = new Blob([JSON.stringify(gardenKeyData, null, 2)], { type: 'application/octet-stream' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `garden-key-${new Date().toISOString().split('T')[0]}.json`;
+          a.download = `garden-key-${new Date().toISOString().split('T')[0]}.gardenkey`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);

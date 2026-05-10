@@ -495,11 +495,11 @@ export function downloadGardenKeyFile(gardenId: string): void {
     gardenPublicKey: ref.gardenPublicKeyBase64,
   };
 
-  const blob = new Blob([JSON.stringify(keyData, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(keyData, null, 2)], { type: 'application/octet-stream' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${ref.gardenName.replace(/\s+/g, '-').toLowerCase()}-garden-key.json`;
+  a.download = `${ref.gardenName.replace(/\s+/g, '-').toLowerCase()}-garden-key.gardenkey`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

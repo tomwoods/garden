@@ -76,7 +76,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".json"
+          accept=".gardenkey,.json"
           onChange={handleFileChange}
           className="hidden"
         />
