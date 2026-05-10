@@ -1,7 +1,7 @@
 {
   "name": "Garden",
   "short_name": "Garden",
-  "description": "Track and manage your spiritual relationships using the metaphor of a garden.",
+  "description": "Cultivate your spiritual relationships using the metaphor of a garden.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
