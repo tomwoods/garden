@@ -213,88 +213,47 @@ export async function generateEphemeralRSAKeyPair(): Promise<{ publicKeyBase64: 
   return { publicKeyBase64, privateKeyBase64 };
 }
 
-// ─── ECDH P-256 ephemeral handshake ──────────────────────────────────────────
-// Produces a ~124-char Base64 private key vs ~2232 chars for RSA-2048.
-// Scheme: generate ephemeral P-256 pair → derive AES-256-GCM key via HKDF
-// from a self-ECDH operation → encrypt payload → embed private key in URL.
-// Receiver re-derives the same AES key from the URL fragment to decrypt.
+// ─── Ephemeral AES-256-GCM share key ─────────────────────────────────────────
+// Generates a random 32-byte AES-256-GCM key, embeds it raw (Base64, ~44 chars)
+// in the share URL fragment, and uses it directly to encrypt the payload.
+// The key never leaves the URL fragment — it is never sent to any server.
 
-const ECDH_HKDF_INFO = new TextEncoder().encode('garden-share-v1');
-const ECDH_HKDF_SALT = new TextEncoder().encode('garden-ephemeral-salt-v1');
-const ECDH_ALG = { name: 'ECDH', namedCurve: 'P-256' } as const;
-
-function importECDHPrivateKey(pkcs8Base64: string): Promise<CryptoKey> {
+function importEphemeralAESKey(keyBase64: string, usage: 'encrypt' | 'decrypt'): Promise<CryptoKey> {
   return window.crypto.subtle.importKey(
-    'pkcs8',
-    base64ToArrayBuffer(pkcs8Base64),
-    ECDH_ALG,
-    true,
-    ['deriveKey', 'deriveBits']
-  );
-}
-
-async function deriveAESFromECDHPrivate(privateKey: CryptoKey): Promise<CryptoKey> {
-  // Re-derive the public key from the private key via JWK round-trip.
-  const jwk = await window.crypto.subtle.exportKey('jwk', privateKey);
-  const { d: _d, key_ops: _ops, ...publicJwk } = jwk;
-  const publicKey = await window.crypto.subtle.importKey(
-    'jwk',
-    { ...publicJwk, key_ops: ['deriveKey', 'deriveBits'] },
-    ECDH_ALG,
+    'raw',
+    base64ToArrayBuffer(keyBase64),
+    { name: 'AES-GCM' },
     false,
-    ['deriveKey', 'deriveBits']
-  );
-
-  // Self-ECDH: derive shared secret bytes from own private + public keys.
-  const bits = await window.crypto.subtle.deriveBits(
-    { name: 'ECDH', public: publicKey },
-    privateKey,
-    256
-  );
-
-  const keyMaterial = await window.crypto.subtle.importKey(
-    'raw', bits, { name: 'HKDF' }, false, ['deriveKey']
-  );
-
-  return window.crypto.subtle.deriveKey(
-    { name: 'HKDF', hash: 'SHA-256', salt: ECDH_HKDF_SALT, info: ECDH_HKDF_INFO },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
+    [usage]
   );
 }
 
 /**
- * Generate an ephemeral P-256 ECDH key pair.
- * Returns the PKCS8 private key as Base64 (~124 chars) for embedding in URLs.
+ * Generate an ephemeral AES-256-GCM key for single-use share links.
+ * Returns the raw key as Base64 (~44 chars) for embedding in URLs.
  */
 export async function generateEphemeralECDHKeyPair(): Promise<{ privateKeyBase64: string }> {
-  const keyPair = await window.crypto.subtle.generateKey(
-    ECDH_ALG,
+  const key = await window.crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
     true,
-    ['deriveKey', 'deriveBits']
+    ['encrypt', 'decrypt']
   );
-  const pkcs8 = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-  return { privateKeyBase64: arrayBufferToBase64(pkcs8) };
+  const raw = await window.crypto.subtle.exportKey('raw', key);
+  return { privateKeyBase64: arrayBufferToBase64(raw) };
 }
 
 /**
- * Encrypt a string using an ephemeral ECDH private key.
- * Returns {iv, encryptedData} — both Base64. No wrapped AES key in the output.
+ * Encrypt a string using an ephemeral AES-256-GCM key.
+ * Returns {iv, encryptedData} — both Base64.
  */
 export async function encryptWithECDHKey(data: string, privateKeyBase64: string): Promise<{ iv: string; encryptedData: string }> {
-  const privateKey = await importECDHPrivateKey(privateKeyBase64);
-  const aesKey = await deriveAESFromECDHPrivate(privateKey);
-
+  const aesKey = await importEphemeralAESKey(privateKeyBase64, 'encrypt');
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
-  const encoder = new TextEncoder();
   const ciphertext = await window.crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
     aesKey,
-    encoder.encode(data)
+    new TextEncoder().encode(data)
   );
-
   return {
     iv: arrayBufferToBase64(iv),
     encryptedData: arrayBufferToBase64(ciphertext),
@@ -302,24 +261,18 @@ export async function encryptWithECDHKey(data: string, privateKeyBase64: string)
 }
 
 /**
- * Decrypt a payload encrypted by encryptWithECDHKey using the same ephemeral private key.
+ * Decrypt a payload encrypted by encryptWithECDHKey using the same ephemeral key.
  */
 export async function decryptWithECDHKey(
   encryptedPackage: { iv: string; encryptedData: string },
   privateKeyBase64: string
 ): Promise<string> {
-  const privateKey = await importECDHPrivateKey(privateKeyBase64);
-  const aesKey = await deriveAESFromECDHPrivate(privateKey);
-
-  const iv = base64ToArrayBuffer(encryptedPackage.iv);
-  const ciphertext = base64ToArrayBuffer(encryptedPackage.encryptedData);
-
+  const aesKey = await importEphemeralAESKey(privateKeyBase64, 'decrypt');
   const plain = await window.crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
+    { name: 'AES-GCM', iv: base64ToArrayBuffer(encryptedPackage.iv) },
     aesKey,
-    ciphertext
+    base64ToArrayBuffer(encryptedPackage.encryptedData)
   );
-
   return new TextDecoder().decode(plain);
 }
 
