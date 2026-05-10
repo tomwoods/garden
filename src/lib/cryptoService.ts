@@ -214,48 +214,40 @@ export async function generateEphemeralRSAKeyPair(): Promise<{ publicKeyBase64: 
 }
 
 // ─── ECDH P-256 ephemeral handshake ──────────────────────────────────────────
-// Produces a ~162-char Base64 private key vs ~2232 chars for RSA-2048.
+// Produces a ~124-char Base64 private key vs ~2232 chars for RSA-2048.
 // Scheme: generate ephemeral P-256 pair → derive AES-256-GCM key via HKDF
-// from the raw private key scalar → encrypt payload → embed private key in URL.
+// from a self-ECDH operation → encrypt payload → embed private key in URL.
 // Receiver re-derives the same AES key from the URL fragment to decrypt.
 
-const ECDH_CURVE = 'P-256';
 const ECDH_HKDF_INFO = new TextEncoder().encode('garden-share-v1');
 const ECDH_HKDF_SALT = new TextEncoder().encode('garden-ephemeral-salt-v1');
+const ECDH_ALG = { name: 'ECDH', namedCurve: 'P-256' } as const;
 
-/** Export a raw P-256 private key scalar to Base64 (32 bytes → 44 Base64 chars). */
-async function exportECDHPrivateKeyRaw(key: CryptoKey): Promise<string> {
-  const jwk = await window.crypto.subtle.exportKey('jwk', key);
-  return jwk.d!; // already Base64url in JWK; use as-is
-}
-
-/** Import a raw P-256 private key from a Base64url JWK `d` scalar. */
-async function importECDHPrivateKeyRaw(dBase64url: string): Promise<CryptoKey> {
-  // Reconstruct a minimal P-256 JWK from the private scalar.
-  // We derive the public point from the scalar via a dummy ECDH derive step.
-  // The simplest approach: import as 'pkcs8' after reconstructing the full JWK.
-  // Web Crypto requires x/y for EC private key JWK, so we generate a throwaway
-  // pair and swap out d — but that changes the key. Instead, use the pkcs8 path
-  // via SubtleCrypto which accepts the full JWK.
-  //
-  // The cleanest solution: store as full PKCS8 (91 bytes → 124 Base64 chars)
-  // which is still 18x smaller than RSA-2048 PKCS8.
-  // We store PKCS8 Base64 in the URL, so this function imports it directly.
-  const bytes = base64ToArrayBuffer(dBase64url);
+function importECDHPrivateKey(pkcs8Base64: string): Promise<CryptoKey> {
   return window.crypto.subtle.importKey(
     'pkcs8',
-    bytes,
-    { name: ECDH_CURVE },
+    base64ToArrayBuffer(pkcs8Base64),
+    ECDH_ALG,
     true,
     ['deriveKey', 'deriveBits']
   );
 }
 
-/** Derive an AES-256-GCM key from an ECDH private key via HKDF. */
 async function deriveAESFromECDHPrivate(privateKey: CryptoKey): Promise<CryptoKey> {
-  // Export raw bits of the private key scalar (32 bytes)
+  // Re-derive the public key from the private key via JWK round-trip.
+  const jwk = await window.crypto.subtle.exportKey('jwk', privateKey);
+  const { d: _d, key_ops: _ops, ...publicJwk } = jwk;
+  const publicKey = await window.crypto.subtle.importKey(
+    'jwk',
+    { ...publicJwk, key_ops: ['deriveKey', 'deriveBits'] },
+    ECDH_ALG,
+    false,
+    ['deriveKey', 'deriveBits']
+  );
+
+  // Self-ECDH: derive shared secret bytes from own private + public keys.
   const bits = await window.crypto.subtle.deriveBits(
-    { name: 'ECDH', public: await _getECDHPublicFromPrivate(privateKey) },
+    { name: 'ECDH', public: publicKey },
     privateKey,
     256
   );
@@ -273,33 +265,18 @@ async function deriveAESFromECDHPrivate(privateKey: CryptoKey): Promise<CryptoKe
   );
 }
 
-// Derive a public key from a private key by re-exporting as JWK and importing as public.
-async function _getECDHPublicFromPrivate(privateKey: CryptoKey): Promise<CryptoKey> {
-  const jwk = await window.crypto.subtle.exportKey('jwk', privateKey);
-  // Remove the private scalar to get a public-only JWK
-  const { d: _d, key_ops: _ops, ...publicJwk } = jwk;
-  return window.crypto.subtle.importKey(
-    'jwk',
-    { ...publicJwk, key_ops: ['deriveKey', 'deriveBits'] },
-    { name: ECDH_CURVE },
-    false,
-    ['deriveKey', 'deriveBits']
-  );
-}
-
 /**
  * Generate an ephemeral P-256 ECDH key pair.
  * Returns the PKCS8 private key as Base64 (~124 chars) for embedding in URLs.
  */
 export async function generateEphemeralECDHKeyPair(): Promise<{ privateKeyBase64: string }> {
   const keyPair = await window.crypto.subtle.generateKey(
-    { name: ECDH_CURVE, namedCurve: ECDH_CURVE },
+    ECDH_ALG,
     true,
     ['deriveKey', 'deriveBits']
   );
   const pkcs8 = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-  const privateKeyBase64 = arrayBufferToBase64(pkcs8);
-  return { privateKeyBase64 };
+  return { privateKeyBase64: arrayBufferToBase64(pkcs8) };
 }
 
 /**
@@ -307,7 +284,7 @@ export async function generateEphemeralECDHKeyPair(): Promise<{ privateKeyBase64
  * Returns {iv, encryptedData} — both Base64. No wrapped AES key in the output.
  */
 export async function encryptWithECDHKey(data: string, privateKeyBase64: string): Promise<{ iv: string; encryptedData: string }> {
-  const privateKey = await importECDHPrivateKeyRaw(privateKeyBase64);
+  const privateKey = await importECDHPrivateKey(privateKeyBase64);
   const aesKey = await deriveAESFromECDHPrivate(privateKey);
 
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
@@ -331,7 +308,7 @@ export async function decryptWithECDHKey(
   encryptedPackage: { iv: string; encryptedData: string },
   privateKeyBase64: string
 ): Promise<string> {
-  const privateKey = await importECDHPrivateKeyRaw(privateKeyBase64);
+  const privateKey = await importECDHPrivateKey(privateKeyBase64);
   const aesKey = await deriveAESFromECDHPrivate(privateKey);
 
   const iv = base64ToArrayBuffer(encryptedPackage.iv);
