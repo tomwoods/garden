@@ -387,7 +387,7 @@ export const SharedGardenView: React.FC = () => {
     setActivityModal(null);
   };
 
-  const handleEditSave = async (updates: Partial<Plant>) => {
+  const handleEditSave = async (_plantId: string, updates: Partial<Plant>) => {
     if (!editPlantModal.plant || !gardenId || !user) return;
     await SharedGardenDatabase.init(gardenId);
     const myDisplayName = SharedGardenDatabase.getMember(gardenId, user.userId)?.display_name ?? 'Unknown';
@@ -395,6 +395,7 @@ export const SharedGardenView: React.FC = () => {
     await loadPlants();
     setRefreshKey(k => k + 1);
     setEditPlantModal({ isOpen: false, plant: null });
+    success('Updated', 'Plant details saved.');
   };
 
   const handleRemovePlant = async () => {

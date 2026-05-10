@@ -86,11 +86,10 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
       const hoursInUnit = formData.care_frequency_unit === 'weeks' ? 168 : 24;
       const nextCareTimestamp = plant.last_cared_for + (formData.care_frequency_multiplier * hoursInUnit * 60 * 60 * 1000);
 
-      const freshPlant = await DatabaseService.getPlant(plant.id);
       let additionalInfo: Record<string, unknown> = {};
-      if (freshPlant?.additional_info) {
+      if (plant.additional_info) {
         try {
-          additionalInfo = JSON.parse(freshPlant.additional_info);
+          additionalInfo = JSON.parse(plant.additional_info);
         } catch {}
       }
       if (location) {
