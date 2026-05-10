@@ -247,4 +247,3 @@ Implementation steps:
 | DEBT | The service worker's upload queue uses `XMLHttpRequest` patterns. Should be standardized to `fetch` with the same retry logic. | Low |
 | DEBT | No error boundary in the React tree. An unhandled render error in any component will blank the entire app. Add a top-level `ErrorBoundary`. | Medium |
 | DEBT | `stores.ts` uses a custom Svelte-inspired store pattern rather than React state. Consider replacing with `useContext` + `useReducer` for consistency. | Low |
-| DEBT | The `vite.config.ts` PWA manifest description still reads "Track and manage your garden plots, plants, and activities" — the spiritual metaphor description is absent. | Low |
