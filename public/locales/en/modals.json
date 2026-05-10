@@ -307,7 +307,8 @@
     "shareMessage": "Share message",
     "copyLink": "Copy link",
     "copyMessage": "Copy message",
-    "linkExpiry": "This link expires in 7 days if unclaimed.",
+    "copied": "Copied",
+    "linkExpiry": "Expires on",
     "generateNew": "Generate a new link",
     "disconnected": "Disconnected"
   },
@@ -355,7 +356,8 @@
     "shareMessage": "Share message",
     "copyLink": "Copy link",
     "copyMessage": "Copy message",
-    "linkExpiry": "Expires in 7 days if unclaimed.",
+    "copied": "Copied",
+    "linkExpiry": "Expires on",
     "inviteAnother": "Invite another gardener"
   },
   "ruhiBooks": {

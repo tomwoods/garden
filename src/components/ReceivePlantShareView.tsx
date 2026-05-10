@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Leaf, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { DatabaseService, addSharedPlantRef } from '../lib/database';
-import { decryptWithPrivateKey } from '../lib/cryptoService';
+import { decryptWithECDHKey } from '../lib/cryptoService';
 import { claimPlantShare, pullSharedPlantPreview } from '../lib/sharedBackupService';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from './ToastContainer';
@@ -63,9 +63,9 @@ export const ReceivePlantShareView: React.FC = () => {
           return;
         }
 
-        // 5. Decrypt the plant private key using the ephemeral key from the URL fragment (local-only)
+        // 5. Decrypt the plant private key using the ephemeral ECDH key from the URL fragment (local-only)
         const encryptedPlantKey = JSON.parse(claimed.encryptedPlantKey);
-        const plantPrivateKeyBase64 = await decryptWithPrivateKey(encryptedPlantKey, decodeURIComponent(ephemeralPrivKeyBase64));
+        const plantPrivateKeyBase64 = await decryptWithECDHKey(encryptedPlantKey, decodeURIComponent(ephemeralPrivKeyBase64));
 
         // 6. Pull the shared plant snapshot to preview
         const shareObj = await pullSharedPlantPreview(claimed.sharedPlantId, plantPrivateKeyBase64, user);

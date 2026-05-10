@@ -307,7 +307,8 @@
     "shareMessage": "Mesaj pataje",
     "copyLink": "Kopye lyen",
     "copyMessage": "Kopye mesaj",
-    "linkExpiry": "Lyen sa a ekspire nan 7 jou si li pa reklame.",
+    "copied": "Kopye",
+    "linkExpiry": "Ekspire nan",
     "generateNew": "Jenere yon nouvo lyen",
     "disconnected": "Dekonekte"
   },
@@ -355,7 +356,8 @@
     "shareMessage": "Mesaj pataje",
     "copyLink": "Kopye lyen",
     "copyMessage": "Kopye mesaj",
-    "linkExpiry": "Ekspire nan 7 jou si li pa reklame.",
+    "copied": "Kopye",
+    "linkExpiry": "Ekspire nan",
     "inviteAnother": "Envite yon lòt jediné"
   },
   "ruhiBooks": {

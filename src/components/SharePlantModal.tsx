@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Share2, Download, Users, Eye, Pencil, Copy, Check, QrCode, Leaf, TreePine } from 'lucide-react';
+import { X, Share2, Download, Users, Eye, Pencil, Copy, Check, Leaf, TreePine, ExternalLink } from 'lucide-react';
+import dayjs from 'dayjs';
 import QRCode from 'qrcode';
 import type { Plant } from '../lib/database';
 import { DatabaseService, addSharedPlantRef, getSharedPlantRefs } from '../lib/database';
 import {
-  generateEphemeralRSAKeyPair,
-  encryptWithPublicKey,
+  generateEphemeralECDHKeyPair,
+  encryptWithECDHKey,
   exportCryptoKey,
+  generateRSAKeyPair,
 } from '../lib/cryptoService';
-import { generateRSAKeyPair } from '../lib/cryptoService';
 import { createSharedPlant, createShareClaim } from '../lib/sharedBackupService';
 import { getSharedGardenRefs } from '../lib/sharedGardenDatabase';
 import { linkPlantToSharedGarden } from '../lib/plantLinkService';
@@ -69,9 +70,11 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
   const [shareStep, setShareStep] = useState<ShareStep>('configure');
   const [shareUrl, setShareUrl] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
   const [error, setError] = useState('');
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const expiryDate = dayjs().add(7, 'day').format('MMM D');
   const [gardenRefs, setGardenRefs] = useState(() => getSharedGardenRefs());
   const [selectedGardenId, setSelectedGardenId] = useState('');
   const [gardenLinkStep, setGardenLinkStep] = useState<'select' | 'linking' | 'done'>('select');
@@ -85,7 +88,8 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
       setShareUrl('');
       setQrDataUrl('');
       setError('');
-      setCopied(false);
+      setCopiedLink(false);
+      setCopiedMessage(false);
       const refs = getSharedGardenRefs();
       setGardenRefs(refs);
       setSelectedGardenId(refs.length > 0 ? refs[0].gardenId : '');
@@ -169,12 +173,12 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
         });
       }
 
-      // Generate ephemeral handshake key pair
-      const ephemeral = await generateEphemeralRSAKeyPair();
+      // Generate ephemeral ECDH key pair (~124-char private key vs ~2232 for RSA)
+      const ephemeral = await generateEphemeralECDHKeyPair();
 
-      // Encrypt the plant private key with the ephemeral public key
+      // Encrypt the plant private key using the ephemeral ECDH private key
       const encryptedPlantKey = JSON.stringify(
-        await encryptWithPublicKey(plantPrivateKeyBase64, ephemeral.publicKeyBase64)
+        await encryptWithECDHKey(plantPrivateKeyBase64, ephemeral.privateKeyBase64)
       );
 
       // Store the encrypted plant key in share_claims via edge function
@@ -213,18 +217,50 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
     }
   };
 
-  const shareText = `I want to share a plant with you. To add it to your garden, please visit this link:\n\n${shareUrl}`;
+  const shareLinkLabel = `Open ${plant.name} in Garden`;
+  const plainMessage = `I want to share a plant with you. To add it to your garden, please visit this link:\n\n${shareUrl}`;
+  const htmlMessage = `I want to share a plant with you. To add it to your garden, open this link: <a href="${shareUrl}">${shareLinkLabel}</a>`;
 
-  const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(shareText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  async function copyRichLink(url: string, linkText: string, plain: string): Promise<void> {
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([`<a href="${url}">${linkText}</a>`], { type: 'text/html' }),
+          'text/plain': new Blob([plain], { type: 'text/plain' }),
+        }),
+      ]);
+    } catch {
+      await navigator.clipboard.writeText(plain);
+    }
+  }
 
   const handleCopyUrl = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    await copyRichLink(shareUrl, shareLinkLabel, shareUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleCopyMessage = async () => {
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([htmlMessage], { type: 'text/html' }),
+          'text/plain': new Blob([plainMessage], { type: 'text/plain' }),
+        }),
+      ]);
+    } catch {
+      await navigator.clipboard.writeText(plainMessage);
+    }
+    setCopiedMessage(true);
+    setTimeout(() => setCopiedMessage(false), 2000);
+  };
+
+  const handleNativeShare = async () => {
+    try {
+      await navigator.share({ title: shareLinkLabel, text: plainMessage, url: shareUrl });
+    } catch {
+      await handleCopyMessage();
+    }
   };
 
   const handleLinkToGarden = async () => {
@@ -244,9 +280,9 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center">
               <Share2 className="w-4 h-4 text-green-700" />
@@ -262,7 +298,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex border-b border-gray-100 flex-shrink-0">
           <button
             onClick={() => setActiveTab('contact')}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
@@ -298,7 +334,7 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5">
+        <div className="px-6 py-5 overflow-y-auto">
 
           {/* Export Contact Tab */}
           {activeTab === 'contact' && (
@@ -468,40 +504,63 @@ export const SharePlantModal: React.FC<SharePlantModalProps> = ({
 
               {shareStep === 'ready' && (
                 <div className="space-y-4">
-                  {/* QR Code */}
+                  {/* QR Code — always first */}
                   {qrDataUrl && (
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center gap-2">
                       <div className="bg-green-50 rounded-2xl p-4 inline-block">
                         <img src={qrDataUrl} alt="Share QR code" className="w-48 h-48 rounded-xl" />
                       </div>
                     </div>
                   )}
 
-                  {/* Share text */}
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">{t('sharePlant.shareMessage')}</p>
-                    <p className="text-sm text-gray-700 leading-relaxed break-all">{shareText}</p>
+                  {/* Link preview — clean label, not raw URL */}
+                  <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400 mb-0.5">{t('sharePlant.shareMessage')}</p>
+                      <p className="text-sm font-medium text-green-700 truncate">{shareLinkLabel}</p>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={handleCopyUrl}
-                      className="flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
-                    >
-                      {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                      {t('sharePlant.copyLink')}
-                    </button>
-                    <button
-                      onClick={handleCopyLink}
-                      className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
-                    >
-                      <Share2 className="w-4 h-4" />
-                      {t('sharePlant.copyMessage')}
-                    </button>
-                  </div>
+                  {/* Action buttons */}
+                  {typeof navigator.share === 'function' ? (
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleNativeShare}
+                        className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        {t('sharePlant.copyMessage')}
+                      </button>
+                      <button
+                        onClick={handleCopyUrl}
+                        className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
+                      >
+                        {copiedLink ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        {copiedLink ? t('sharePlant.copied') : t('sharePlant.copyLink')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleCopyUrl}
+                        className="flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
+                      >
+                        {copiedLink ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        {copiedLink ? t('sharePlant.copied') : t('sharePlant.copyLink')}
+                      </button>
+                      <button
+                        onClick={handleCopyMessage}
+                        className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-3 rounded-xl transition-colors text-sm"
+                      >
+                        {copiedMessage ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                        {copiedMessage ? t('sharePlant.copied') : t('sharePlant.copyMessage')}
+                      </button>
+                    </div>
+                  )}
 
                   <p className="text-xs text-gray-400 text-center">
-                    {t('sharePlant.linkExpiry')}
+                    {t('sharePlant.linkExpiry')} {expiryDate}
                   </p>
 
                   <button

@@ -20,7 +20,7 @@ import {
   markGardenDisconnected,
   addSharedGardenRef,
 } from './sharedGardenDatabase';
-import { importCryptoKey, encryptData, decryptData, generateRSAKeyPair, exportCryptoKey, generateEphemeralRSAKeyPair, encryptWithPublicKey } from './cryptoService';
+import { importCryptoKey, encryptData, decryptData, generateRSAKeyPair, exportCryptoKey, generateEphemeralECDHKeyPair, encryptWithECDHKey, decryptWithECDHKey } from './cryptoService';
 import { signData, importSigningKey } from './signatureService';
 import { mirrorActivityToPersonalGarden } from './plantLinkService';
 import { v4 as uuidv4 } from 'uuid';
@@ -336,12 +336,12 @@ export async function createGardenInvite(
   const gardenPrivKeyBase64 = localStorage.getItem(`shared_garden_key_${gardenId}`);
   if (!gardenPrivKeyBase64) return null;
 
-  // Generate ephemeral handshake key pair
-  const ephemeral = await generateEphemeralRSAKeyPair();
+  // Generate ephemeral ECDH key pair (~124-char private key vs ~2232 for RSA)
+  const ephemeral = await generateEphemeralECDHKeyPair();
 
-  // Encrypt the garden private key with the ephemeral public key
+  // Encrypt the garden private key using the ephemeral ECDH private key
   const encryptedGardenKey = JSON.stringify(
-    await encryptWithPublicKey(gardenPrivKeyBase64, ephemeral.publicKeyBase64)
+    await encryptWithECDHKey(gardenPrivKeyBase64, ephemeral.privateKeyBase64)
   );
 
   // Create claim via edge function
@@ -403,10 +403,9 @@ export async function claimGardenInvite(
   const data = await res.json();
   if (!data.encryptedGardenKey || !data.sharedGardenId) return null;
 
-  // Decrypt the garden private key using the ephemeral private key
-  const ephemeralPrivKey = await importCryptoKey(ephemeralPrivKeyBase64, 'pkcs8', ['decrypt']);
+  // Decrypt the garden private key using the ephemeral ECDH private key from the URL fragment
   const encryptedObj = JSON.parse(data.encryptedGardenKey);
-  const gardenPrivKeyBase64 = await decryptData(encryptedObj, ephemeralPrivKey);
+  const gardenPrivKeyBase64 = await decryptWithECDHKey(encryptedObj, ephemeralPrivKeyBase64);
 
   // Fetch the encrypted garden object
   const syncUser: GardenSyncUser = user;
