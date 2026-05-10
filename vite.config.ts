@@ -24,7 +24,7 @@ export default defineConfig({
       manifest: {
         name: 'Garden',
         short_name: 'Garden',
-        description: 'Track and manage your garden plots, plants, and activities',
+        description: 'Cultivate your spiritual relationships using the metaphor of a garden.',
         theme_color: '#16a34a',
         background_color: '#ffffff',
         display: 'standalone',
