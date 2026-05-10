@@ -36,6 +36,8 @@ import type { ParsedContact } from './lib/vCardParser';
 import { Leaf } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import i18n from './lib/i18n';
+import { useTranslation } from 'react-i18next';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -56,6 +58,8 @@ function App() {
   const userRef = useRef<User | null>(null);
   const { toasts, success, error, removeToast } = useToast();
   const [sharedContacts, setSharedContacts] = useState<ParsedContact[] | null>(null);
+  const isOnline = useOnlineStatus();
+  const { t } = useTranslation('common');
 
   userRef.current = user;
 
@@ -461,6 +465,18 @@ function App() {
       <UpdatePrompt />
       <InstallPrompt />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      <div
+        className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${
+          isOnline ? 'opacity-0 pointer-events-none translate-y-2' : 'opacity-100 translate-y-0'
+        }`}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span className="inline-flex items-center gap-1.5 bg-gray-600/80 backdrop-blur-sm text-white text-xs font-medium px-3 py-1 rounded-full select-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
+          {t('offline')}
+        </span>
+      </div>
       {sharedContacts && (
         <ImportContactModal
           contacts={sharedContacts}

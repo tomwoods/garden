@@ -71,5 +71,6 @@
   "daysOverdue_one": "{{count}} day overdue",
   "daysOverdue_other": "{{count}} days overdue",
   "inDays_one": "In {{count}} day",
-  "inDays_other": "In {{count}} days"
+  "inDays_other": "In {{count}} days",
+  "offline": "offline"
 }
