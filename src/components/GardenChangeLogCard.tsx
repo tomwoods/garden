@@ -7,6 +7,8 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(relativeTime);
 
+const PAGE_SIZE = 10;
+
 interface GardenChangeLogCardProps {
   gardenId: string;
   refreshKey?: number;
