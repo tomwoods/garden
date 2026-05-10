@@ -235,7 +235,7 @@ function buildNotificationOptions(plantId, title, body, tag) {
   return {
     body,
     icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    badge: '/icon-badge.png',
     tag,
     renotify: false,
     data: {
