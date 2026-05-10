@@ -865,13 +865,13 @@ export class SharedGardenDatabase {
       'plants','tendings','waterings','sunlight','fruits','prunings',
       'companions','scheduled_events','plots','plot_memberships',
       'buds','notchings','capabilities',
-      'garden_members','garden_change_log'
+      'garden_members'
     ];
 
     for (const table of tables) {
       let rows: Array<Record<string, unknown>>;
       try {
-        rows = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM ${table} WHERE updated_at > ?`, [sinceTs]);
+        rows = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM ${table} WHERE updated_at >= ?`, [sinceTs]);
       } catch {
         // table might not have updated_at — skip
         continue;
@@ -888,6 +888,25 @@ export class SharedGardenDatabase {
           authored_by_display_name: (row.authored_by_display_name as string) ?? authorDisplayName,
         });
       }
+    }
+
+    // garden_change_log uses occurred_at instead of updated_at
+    try {
+      const logRows = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM garden_change_log WHERE occurred_at >= ?`, [sinceTs]);
+      for (const row of logRows) {
+        deltas.push({
+          id: uuidv4(),
+          type: 'UPDATE',
+          table: 'garden_change_log',
+          record_id: row.id as string,
+          data: row,
+          ts: row.occurred_at as number,
+          authored_by_uuid: (row.actor_uuid as string) ?? authorUuid,
+          authored_by_display_name: (row.actor_display_name as string) ?? authorDisplayName,
+        });
+      }
+    } catch {
+      // garden_change_log not yet initialised — skip
     }
 
     // Tombstones
