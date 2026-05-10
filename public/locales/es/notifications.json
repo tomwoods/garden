@@ -10,7 +10,7 @@
   "notNow": "Ahora No",
   "keyBackupTitle": "Guarda La Llave de tu Jardín",
   "keyBackupMessage": "La llave de tu jardín es un archivo que te identifica y que usas para que tu información se guarde de manera secreta y segura. Guárdala en un lugar seguro - esta es la única manera de entrar a tu jardín si borras la aplicación.",
-  "downloadKey": "Descargar Clave de Jardín",
+  "downloadKey": "Descargar Llave del Jardín",
   "remindLater": "Recordarme después",
   "swTendTime": "Es hora de cuidar a {{name}}",
   "swTendBody": "Tu planta está esperando cuidado",
