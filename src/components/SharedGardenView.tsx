@@ -638,7 +638,7 @@ export const SharedGardenView: React.FC = () => {
           isOpen={editPlantModal.isOpen}
           plant={editPlantModal.plant}
           onClose={() => setEditPlantModal({ isOpen: false, plant: null })}
-          onSave={handleEditSave}
+          onUpdate={handleEditSave}
         />
       )}
 
