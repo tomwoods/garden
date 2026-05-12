@@ -121,7 +121,6 @@ export const SharedPlotDetailView: React.FC = () => {
     if (!gardenId || !user) throw new Error('No garden context');
     await SharedGardenDatabase.init(gardenId);
     const newPlant = SharedGardenDatabase.addPlant(gardenId, plantData, user.userId, myDisplayName());
-    setAllPlants(prev => [...prev, newPlant]);
     syncSharedGarden(gardenId, user).catch(() => {});
     return newPlant;
   };

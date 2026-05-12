@@ -42,7 +42,8 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
       setSelectedPlantIds(new Set(currentMemberIds));
       setLocalPlants(allPlants);
     }
-  }, [isOpen, currentMemberIds, allPlants]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

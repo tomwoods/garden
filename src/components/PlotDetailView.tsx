@@ -138,7 +138,6 @@ export const PlotDetailView: React.FC = () => {
     if (images && images.length > 0) {
       await uploadService.queueUpload(newPlant.id, plantData.name, images[0]);
     }
-    setAllPlants(prev => [...prev, newPlant]);
     return newPlant;
   };
 
