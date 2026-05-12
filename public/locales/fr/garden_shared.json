@@ -111,6 +111,13 @@
   "saving": "Enregistrement...",
   "save": "Enregistrer",
   "searchPlantsPlaceholder": "Rechercher des plantes...",
+  "ageFilter": {
+    "all": "Tous les âges",
+    "adult": "Adulte",
+    "youth": "Jeune",
+    "junior_youth": "Jeune Junior",
+    "child": "Enfant"
+  },
   "changeLog": {
     "title": "Activité du jardin",
     "showMore": "Afficher plus ({{count}} restants)",

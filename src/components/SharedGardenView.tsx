@@ -8,6 +8,7 @@ import {
 import { SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef } from '../lib/sharedGardenDatabase';
 import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile } from '../lib/sharedGardenSyncService';
 import type { Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion } from '../lib/database';
+import { parseAgeInfoFromPlant, resolveAgeGroup, type AgeGroup } from '../lib/harvestService';
 import { PlantCard } from './PlantCard';
 import { ActivityModal } from './ActivityModal';
 import { AddPlantModal } from './AddPlantModal';
@@ -269,6 +270,7 @@ export const SharedGardenView: React.FC = () => {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [filteredPlants, setFilteredPlants] = useState<Plant[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [ageFilter, setAgeFilter] = useState<AgeGroup | 'all'>('all');
   const [showSearch, setShowSearch] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -312,14 +314,17 @@ export const SharedGardenView: React.FC = () => {
   }, [gardenId, loadPlants]);
 
   useEffect(() => {
-    if (searchTerm.trim()) {
-      setFilteredPlants(plants.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase())
-      ));
-    } else {
-      setFilteredPlants(plants);
-    }
-  }, [searchTerm, plants]);
+    const nameTerm = searchTerm.trim().toLowerCase();
+    setFilteredPlants(plants.filter(p => {
+      const nameMatch = !nameTerm || p.name.toLowerCase().includes(nameTerm);
+      if (!nameMatch) return false;
+      if (ageFilter === 'all') return true;
+      const ageInfo = parseAgeInfoFromPlant(p);
+      const group = resolveAgeGroup(ageInfo);
+      if (ageFilter === 'youth') return group === 'youth' || group === 'voting_youth';
+      return group === ageFilter;
+    }));
+  }, [searchTerm, ageFilter, plants]);
 
   const runSync = async (ref: SharedGardenRef, showSuccessToast: boolean) => {
     if (!user || isSyncing) return;
@@ -470,7 +475,7 @@ export const SharedGardenView: React.FC = () => {
             {!isDisconnected && (
               <>
                 <button
-                  onClick={() => { setShowSearch(s => !s); if (showSearch) setSearchTerm(''); }}
+                  onClick={() => { setShowSearch(s => !s); if (showSearch) { setSearchTerm(''); setAgeFilter('all'); } }}
                   className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   <Search className="w-5 h-5" />
@@ -500,7 +505,7 @@ export const SharedGardenView: React.FC = () => {
           </div>
         </div>
         {showSearch && !isDisconnected && (
-          <div className="max-w-2xl mx-auto px-4 pb-3">
+          <div className="max-w-2xl mx-auto px-4 pb-3 space-y-2">
             <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl">
               <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
@@ -516,6 +521,24 @@ export const SharedGardenView: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
               )}
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+              {(['all', 'adult', 'youth', 'junior_youth', 'child'] as const).map(group => {
+                const active = ageFilter === group;
+                return (
+                  <button
+                    key={group}
+                    onClick={() => setAgeFilter(group)}
+                    className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      active
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {t(`ageFilter.${group}`)}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

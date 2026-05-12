@@ -111,6 +111,13 @@
   "saving": "Ap sove...",
   "save": "Sove",
   "searchPlantsPlaceholder": "Chèche plant yo...",
+  "ageFilter": {
+    "all": "Tout laj",
+    "adult": "Granmoun",
+    "youth": "Jenn",
+    "junior_youth": "Jenn Jinyò",
+    "child": "Timoun"
+  },
   "changeLog": {
     "title": "Aktivite jaden",
     "showMore": "Montre plis ({{count}} ki rete)",

@@ -111,6 +111,13 @@
   "saving": "Saving...",
   "save": "Save",
   "searchPlantsPlaceholder": "Search plants...",
+  "ageFilter": {
+    "all": "All ages",
+    "adult": "Adult",
+    "youth": "Youth",
+    "junior_youth": "Junior Youth",
+    "child": "Child"
+  },
   "changeLog": {
     "title": "Garden activity",
     "showMore": "Show more ({{count}} remaining)",
