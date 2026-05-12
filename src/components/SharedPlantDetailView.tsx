@@ -14,7 +14,7 @@ import isYesterday from 'dayjs/plugin/isYesterday';
 import {
   SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef
 } from '../lib/sharedGardenDatabase';
-import { syncSharedGarden } from '../lib/sharedGardenSyncService';
+import { deepSyncSharedGarden } from '../lib/sharedGardenSyncService';
 import type {
   Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion,
   Bud, Notching, Capability, ScheduledEvent
@@ -172,7 +172,7 @@ export const SharedPlantDetailView: React.FC = () => {
 
   const triggerSync = () => {
     if (!ref_ || !user) return;
-    syncSharedGarden(ref_, user).catch(() => {});
+    deepSyncSharedGarden(ref_, user).catch(() => {});
   };
 
   const formatRelativeTime = (ts: number) => {

@@ -360,6 +360,7 @@ export const SharedGardenView: React.FC = () => {
     setRefreshKey(k => k + 1);
     setShowAddPlant(false);
     success('Planted', `${plantData.name} has been added to the garden.`);
+    if (ref_ && !ref_.disconnected) runSync(ref_, false);
   };
 
   const handleTend = (plantId: string) => {
@@ -405,6 +406,7 @@ export const SharedGardenView: React.FC = () => {
     await loadPlants();
     setRefreshKey(k => k + 1);
     setActivityModal(null);
+    if (ref_ && !ref_.disconnected) runSync(ref_, false);
   };
 
   const handleEditSave = async (_plantId: string, updates: Partial<Plant>) => {
@@ -416,6 +418,7 @@ export const SharedGardenView: React.FC = () => {
     setRefreshKey(k => k + 1);
     setEditPlantModal({ isOpen: false, plant: null });
     success('Updated', 'Plant details saved.');
+    if (ref_ && !ref_.disconnected) runSync(ref_, false);
   };
 
   const handleRemovePlant = async () => {
@@ -426,12 +429,14 @@ export const SharedGardenView: React.FC = () => {
     await loadPlants();
     setRefreshKey(k => k + 1);
     setConfirmModal(null);
+    if (ref_ && !ref_.disconnected) runSync(ref_, false);
   };
 
   const handleBulkSunlightDone = async () => {
     setShowBulkSunlight(false);
     await loadPlants();
     setRefreshKey(k => k + 1);
+    if (ref_ && !ref_.disconnected) runSync(ref_, false);
   };
 
   const isDisconnected = ref_?.disconnected;

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef } from '../lib/sharedGardenDatabase';
+import { deepSyncSharedGarden } from '../lib/sharedGardenSyncService';
 import { AddEditPlotModal } from './AddEditPlotModal';
 import { ToastContainer } from './ToastContainer';
 import { useToast } from '../hooks/useToast';
@@ -70,6 +71,7 @@ export const SharedPlotsView: React.FC = () => {
       SharedGardenDatabase.createPlot(gardenId, plotData, user.userId, myDisplayName);
       loadPlots();
       success('Plot created', `${plotData.name} has been created`);
+      if (ref_ && !ref_.disconnected) deepSyncSharedGarden(ref_, user).catch(() => {});
     } catch (err) {
       console.error('Failed to create plot:', err);
       error('Failed to create plot', 'Please try again');
