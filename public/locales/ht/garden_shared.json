@@ -54,7 +54,11 @@
     "activityFailed": "Echèk anregistre aktivite",
     "notchingLogged": "Sesyon etid anregistre pou {{count}} plant",
     "notchingLoggedTitle": "Antay anregistre",
-    "notchingFailed": "Echèk anregistre antay"
+    "notchingFailed": "Echèk anregistre antay",
+    "syncedTitle": "Senkronize",
+    "syncedDesc": "Jaden an ajou.",
+    "syncErrorTitle": "Echèk senkronizasyon",
+    "syncErrorStep": "Pa kapab fini senkronizasyon nan etap: {{step}}"
   },
   "createModal": {
     "createTitle": "Kreye Nouvo Jaden Pataje",

@@ -54,7 +54,11 @@
     "activityFailed": "Échec de l'enregistrement de l'activité",
     "notchingLogged": "Session d'étude enregistrée pour {{count}} plantes",
     "notchingLoggedTitle": "Encochage enregistré",
-    "notchingFailed": "Échec de l'enregistrement de l'encochage"
+    "notchingFailed": "Échec de l'enregistrement de l'encochage",
+    "syncedTitle": "Synchronisé",
+    "syncedDesc": "Le jardin est à jour.",
+    "syncErrorTitle": "Échec de synchronisation",
+    "syncErrorStep": "La synchronisation a échoué à l'étape : {{step}}"
   },
   "createModal": {
     "createTitle": "Créer un Nouveau Jardin Partagé",

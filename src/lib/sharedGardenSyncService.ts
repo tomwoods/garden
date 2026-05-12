@@ -234,6 +234,115 @@ export async function syncSharedGarden(
   }
 }
 
+// ─── Deep sync (force compaction) ────────────────────────────────────────────
+
+export interface DeepSyncResult {
+  ok: boolean;
+  failedStep?: string;
+}
+
+export async function deepSyncSharedGarden(
+  ref: SharedGardenRef,
+  user: GardenSyncUser
+): Promise<DeepSyncResult> {
+  if (!navigator.onLine) return { ok: false, failedStep: 'offline' };
+
+  const gardenPrivKeyBase64 = localStorage.getItem(`shared_garden_key_${ref.gardenId}`);
+  if (!gardenPrivKeyBase64) return { ok: false, failedStep: 'fetch' };
+
+  try {
+    await SharedGardenDatabase.init(ref.gardenId);
+
+    // Step 1: fetch latest from server
+    const remote = await fetchSharedGarden(ref.sharedGardenId, user);
+    if (!remote) {
+      markGardenDisconnected(ref.gardenId);
+      return { ok: false, failedStep: 'fetch' };
+    }
+
+    // Step 2: decrypt and apply all deltas (not just since lastSyncTs)
+    let remoteObj: SharedGardenObject;
+    try {
+      remoteObj = await decryptGardenObject(remote.encryptedData, gardenPrivKeyBase64);
+    } catch {
+      return { ok: false, failedStep: 'decrypt' };
+    }
+
+    const conflicts = SharedGardenDatabase.applyDeltas(ref.gardenId, remoteObj.deltas);
+
+    // Mirror own incoming activities to personal garden
+    const activityTables = ['tendings', 'waterings', 'sunlight', 'fruits', 'prunings'];
+    for (const delta of remoteObj.deltas) {
+      if (delta.type !== 'DELETE' && delta.data && delta.authored_by_uuid === user.userId) {
+        if (activityTables.includes(delta.table)) {
+          await mirrorActivityToPersonalGarden(
+            ref.gardenId,
+            delta.data.plant_id as string,
+            delta.table,
+            delta.data,
+            delta.authored_by_uuid,
+            user.userId
+          ).catch(() => {});
+        }
+      }
+    }
+
+    // Step 3: collect local changes since last sync and merge
+    const myDisplayName = SharedGardenDatabase.getMember(ref.gardenId, user.userId)?.display_name ?? 'Unknown';
+    const localDeltas = SharedGardenDatabase.getDeltasSince(ref.gardenId, ref.lastSyncTs, user.userId, myDisplayName);
+
+    // Step 4: force compaction unconditionally
+    const freshSnapshot = SharedGardenDatabase.getFullSnapshot(ref.gardenId);
+    const compactedObj: SharedGardenObject = {
+      snapshot: freshSnapshot,
+      deltas: localDeltas,
+      schema_version: 1,
+      garden_name: remoteObj.garden_name,
+    };
+    SharedGardenDatabase.purgeTombstones(ref.gardenId);
+
+    // Step 5: encrypt and push
+    let encryptedStr: string;
+    try {
+      encryptedStr = await encryptGardenObject(compactedObj, ref.gardenPublicKeyBase64);
+    } catch {
+      return { ok: false, failedStep: 'encrypt' };
+    }
+
+    const pushResult = await pushSharedGarden(ref.sharedGardenId, encryptedStr, remote.lastModified, true, user);
+
+    if (pushResult.conflict) {
+      // Re-fetch, rebuild compaction on top of latest server state, retry once
+      try {
+        const serverObj = await decryptGardenObject(pushResult.conflict.encryptedData, gardenPrivKeyBase64);
+        SharedGardenDatabase.applyDeltas(ref.gardenId, serverObj.deltas);
+        const retrySnapshot = SharedGardenDatabase.getFullSnapshot(ref.gardenId);
+        const retryObj: SharedGardenObject = {
+          snapshot: retrySnapshot,
+          deltas: [],
+          schema_version: 1,
+          garden_name: serverObj.garden_name,
+        };
+        const retryEncrypted = await encryptGardenObject(retryObj, ref.gardenPublicKeyBase64);
+        const retryResult = await pushSharedGarden(ref.sharedGardenId, retryEncrypted, pushResult.conflict.lastModified, true, user);
+        if (!retryResult.success && !retryResult.conflict) {
+          return { ok: false, failedStep: 'upload' };
+        }
+      } catch {
+        return { ok: false, failedStep: 'upload' };
+      }
+    } else if (!pushResult.success) {
+      return { ok: false, failedStep: 'upload' };
+    }
+
+    setGardenSyncTs(ref.gardenId, Date.now());
+    return { ok: true };
+  } catch (err) {
+    console.error(`Deep sync failed for ${ref.gardenId}:`, err);
+    return { ok: false, failedStep: 'unknown' };
+  }
+}
+
 // ─── Sync all shared gardens ──────────────────────────────────────────────────
 
 export async function syncAllSharedGardens(

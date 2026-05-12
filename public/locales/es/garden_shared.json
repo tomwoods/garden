@@ -54,7 +54,11 @@
     "activityFailed": "Error al registrar actividad",
     "notchingLogged": "Sesión de estudio registrada para {{count}} plantas",
     "notchingLoggedTitle": "Muesca registrada",
-    "notchingFailed": "Error al registrar muesca"
+    "notchingFailed": "Error al registrar muesca",
+    "syncedTitle": "Sincronizado",
+    "syncedDesc": "El jardín está actualizado.",
+    "syncErrorTitle": "Error de sincronización",
+    "syncErrorStep": "No se pudo completar la sincronización en el paso: {{step}}"
   },
   "createModal": {
     "createTitle": "Crear Nuevo Jardín Compartido",

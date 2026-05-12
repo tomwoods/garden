@@ -54,7 +54,11 @@
     "activityFailed": "Failed to log activity",
     "notchingLogged": "Study session recorded for {{count}} plants",
     "notchingLoggedTitle": "Notching logged",
-    "notchingFailed": "Failed to log notching"
+    "notchingFailed": "Failed to log notching",
+    "syncedTitle": "Synced",
+    "syncedDesc": "Garden is up to date.",
+    "syncErrorTitle": "Sync failed",
+    "syncErrorStep": "Could not complete sync at step: {{step}}"
   },
   "createModal": {
     "createTitle": "Create New Shared Garden",

@@ -6,7 +6,7 @@ import {
   Trash2, UserMinus, AlertTriangle, Sun, LayoutGrid
 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef } from '../lib/sharedGardenDatabase';
-import { syncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile } from '../lib/sharedGardenSyncService';
+import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile } from '../lib/sharedGardenSyncService';
 import type { Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion } from '../lib/database';
 import { PlantCard } from './PlantCard';
 import { ActivityModal } from './ActivityModal';
@@ -296,11 +296,19 @@ export const SharedGardenView: React.FC = () => {
     }
   }, [gardenId]);
 
+  const AUTO_SYNC_THRESHOLD_MS = 15 * 60 * 1000;
+
   useEffect(() => {
     if (!gardenId) return;
     const r = getSharedGardenRef(gardenId);
     setRef_(r);
-    loadPlants();
+    loadPlants().then(() => {
+      const stale = !r || !r.lastSyncTs || (Date.now() - r.lastSyncTs > AUTO_SYNC_THRESHOLD_MS);
+      if (stale && r && !r.disconnected && user) {
+        runSync(r, false);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gardenId, loadPlants]);
 
   useEffect(() => {
@@ -313,23 +321,34 @@ export const SharedGardenView: React.FC = () => {
     }
   }, [searchTerm, plants]);
 
-  const handleSync = async () => {
-    if (!ref_ || !user || isSyncing) return;
+  const runSync = async (ref: SharedGardenRef, showSuccessToast: boolean) => {
+    if (!user || isSyncing) return;
     setIsSyncing(true);
     try {
-      const result = await syncSharedGarden(ref_, user);
-      if (result.disconnected) {
-        error('Disconnected', 'You have been removed from this garden.');
+      const result = await deepSyncSharedGarden(ref, user);
+      if (result.failedStep === 'fetch' && !result.ok) {
+        error(t('garden_shared:toasts.syncErrorTitle', 'Sync failed'), t('garden_shared:removedFromGarden'));
         setRef_(prev => prev ? { ...prev, disconnected: true } : null);
+      } else if (!result.ok) {
+        if (showSuccessToast) {
+          error(t('garden_shared:toasts.syncErrorTitle', 'Sync failed'), t('garden_shared:toasts.syncErrorStep', { step: result.failedStep ?? 'unknown' }));
+        }
       } else {
         await loadPlants();
         setRefreshKey(k => k + 1);
         setRef_(getSharedGardenRef(gardenId ?? ''));
-        success('Synced', 'Garden is up to date.');
+        if (showSuccessToast) {
+          success(t('garden_shared:toasts.syncedTitle', 'Synced'), t('garden_shared:toasts.syncedDesc', 'Garden is up to date.'));
+        }
       }
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const handleSync = async () => {
+    if (!ref_ || isSyncing) return;
+    await runSync(ref_, true);
   };
 
   const handleAddPlant = async (plantData: Omit<Plant, 'id' | 'created_at' | 'updated_at'>) => {
