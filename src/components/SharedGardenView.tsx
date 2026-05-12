@@ -324,6 +324,7 @@ export const SharedGardenView: React.FC = () => {
       } else {
         await loadPlants();
         setRefreshKey(k => k + 1);
+        setRef_(getSharedGardenRef(gardenId ?? ''));
         success('Synced', 'Garden is up to date.');
       }
     } finally {
