@@ -110,6 +110,22 @@ export const SharedPlotDetailView: React.FC = () => {
     }
   };
 
+  const handleCreatePlantForPlot = async (plantData: {
+    name: string;
+    phone?: string;
+    description?: string;
+    care_frequency_multiplier: number;
+    care_frequency_unit: 'days' | 'weeks';
+    additional_info?: string;
+  }): Promise<Plant> => {
+    if (!gardenId || !user) throw new Error('No garden context');
+    await SharedGardenDatabase.init(gardenId);
+    const newPlant = SharedGardenDatabase.addPlant(gardenId, plantData, user.userId, myDisplayName());
+    setAllPlants(prev => [...prev, newPlant]);
+    syncSharedGarden(gardenId, user).catch(() => {});
+    return newPlant;
+  };
+
   const handleBulkActivity = (type: 'tending' | 'watering' | 'sunlight' | 'fruit') => {
     if (members.length === 0) {
       error('No members', 'Add plants to this plot before logging activities');
@@ -393,6 +409,7 @@ export const SharedPlotDetailView: React.FC = () => {
         allPlants={allPlants}
         currentMemberIds={members.map(m => m.id)}
         onSave={handleUpdateMembers}
+        onCreatePlant={handleCreatePlantForPlot}
       />
 
       <BulkActivityModal

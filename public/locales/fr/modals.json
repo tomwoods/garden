@@ -257,7 +257,16 @@
     "subtitle": "Ajouter ou retirer des plantes de {{plotName}}",
     "cancelBtn": "Annuler",
     "updateBtn": "Mettre à Jour les Membres",
-    "savingBtn": "Enregistrement..."
+    "savingBtn": "Enregistrement...",
+    "addNewPlant": "Ajouter une nouvelle plante"
+  },
+  "plantSelector": {
+    "label": "Sélectionner des plantes ({{selected}} sur {{total}} sélectionnées)",
+    "selectAll": "Tout Sélectionner",
+    "selectNone": "Tout Désélectionner",
+    "searchPlaceholder": "Rechercher des plantes...",
+    "noMatch": "Aucune plante ne correspond à la recherche",
+    "empty": "Aucune plante disponible"
   },
   "harvestPreview": {
     "title": "Aperçu de la Récolte",

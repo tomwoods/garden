@@ -257,7 +257,16 @@
     "subtitle": "Add or remove plants from {{plotName}}",
     "cancelBtn": "Cancel",
     "updateBtn": "Update Members",
-    "savingBtn": "Saving..."
+    "savingBtn": "Saving...",
+    "addNewPlant": "Add a new plant"
+  },
+  "plantSelector": {
+    "label": "Select plants ({{selected}} of {{total}} selected)",
+    "selectAll": "Select All",
+    "selectNone": "Select None",
+    "searchPlaceholder": "Search plants...",
+    "noMatch": "No plants match your search",
+    "empty": "No plants available"
   },
   "harvestPreview": {
     "title": "Harvest Preview",

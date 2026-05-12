@@ -257,7 +257,16 @@
     "subtitle": "Ajoute oswa retire plant nan {{plotName}}",
     "cancelBtn": "Anile",
     "updateBtn": "Mete Ajou Manm Yo",
-    "savingBtn": "Ap sovgade..."
+    "savingBtn": "Ap sovgade...",
+    "addNewPlant": "Ajoute yon nouvo plant"
+  },
+  "plantSelector": {
+    "label": "Chwazi plant yo ({{selected}} sou {{total}} chwazi)",
+    "selectAll": "Chwazi Tout",
+    "selectNone": "Dekoche Tout",
+    "searchPlaceholder": "Chèche plant...",
+    "noMatch": "Pa gen plant ki koresponn ak rechèch la",
+    "empty": "Pa gen plant disponib"
   },
   "harvestPreview": {
     "title": "Apèsi Rekòlt",

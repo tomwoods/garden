@@ -10,6 +10,7 @@ import { BulkNotchingModal } from './BulkNotchingModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { DatabaseService, type PlotWithMembers, type Plant } from '../lib/database';
+import { uploadService } from '../lib/uploadService';
 import { useToast } from '../hooks/useToast';
 
 export const PlotDetailView: React.FC = () => {
@@ -123,6 +124,22 @@ export const PlotDetailView: React.FC = () => {
       console.error('Failed to update members:', err);
       error(t('toasts.membersFailed'), t('tryAgain', { ns: 'common' }));
     }
+  };
+
+  const handleCreatePlantForPlot = async (plantData: {
+    name: string;
+    phone?: string;
+    description?: string;
+    care_frequency_multiplier: number;
+    care_frequency_unit: 'days' | 'weeks';
+    additional_info?: string;
+  }, images?: string[]): Promise<Plant> => {
+    const newPlant = await DatabaseService.addPlant(plantData);
+    if (images && images.length > 0) {
+      await uploadService.queueUpload(newPlant.id, plantData.name, images[0]);
+    }
+    setAllPlants(prev => [...prev, newPlant]);
+    return newPlant;
   };
 
   const handleBulkActivity = (type: 'tending' | 'watering' | 'sunlight' | 'fruit') => {
@@ -394,6 +411,7 @@ export const PlotDetailView: React.FC = () => {
         allPlants={allPlants}
         currentMemberIds={plot.members.map(m => m.id)}
         onSave={handleUpdateMembers}
+        onCreatePlant={handleCreatePlantForPlot}
       />
 
       <BulkActivityModal
