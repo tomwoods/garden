@@ -127,7 +127,24 @@
     "share": "Partager",
     "backToForm": "Retour",
     "noResults": "Aucune activité trouvée dans cette plage de dates.",
-    "downloadStarted": "Rapport téléchargé."
+    "downloadStarted": "Rapport téléchargé.",
+    "sentences": {
+      "tending": "{{time}} — {{actor}} rapporte avoir eu une {{type}} avec {{names}}.",
+      "tendingWithSummary": "{{time}} — {{actor}} rapporte avoir eu une {{type}} avec {{names}}. {{summary}}",
+      "watering": "{{time}} — {{actor}} a étudié {{source}} avec {{names}}.",
+      "wateringWithNotes": "{{time}} — {{actor}} a étudié {{source}} avec {{names}}. Notes : {{notes}}",
+      "sunlight": "{{time}} — {{actor}} a prié pour {{names}}.",
+      "sunlightWithTopic": "{{time}} — {{actor}} a prié pour {{names}}. Sujet : {{topic}}",
+      "fruit": "{{time}} — {{actor}} a noté que {{name}} a accompli un acte désintéressé.",
+      "fruitWithDescription": "{{time}} — {{actor}} a noté que {{name}} a accompli un acte désintéressé. {{description}}",
+      "pruning": "{{time}} — {{actor}} a eu une conversation difficile avec {{name}}.",
+      "pruningWithDescription": "{{time}} — {{actor}} a eu une conversation difficile avec {{name}}. {{description}}",
+      "notching": "{{time}} — {{actor}} a étudié {{book}} avec {{names}} (unités {{start}}–{{end}}, {{sections}} sections).",
+      "notchingSimple": "{{time}} — {{actor}} a étudié {{book}} avec {{names}}.",
+      "notchingWithNotes": "{{time}} — {{actor}} a étudié {{book}} avec {{names}} (unités {{start}}–{{end}}, {{sections}} sections). {{notes}}",
+      "listTwo": "{{a}} et {{b}}",
+      "listMany": "{{rest}}, et {{last}}"
+    }
   },
   "ageFilter": {
     "all": "Tous les âges",

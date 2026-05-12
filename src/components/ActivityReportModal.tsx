@@ -51,7 +51,7 @@ export const ActivityReportModal: React.FC<Props> = ({ gardenId, plants, onClose
         return;
       }
 
-      const result = await buildPlainTextReport(gardenId, fromMs, toMs, plants);
+      const result = await buildPlainTextReport(gardenId, fromMs, toMs, plants, t);
       setReport(result);
     } finally {
       setGenerating(false);

@@ -16,6 +16,8 @@ import {
 } from './harvestService';
 import { parseAgeInfoFromPlant, resolveAgeGroup } from './harvestService';
 
+export type TFunction = (key: string, opts?: Record<string, unknown>) => string;
+
 export interface ReportParagraph {
   text: string;
 }
@@ -40,15 +42,13 @@ function formatDateKey(ms: number): string {
   return dayjs(ms).format('YYYY-MM-DD');
 }
 
-function actor(name: string): string {
-  return name || 'Someone';
-}
-
-function listNames(names: string[]): string {
+function listNames(names: string[], t: TFunction): string {
   if (names.length === 0) return '';
   if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+  if (names.length === 2) return t('activityReport.sentences.listTwo', { a: names[0], b: names[1] });
+  const rest = names.slice(0, -1).join(', ');
+  const last = names[names.length - 1];
+  return t('activityReport.sentences.listMany', { rest, last });
 }
 
 // Groups records that share the same authored_by_uuid, datetime, and type key
@@ -72,7 +72,8 @@ export async function buildPlainTextReport(
   gardenId: string,
   fromMs: number,
   toMs: number,
-  plants: Plant[]
+  plants: Plant[],
+  t: TFunction
 ): Promise<PlainTextReport> {
   const plantMap = new Map<string, string>(plants.map(p => [p.id, p.name]));
 
@@ -91,12 +92,12 @@ export async function buildPlainTextReport(
   for (const group of tendingGroups.values()) {
     const first = group[0];
     const time = formatTime(first.datetime);
-    const actorName = actor(first.authored_by_display_name);
+    const actor = first.authored_by_display_name || 'Someone';
     const names = group.map(r => plantMap.get(r.plant_id) || 'someone');
-    const nameStr = listNames(names);
+    const names_str = listNames(names, t);
     const type = first.type || 'conversation';
-    let text = `${time} — ${actorName} reports having had a ${type} with ${nameStr}.`;
-    if (first.summary) text += ` ${first.summary}`;
+    const key = first.summary ? 'activityReport.sentences.tendingWithSummary' : 'activityReport.sentences.tending';
+    const text = t(key, { time, actor, type, names: names_str, summary: first.summary ?? '' });
     allParagraphs.push({ ts: first.datetime, text });
   }
 
@@ -105,12 +106,12 @@ export async function buildPlainTextReport(
   for (const group of wateringGroups.values()) {
     const first = group[0];
     const time = formatTime(first.datetime);
-    const actorName = actor(first.authored_by_display_name);
+    const actor = first.authored_by_display_name || 'Someone';
     const names = group.map(r => plantMap.get(r.plant_id) || 'someone');
-    const nameStr = listNames(names);
+    const names_str = listNames(names, t);
     const source = first.source || 'a sacred text';
-    let text = `${time} — ${actorName} studied ${source} with ${nameStr}.`;
-    if (first.progress_description) text += ` Notes: ${first.progress_description}`;
+    const key = first.progress_description ? 'activityReport.sentences.wateringWithNotes' : 'activityReport.sentences.watering';
+    const text = t(key, { time, actor, source, names: names_str, notes: first.progress_description ?? '' });
     allParagraphs.push({ ts: first.datetime, text });
   }
 
@@ -119,31 +120,31 @@ export async function buildPlainTextReport(
   for (const group of sunlightGroups.values()) {
     const first = group[0];
     const time = formatTime(first.datetime);
-    const actorName = actor(first.authored_by_display_name);
+    const actor = first.authored_by_display_name || 'Someone';
     const names = group.map(r => plantMap.get(r.plant_id) || 'someone');
-    const nameStr = listNames(names);
-    let text = `${time} — ${actorName} prayed for ${nameStr}.`;
-    if (first.topic) text += ` Topic: ${first.topic}`;
+    const names_str = listNames(names, t);
+    const key = first.topic ? 'activityReport.sentences.sunlightWithTopic' : 'activityReport.sentences.sunlight';
+    const text = t(key, { time, actor, names: names_str, topic: first.topic ?? '' });
     allParagraphs.push({ ts: first.datetime, text });
   }
 
   // Fruits (service)
   for (const r of fruits) {
     const time = formatTime(r.datetime);
-    const actorName = actor(r.authored_by_display_name);
-    const plantName = plantMap.get(r.plant_id) || 'someone';
-    let text = `${time} — ${actorName} noted that ${plantName} performed a selfless act.`;
-    if (r.description) text += ` ${r.description}`;
+    const actor = r.authored_by_display_name || 'Someone';
+    const name = plantMap.get(r.plant_id) || 'someone';
+    const key = r.description ? 'activityReport.sentences.fruitWithDescription' : 'activityReport.sentences.fruit';
+    const text = t(key, { time, actor, name, description: r.description ?? '' });
     allParagraphs.push({ ts: r.datetime, text });
   }
 
   // Prunings (difficult conversations)
   for (const r of prunings) {
     const time = formatTime(r.datetime);
-    const actorName = actor(r.authored_by_display_name);
-    const plantName = plantMap.get(r.plant_id) || 'someone';
-    let text = `${time} — ${actorName} had a difficult conversation with ${plantName}.`;
-    if (r.description) text += ` ${r.description}`;
+    const actor = r.authored_by_display_name || 'Someone';
+    const name = plantMap.get(r.plant_id) || 'someone';
+    const key = r.description ? 'activityReport.sentences.pruningWithDescription' : 'activityReport.sentences.pruning';
+    const text = t(key, { time, actor, name, description: r.description ?? '' });
     allParagraphs.push({ ts: r.datetime, text });
   }
 
@@ -152,18 +153,26 @@ export async function buildPlainTextReport(
   for (const group of notchingGroups.values()) {
     const first = group[0];
     const time = formatTime(first.datetime);
-    const actorName = actor(first.authored_by_display_name);
+    const actor = first.authored_by_display_name || 'Someone';
     const names = group.map(r => plantMap.get(r.plant_id) || 'someone');
-    const nameStr = listNames(names);
+    const names_str = listNames(names, t);
     const book = first.book || 'a text';
-    let text = `${time} — ${actorName} studied ${book} with ${nameStr}`;
-    if (first.start_unit !== undefined && first.end_unit !== undefined) {
-      text += ` (units ${first.start_unit}–${first.end_unit}`;
-      if (first.sections_studied) text += `, ${first.sections_studied} sections`;
-      text += ')';
+    const hasRange = first.start_unit !== undefined && first.end_unit !== undefined;
+    let key: string;
+    if (!hasRange) {
+      key = 'activityReport.sentences.notchingSimple';
+    } else if (first.progress_description) {
+      key = 'activityReport.sentences.notchingWithNotes';
+    } else {
+      key = 'activityReport.sentences.notching';
     }
-    text += '.';
-    if (first.progress_description) text += ` ${first.progress_description}`;
+    const text = t(key, {
+      time, actor, book, names: names_str,
+      start: first.start_unit ?? '',
+      end: first.end_unit ?? '',
+      sections: first.sections_studied ?? '',
+      notes: first.progress_description ?? '',
+    });
     allParagraphs.push({ ts: first.datetime, text });
   }
 

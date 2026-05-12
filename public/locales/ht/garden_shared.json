@@ -127,7 +127,24 @@
     "share": "Pataje",
     "backToForm": "Tounen",
     "noResults": "Pa gen aktivite jwenn nan peryòd dat sa a.",
-    "downloadStarted": "Rapò telechaje."
+    "downloadStarted": "Rapò telechaje.",
+    "sentences": {
+      "tending": "{{time}} — {{actor}} rapòte te gen yon {{type}} ak {{names}}.",
+      "tendingWithSummary": "{{time}} — {{actor}} rapòte te gen yon {{type}} ak {{names}}. {{summary}}",
+      "watering": "{{time}} — {{actor}} etidye {{source}} ak {{names}}.",
+      "wateringWithNotes": "{{time}} — {{actor}} etidye {{source}} ak {{names}}. Nòt: {{notes}}",
+      "sunlight": "{{time}} — {{actor}} priye pou {{names}}.",
+      "sunlightWithTopic": "{{time}} — {{actor}} priye pou {{names}}. Sijè: {{topic}}",
+      "fruit": "{{time}} — {{actor}} remake ke {{name}} fè yon aksyon dezentèrese.",
+      "fruitWithDescription": "{{time}} — {{actor}} remake ke {{name}} fè yon aksyon dezentèrese. {{description}}",
+      "pruning": "{{time}} — {{actor}} te gen yon konvèsasyon difisil ak {{name}}.",
+      "pruningWithDescription": "{{time}} — {{actor}} te gen yon konvèsasyon difisil ak {{name}}. {{description}}",
+      "notching": "{{time}} — {{actor}} etidye {{book}} ak {{names}} (inite {{start}}–{{end}}, {{sections}} seksyon).",
+      "notchingSimple": "{{time}} — {{actor}} etidye {{book}} ak {{names}}.",
+      "notchingWithNotes": "{{time}} — {{actor}} etidye {{book}} ak {{names}} (inite {{start}}–{{end}}, {{sections}} seksyon). {{notes}}",
+      "listTwo": "{{a}} ak {{b}}",
+      "listMany": "{{rest}}, ak {{last}}"
+    }
   },
   "ageFilter": {
     "all": "Tout laj",

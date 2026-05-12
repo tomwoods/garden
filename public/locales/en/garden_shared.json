@@ -127,7 +127,24 @@
     "share": "Share",
     "backToForm": "Back",
     "noResults": "No activity found in this date range.",
-    "downloadStarted": "Report downloaded."
+    "downloadStarted": "Report downloaded.",
+    "sentences": {
+      "tending": "{{time}} — {{actor}} reports having had a {{type}} with {{names}}.",
+      "tendingWithSummary": "{{time}} — {{actor}} reports having had a {{type}} with {{names}}. {{summary}}",
+      "watering": "{{time}} — {{actor}} studied {{source}} with {{names}}.",
+      "wateringWithNotes": "{{time}} — {{actor}} studied {{source}} with {{names}}. Notes: {{notes}}",
+      "sunlight": "{{time}} — {{actor}} prayed for {{names}}.",
+      "sunlightWithTopic": "{{time}} — {{actor}} prayed for {{names}}. Topic: {{topic}}",
+      "fruit": "{{time}} — {{actor}} noted that {{name}} performed a selfless act.",
+      "fruitWithDescription": "{{time}} — {{actor}} noted that {{name}} performed a selfless act. {{description}}",
+      "pruning": "{{time}} — {{actor}} had a difficult conversation with {{name}}.",
+      "pruningWithDescription": "{{time}} — {{actor}} had a difficult conversation with {{name}}. {{description}}",
+      "notching": "{{time}} — {{actor}} studied {{book}} with {{names}} (units {{start}}–{{end}}, {{sections}} sections).",
+      "notchingSimple": "{{time}} — {{actor}} studied {{book}} with {{names}}.",
+      "notchingWithNotes": "{{time}} — {{actor}} studied {{book}} with {{names}} (units {{start}}–{{end}}, {{sections}} sections). {{notes}}",
+      "listTwo": "{{a}} and {{b}}",
+      "listMany": "{{rest}}, and {{last}}"
+    }
   },
   "ageFilter": {
     "all": "All ages",
