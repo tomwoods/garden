@@ -95,9 +95,13 @@ export async function buildPlainTextReport(
     const actor = first.authored_by_display_name || 'Someone';
     const names = group.map(r => plantMap.get(r.plant_id) || 'someone');
     const names_str = listNames(names, t);
-    const type = first.type || 'conversation';
+    const typeSlug = first.type || 'conversation';
+    const knownSlugs = ['conversation', 'coffee', 'meal', 'call', 'message', 'activity'];
+    const typeLabel = knownSlugs.includes(typeSlug)
+      ? t(`activity.interactionTypes.${typeSlug}`, { ns: 'modals', defaultValue: typeSlug })
+      : typeSlug;
     const key = first.summary ? 'activityReport.sentences.tendingWithSummary' : 'activityReport.sentences.tending';
-    const text = t(key, { time, actor, type, names: names_str, summary: first.summary ?? '' });
+    const text = t(key, { time, actor, type: typeLabel, names: names_str, summary: first.summary ?? '' });
     allParagraphs.push({ ts: first.datetime, text });
   }
 
