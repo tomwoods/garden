@@ -8,7 +8,7 @@ Garden is a private, offline-first spiritual relationship manager. Users tend a 
 
 ### Non-Goals
 
-- Garden is **not** a social network or collaboration platform (the future sharing feature is opt-in and strictly user-controlled).
+- Garden is **not** a social network or collaboration platform (all sharing features are opt-in and strictly user-controlled).
 - Garden is **not** a CRM. There are no tags, funnels, conversion tracking, or performance metrics.
 - Garden is **not** a devotional app that explains religion to users. It is a private tool used by people who already have a spiritual framework.
 - Garden is **not** a gamified habit tracker. No streaks, points, badges, or leaderboards. Ever.

@@ -121,15 +121,17 @@
 ## Phase 3 — Sharing, Reporting, and Localization (In Progress)
 
 ### Shared Gardens
-A fully collaborative garden where any number of members co-tend the same set of plants and log activities together. All garden data is E2EE — the server holds only ciphertext encrypted with the garden's RSA key pair. The garden private key is held locally by each member and never transmitted to the server (distributed via ephemeral RSA handshake at invite time).
+A fully collaborative garden where any number of members co-tend the same set of plants and log activities together. All garden data is E2EE — the server holds only ciphertext encrypted with the garden's RSA key pair. The garden private key is held locally by each member and never transmitted to the server (distributed via ephemeral ECDH key handshake at invite time).
 
 - [DONE] `shared_gardens` Supabase table with `authorized_users` JSONB access control
 - [DONE] `garden_share_claims` table — ephemeral invite claims (72-hour TTL short codes)
 - [DONE] `sharedGardenDatabase.ts` — per-garden AlaSQL database with 15 tables (13 standard + `garden_members` + `garden_change_log` + `garden_tombstones`)
 - [DONE] `sharedGardenSyncService.ts` — snapshot + delta log sync engine; compaction at 50 deltas; 409 conflict retry; tombstone-aware delta application
+- [DONE] `deepSyncSharedGarden()` — force-compaction sync callable from the UI sync button; unconditionally compacts local state and re-uploads; used for both manual syncs and recovery (see Decision 20 in MEMORY.md)
+- [DONE] Auto-sync on load — `SharedGardenView` silently triggers `deepSyncSharedGarden()` on mount when `lastSyncTs` is absent or older than 15 minutes (see Decision 21 in MEMORY.md)
 - [DONE] `create-shared-garden` Edge Function
 - [DONE] `sync-shared-garden` Edge Function — `read`, `write`, `remove-member` actions
-- [DONE] `create-garden-share-claim` Edge Function — ephemeral key handshake
+- [DONE] `create-garden-share-claim` Edge Function — ephemeral ECDH key handshake for invite delivery
 - [DONE] `claim-garden-share` Edge Function — redeems invite, adds member to `authorized_users`
 - [DONE] `CreateSharedGardenModal` — two-tab UI: create new garden or restore from key file
 - [DONE] `JoinSharedGardenView` — invite claim redemption flow
@@ -140,8 +142,8 @@ A fully collaborative garden where any number of members co-tend the same set of
 - [DONE] `GardenChangeLogCard` — paginated audit log of all garden actions
 - [DONE] `ManageMembersModal` — list members, generate invites, remove members
 - [DONE] `InviteToSharedGardenModal` — invite generation with QR code and copy link
-- [DONE] Garden key file download and restore from key file
-- [DONE] Disconnected garden mode — read-only when removed
+- [DONE] Garden key file download (`.gardenkey` extension) and restore from key file
+- [DONE] Disconnected garden mode — read-only when removed; ref stays in `shared_garden_refs_v1` with `disconnected: true`
 - [PLANNED] Key rotation after member removal
 
 ### Plant Sharing
@@ -183,18 +185,14 @@ An aggregated, client-side analytical layer that processes one or more `HarvestR
 - [DONE] Sowing window overlap analysis (`sowingSeasonService.ts`)
 
 ### Multilingual Support
-The app will support English, Spanish, and French as the first three languages.
 
-- [PLANNED] i18n architecture — React context-based locale provider, translation key files
-- [PLANNED] Language selection in Settings
-- [PLANNED] All UI strings extracted to translation files
-- [PLANNED] Activity type labels localized
-- [PLANNED] Care urgency labels localized
+- [DONE] i18n architecture — React i18next + `i18next-http-backend` + `i18next-browser-languagedetector`; translation key files served from `public/locales/{locale}/{namespace}.json`
+- [DONE] Language selection in Settings (`LanguageSwitcher` component)
+- [DONE] All UI strings extracted to namespace translation files (`common`, `garden`, `garden_shared`, `modals`, `settings`, `onboarding`, `harvest`, `notifications`)
+- [DONE] Activity type labels localized across all namespaces
+- [DONE] Four locales shipped: English (`en`), Spanish (`es`), French (`fr`), Haitian Creole (`ht`)
 - [PLANNED] Date/time formatting by locale (dayjs locale support)
 - [PLANNED] RTL support deferred to a future phase
-
-Translation key files will live in `src/i18n/{locale}.json`.
-Default locale: `en`.
 
 ---
 

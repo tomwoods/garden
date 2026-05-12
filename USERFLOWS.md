@@ -545,12 +545,13 @@ A garden member taps "Invite" in the garden's member panel. The app generates a 
 2. User taps "Invite member" → `InviteToSharedGardenModal` opens.
 3. User enters the invitee's intended display name and taps "Generate invite."
 4. `createGardenInvite(gardenId, inviteeDisplayName, user)`:
-   - Generates a one-time ephemeral RSA key pair.
+   - Generates a one-time ephemeral ECDH key pair (`generateEphemeralECDHKeyPair()`).
    - Reads the garden private key from `localStorage['shared_garden_key_{gardenId}']`.
-   - Encrypts the garden private key with the ephemeral public key.
+   - Encrypts the garden private key with the ephemeral ECDH private key (`encryptWithECDHKey()`).
    - Sends the wrapped key, garden public key, and invitee display name to `create-garden-share-claim`.
    - Receives a `shortCode` (8 alphanumeric characters, 72-hour TTL).
-   - Builds the invite URL: `https://app/join-shared-garden/{sharedGardenId}?code={shortCode}#key={ephemeralPrivKeyBase64}`
+   - Builds the invite URL: `https://app/join-shared-garden/{sharedGardenId}#gate={shortCode}&key={ephemeralPrivKeyBase64}&gid={gardenId}`
+   - The full payload is in the URL fragment — the server never sees the short code or ephemeral key in a query string.
 5. The invite link is shown as a QR code and copyable text. The user shares it out-of-band (message, email, etc.).
 
 ### Flow (Invitee)
@@ -582,39 +583,43 @@ A garden member taps "Invite" in the garden's member panel. The app generates a 
 ## 19. Syncing a Shared Garden
 
 ### User Experience
-Sync happens automatically. The user taps into a shared garden and sees activity from all members, including any that were added since their last visit. On slow connections, a subtle loading indicator may appear briefly.
+Sync happens automatically. The user taps into a shared garden and sees activity from all members, including any that were added since their last visit. On slow connections, the sync button shows a brief spinner.
 
 ### Trigger Conditions
-- On app focus (`visibilitychange` event) for all non-disconnected shared gardens.
+- **Auto-sync on load:** When `SharedGardenView` mounts, it checks `ref.lastSyncTs`. If absent (never synced) or more than 15 minutes old, `deepSyncSharedGarden()` is called silently (no success toast).
+- **Manual sync:** User taps the sync button → `deepSyncSharedGarden()` is called; a success toast is shown on completion.
 - After any write operation in a shared garden (activity added, plant added, etc.).
-- On explicit pull-to-refresh in `SharedGardenView`.
-- Called as `syncAllSharedGardens(user)` on app load.
+- Called as `syncAllSharedGardens(user)` on app focus (`visibilitychange`) for all non-disconnected gardens.
 
-### Sync Flow
-1. For each garden ref in `shared_garden_refs_v1` where `disconnected !== true`:
-2. `syncSharedGarden(ref, user)`:
-   a. Reads `gardenPrivKeyBase64` from `localStorage['shared_garden_key_{gardenId}']`.
-   b. Calls `fetchSharedGarden(sharedGardenId, user)` → `sync-shared-garden` Edge Function with `action: 'read'`.
-   c. Decrypts the response with the garden private key → `SharedGardenObject`.
-   d. Identifies new incoming deltas: `remoteObj.deltas.filter(d => d.ts > ref.lastSyncTs)`.
-   e. Calls `SharedGardenDatabase.applyDeltas(gardenId, newDeltas)` — last-write-wins per record, returns any `TombstoneConflict[]`.
-   f. For each incoming delta authored by the current user involving an activity table: calls `mirrorActivityToPersonalGarden()` to copy it to the personal GardenDB.
-   g. Collects local changes since `lastSyncTs` via `SharedGardenDatabase.getDeltasSince(gardenId, lastSyncTs)`.
-   h. Merges local deltas into the remote object's delta array.
-   i. If total deltas > 50: compaction — replaces the delta log with a fresh `getFullSnapshot()` and empty deltas array (`isCompaction: true`).
-   j. Re-encrypts the updated `SharedGardenObject` with the garden public key.
-   k. Calls `pushSharedGarden(sharedGardenId, encryptedData, remote.lastModified, isCompaction, user)` → `sync-shared-garden` with `action: 'write'`.
-   l. On 409 (concurrent write): re-fetches the server version, merges local deltas on top of the winner's state, and retries once.
-   m. On success: `setGardenSyncTs(gardenId, Date.now())` updates `lastSyncTs` in the ref.
+### Sync Function: `deepSyncSharedGarden(ref, user)`
+This is the single sync function used for both manual and auto-sync paths in `SharedGardenView`. It always performs a full compaction pass:
+
+1. Reads `gardenPrivKeyBase64` from `localStorage['shared_garden_key_{gardenId}']`.
+2. Calls `fetchSharedGarden(sharedGardenId, user)` → `sync-shared-garden` Edge Function with `action: 'read'`.
+3. Decrypts the response with the garden private key → `SharedGardenObject`.
+4. Applies ALL deltas from the remote object (not just those since `lastSyncTs`) via `SharedGardenDatabase.applyDeltas()`.
+5. For each incoming delta authored by the current user involving an activity table: calls `mirrorActivityToPersonalGarden()` to copy it to the personal GardenDB.
+6. Collects local changes since `ref.lastSyncTs` via `SharedGardenDatabase.getDeltasSince()`.
+7. Forces compaction unconditionally: builds a fresh `getFullSnapshot()`, sets `deltas: localDeltas`, calls `SharedGardenDatabase.purgeTombstones()`.
+8. Re-encrypts the compacted `SharedGardenObject` with the garden public key.
+9. Calls `pushSharedGarden(sharedGardenId, encryptedData, remote.lastModified, true, user)` → `sync-shared-garden` with `action: 'write'`.
+10. On 409 (concurrent write): re-fetches, applies remote deltas, rebuilds compaction from fresh snapshot, retries once.
+11. On success: `setGardenSyncTs(gardenId, Date.now())` updates `lastSyncTs` in the ref.
+
+Returns `{ ok: boolean; failedStep?: string }` — named steps: `offline`, `fetch`, `decrypt`, `encrypt`, `upload`, `unknown`.
 
 ### Conflict Handling
-- **Activity on a deleted plant (TombstoneConflict):** If an incoming delta tries to INSERT/UPDATE a record whose `record_id` is in `garden_tombstones`, a `TombstoneConflict` is raised. The `onConflict` callback (if provided) surfaces this to the user. Default behavior: the delta is discarded.
-- **409 write conflict:** Automatically retried once after re-fetching. If the second attempt also gets a 409 (extreme edge case), the sync cycle fails silently and is retried on the next trigger.
-- **403 from read:** The user has been removed from the garden. `markGardenDisconnected(gardenId)` sets `ref.disconnected = true`. The garden becomes read-only in the UI.
+- **Activity on a deleted plant (TombstoneConflict):** If an incoming delta tries to INSERT/UPDATE a record whose `record_id` is in `garden_tombstones`, a `TombstoneConflict` is raised. Default behavior: the delta is discarded. Tombstones are purged during compaction.
+- **409 write conflict:** Automatically retried once after re-fetching and re-compacting. If the second attempt also fails, `failedStep: 'upload'` is returned and the UI shows an error toast on manual sync (silently ignored on auto-sync).
+- **403 from read (`failedStep: 'fetch'`):** The user has been removed from the garden. `markGardenDisconnected(gardenId)` sets `ref.disconnected = true`. The garden becomes read-only in the UI. An error toast is always shown (auto or manual).
+
+### Disconnected Garden State
+When a garden has `disconnected: true`, it remains in `shared_garden_refs_v1`. Its local AlaSQL database is preserved and fully readable. No sync is attempted. All write controls in `SharedGardenView` are hidden. The user sees an amber "disconnected" banner.
 
 ### Edge Cases
-- **Offline:** `navigator.onLine` check at the start of `syncSharedGarden()` returns false — function exits immediately with `{}`. No error is shown. Sync retries on next trigger.
-- **Garden private key missing from localStorage:** Sync exits early. This can happen if the user cleared localStorage. Recovery requires restoring from the garden key file.
+- **Offline:** `navigator.onLine` check at the start returns false — `deepSyncSharedGarden()` returns `{ ok: false, failedStep: 'offline' }` immediately. No error shown on auto-sync. Sync retries on next trigger.
+- **Garden private key missing from localStorage:** Sync exits early with `failedStep: 'fetch'`. Recovery requires restoring from the garden key file.
+- **Auto-sync and manual sync overlap:** The `isSyncing` boolean guard in `SharedGardenView` prevents a second call while one is in progress.
 
 ---
 

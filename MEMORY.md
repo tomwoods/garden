@@ -400,7 +400,9 @@ When any schema change is made:
 
 **Why the garden key pair model wins:** A garden write always produces one ciphertext blob regardless of member count. No member needs to know anyone else's public key at write time. The same key is used by all members indefinitely.
 
-**Ephemeral handshake for key delivery:** When a member invites someone, they generate a one-time ephemeral RSA key pair, encrypt the garden private key with the ephemeral public key, and send the wrapped key to the server. The ephemeral private key travels in the invite URL `#fragment` — it never reaches the server. The invitee presents the short code, receives the wrapped garden key, decrypts it with the ephemeral private key from the URL, and now holds the garden private key locally. The server never holds the garden private key or the ephemeral private key.
+**Ephemeral handshake for key delivery:** When a member invites someone, they generate a one-time ephemeral ECDH key pair (`generateEphemeralECDHKeyPair()` in `cryptoService.ts`), encrypt the garden private key with the ephemeral private key (`encryptWithECDHKey()`), and send the wrapped key to the server. The ephemeral private key travels in the invite URL `#fragment` — it never reaches the server. The invitee presents the short code, receives the wrapped garden key, decrypts it with the ephemeral private key from the URL (`decryptWithECDHKey()`), and now holds the garden private key locally. The server never holds the garden private key or the ephemeral private key.
+
+**Why ECDH instead of RSA for the ephemeral layer:** An ephemeral RSA key pair produces a ~2232-character Base64 private key in the URL fragment, making invite links long and fragile across messaging apps that truncate URLs. The ECDH ephemeral private key is ~124 characters — compact enough to be reliably shared. Security properties are equivalent for this one-shot key transport use case.
 
 **Trade-offs:**
 - If a member's device is compromised, the attacker gains the garden private key, which can decrypt all past and future garden ciphertext. This is the same risk as a compromised personal garden key and is accepted.
@@ -426,3 +428,49 @@ When any schema change is made:
 **Trade-offs:**
 - The JSON sub-field approach makes the link invisible to SQL queries — it cannot be indexed or joined. Link lookups are always done by known plant ID via `parseAdditionalInfo()`, not by scanning, so this is acceptable.
 - If `additional_info` JSON becomes corrupted, the link is silently lost. The recovery path is to re-link manually. Accepted as an edge case.
+
+---
+
+## Decision 20: Deep Sync as Manual Force-Compaction
+
+**Date:** Phase 3 (shared gardens, sync refinement)
+
+**Context:** The standard `syncSharedGarden()` function only applies remote deltas since `lastSyncTs` and appends local deltas. This is efficient but means a device that has been offline for a long time, or whose `lastSyncTs` is stale, may miss the implicit state embedded in old compacted snapshots. We wanted a recovery path that ensures full convergence from any state.
+
+**Decision:** `deepSyncSharedGarden()` in `sharedGardenSyncService.ts` — a distinct function from the standard sync that:
+1. Applies ALL remote deltas (not just those since `lastSyncTs`).
+2. Collects local changes since `lastSyncTs`.
+3. Forces compaction unconditionally (regardless of delta count).
+4. Uploads the compacted result.
+5. On 409 conflict, re-fetches, applies remote deltas, rebuilds the compaction, and retries once.
+
+**Why wire to the manual sync button, not background sync:** Background auto-sync (on load staleness check) also calls `deepSyncSharedGarden()` for simplicity — the function is safe to call frequently because it is idempotent (a full compaction of the same state produces the same ciphertext). The cost of always compacting is slightly larger payloads; the benefit is a simpler, single code path with no distinction between "light" and "heavy" sync in the call sites.
+
+**Why not keep the lightweight path for auto-sync:** Two sync functions create divergence risk — a bug in one is not caught by testing the other. A single deep sync function that is always called ensures the test surface is unified.
+
+**Trade-offs:**
+- Compaction is always triggered, even when delta count is low. This produces slightly larger encrypted payloads (~5–10% more bytes) than a delta-append would, but stays well within the acceptable range for this application's data volumes.
+- If multiple members trigger deep sync simultaneously (e.g., after a period of collective offline activity), the 409 retry logic handles it correctly — each retry re-fetches and re-compacts, so the final state is always the union of all members' changes.
+
+---
+
+## Decision 21: Auto-Sync on Load with 15-Minute Staleness Gate
+
+**Date:** Phase 3 (shared gardens, UX)
+
+**Context:** Members expected shared garden data to feel fresh when they open it. Previously, sync only fired on explicit user action (tap the sync button) or on write operations. Opening a garden to read it — the most common action — did not trigger a sync.
+
+**Options considered:**
+- Sync on every mount (no gate): Always fresh, but wasteful for rapid navigation and costly on slow connections.
+- Sync on `visibilitychange` for all gardens (existing `syncAllSharedGardens` path): fires when the tab is re-focused, but not on initial mount within a session.
+- Staleness gate on mount (chosen): sync fires on mount only if the garden has never been synced or was last synced more than 15 minutes ago.
+
+**Decision:** In `SharedGardenView.tsx`, the mount `useEffect` checks `ref.lastSyncTs`. If absent or more than `15 * 60 * 1000` ms ago, `deepSyncSharedGarden()` is called silently (no success toast). The `isSyncing` guard prevents a double-trigger if the user taps the manual sync button while the auto-sync is already running.
+
+**Why 15 minutes:** Long enough that rapid back-and-forth navigation between gardens does not fire repeated syncs. Short enough that a user who returns to a garden after a coffee break sees fresh data without needing to tap anything. The threshold is a constant in the component and can be adjusted independently.
+
+**Why no toast on auto-sync:** A success toast for an automatic background action the user did not trigger would feel like an interruption. The app's tone is unhurried. Toasts are reserved for responses to explicit user intent. Failures during auto-sync that indicate disconnection (403) do surface a toast since they change the garden's functional state.
+
+**Trade-offs:**
+- The 15-minute window means data can be up to 15 minutes stale in the background. For a spiritually-motivated care app (not a real-time collaboration tool), this is acceptable.
+- If a member is on a metered connection, the auto-sync fires without warning. An option to disable auto-sync could be added to Settings in a future phase.

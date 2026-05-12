@@ -489,6 +489,18 @@ Each shared garden the user belongs to gets its own isolated AlaSQL database, na
 
 All 13 personal-garden tables are present verbatim (`plants`, `tendings`, `waterings`, `sunlight`, `fruits`, `prunings`, `companions`, `scheduled_events`, `plots`, `plot_memberships`, `buds`, `notchings`, `capabilities`). Refer to section 1 for their schemas.
 
+**Additional fields on shared garden activity records:** All activity tables in a shared garden (`tendings`, `waterings`, `sunlight`, `fruits`, `prunings`) carry two extra columns beyond the personal garden schema:
+
+| Column | Type | Description |
+|---|---|---|
+| `authored_by_uuid` | STRING | UUID of the member who logged this activity |
+| `authored_by_display_name` | STRING | Display name of that member at time of logging |
+| `updated_at` | NUMBER | Unix ms timestamp of last modification — used for last-write-wins delta arbitration |
+
+These fields are populated by `SharedGardenDatabase` write methods and are included in every `SharedGardenDelta` payload. They are used by `mirrorActivityToPersonalGarden()` to restrict mirroring to activities where `authored_by_uuid === currentUser.userId` (see section 2b.5 and MEMORY.md Decision 19).
+
+`plants` in a shared garden also carry `updated_at` (NUMBER) for the same arbitration purpose.
+
 ---
 
 ### 2b.1 `garden_members`
@@ -840,6 +852,15 @@ interface SharedGardenDelta {
 - Anyone can read (data is encrypted; reading the ciphertext reveals nothing without the garden private key).
 - Service role only can insert and update.
 
+**Sync functions (client-side, `sharedGardenSyncService.ts`):**
+
+| Function | Behaviour |
+|---|---|
+| `syncSharedGarden(ref, user)` | Applies only remote deltas since `ref.lastSyncTs`; appends local deltas; compacts when total deltas > 50. |
+| `deepSyncSharedGarden(ref, user)` | Applies ALL remote deltas (full replay); collects local changes; forces compaction unconditionally; used for manual syncs and auto-sync on load. Returns `{ ok: boolean; failedStep?: string }`. |
+
+`deepSyncSharedGarden()` is the single code path wired to the `SharedGardenView` sync button and the 15-minute staleness auto-sync on mount. See MEMORY.md Decisions 20 and 21 for rationale.
+
 ---
 
 ### 3.6 `garden_share_claims` Table
@@ -874,9 +895,9 @@ CREATE TABLE IF NOT EXISTS garden_share_claims (
 
 **Invite URL structure:**
 ```
-https://app.example.com/join-shared-garden/{sharedGardenId}?code={shortCode}#key={ephemeralPrivateKeyBase64}
+https://app.example.com/join-shared-garden/{sharedGardenId}#gate={shortCode}&key={ephemeralPrivKeyBase64}&gid={gardenId}
 ```
-The ephemeral private key is in the URL `#fragment` — it is never sent to the server by the browser.
+The entire payload (short code, ephemeral private key, and local garden ID) is in the URL `#fragment` — it is never sent to the server by the browser. The ephemeral private key is an ECDH private key (~124 Base64 characters), not RSA, keeping the URL compact enough to survive truncation in messaging apps.
 
 **RLS Policies:**
 - Service role only for all operations. Claims are read and written exclusively through Edge Functions.
