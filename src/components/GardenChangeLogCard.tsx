@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardList, ChevronDown } from 'lucide-react';
+import { ClipboardList, ChevronDown, FileText } from 'lucide-react';
 import { SharedGardenDatabase, type GardenChangeLogEntry } from '../lib/sharedGardenDatabase';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -12,9 +12,10 @@ const PAGE_SIZE = 10;
 interface GardenChangeLogCardProps {
   gardenId: string;
   refreshKey?: number;
+  onGenerateReport?: () => void;
 }
 
-export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ gardenId, refreshKey }) => {
+export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ gardenId, refreshKey, onGenerateReport }) => {
   const { t } = useTranslation('garden_shared');
   const [entries, setEntries] = useState<GardenChangeLogEntry[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -63,10 +64,19 @@ export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ garden
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+        <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <ClipboardList className="w-4 h-4 text-gray-600" />
         </div>
-        <h3 className="font-medium text-gray-900 text-sm">{t('changeLog.title')}</h3>
+        <h3 className="font-medium text-gray-900 text-sm flex-1">{t('changeLog.title')}</h3>
+        {onGenerateReport && (
+          <button
+            onClick={onGenerateReport}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors flex-shrink-0"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            {t('activityReport.generate')}
+          </button>
+        )}
       </div>
 
       <div className="space-y-2">

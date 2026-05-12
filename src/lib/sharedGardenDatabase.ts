@@ -320,6 +320,13 @@ export class SharedGardenDatabase {
     );
   }
 
+  static getChangeLogByRange(gardenId: string, fromMs: number, toMs: number): GardenChangeLogEntry[] {
+    return this.run<GardenChangeLogEntry[]>(gardenId,
+      'SELECT * FROM garden_change_log WHERE occurred_at >= ? AND occurred_at <= ? ORDER BY occurred_at ASC',
+      [fromMs, toMs]
+    );
+  }
+
   static getChangeLogCount(gardenId: string): number {
     const result = this.run<Array<{ cnt: number }>>(gardenId,
       'SELECT COUNT(*) as cnt FROM garden_change_log', []
@@ -832,6 +839,54 @@ export class SharedGardenDatabase {
     plotName: string
   ): void {
     this.logChange(gardenId, actorUuid, actorDisplayName, `bulk_${activityType}`, 'plots', plotId, plotName);
+  }
+
+  // ─── Date-range activity queries (for report generation) ─────────────────
+
+  static getAllTendingsByRange(gardenId: string, fromMs: number, toMs: number): (Tending & { authored_by_display_name: string; authored_by_uuid: string })[] {
+    return this.run(gardenId,
+      'SELECT * FROM tendings WHERE datetime >= ? AND datetime <= ? ORDER BY datetime ASC',
+      [fromMs, toMs]
+    );
+  }
+
+  static getAllWateringsByRange(gardenId: string, fromMs: number, toMs: number): (Watering & { authored_by_display_name: string; authored_by_uuid: string })[] {
+    return this.run(gardenId,
+      'SELECT * FROM waterings WHERE datetime >= ? AND datetime <= ? ORDER BY datetime ASC',
+      [fromMs, toMs]
+    );
+  }
+
+  static getAllSunlightByRange(gardenId: string, fromMs: number, toMs: number): (Sunlight & { authored_by_display_name: string; authored_by_uuid: string })[] {
+    return this.run(gardenId,
+      'SELECT * FROM sunlight WHERE datetime >= ? AND datetime <= ? ORDER BY datetime ASC',
+      [fromMs, toMs]
+    );
+  }
+
+  static getAllFruitsByRange(gardenId: string, fromMs: number, toMs: number): (Fruit & { authored_by_display_name: string; authored_by_uuid: string })[] {
+    return this.run(gardenId,
+      'SELECT * FROM fruits WHERE datetime >= ? AND datetime <= ? ORDER BY datetime ASC',
+      [fromMs, toMs]
+    );
+  }
+
+  static getAllPruningsByRange(gardenId: string, fromMs: number, toMs: number): (Pruning & { authored_by_display_name: string; authored_by_uuid: string })[] {
+    return this.run(gardenId,
+      'SELECT * FROM prunings WHERE datetime >= ? AND datetime <= ? ORDER BY datetime ASC',
+      [fromMs, toMs]
+    );
+  }
+
+  static getAllNotchingsByRange(gardenId: string, fromMs: number, toMs: number): (Notching & { authored_by_display_name: string; authored_by_uuid: string })[] {
+    return this.run(gardenId,
+      'SELECT * FROM notchings WHERE datetime >= ? AND datetime <= ? ORDER BY datetime ASC',
+      [fromMs, toMs]
+    );
+  }
+
+  static getAllPlotMemberships(gardenId: string): PlotMembership[] {
+    return this.run<PlotMembership[]>(gardenId, 'SELECT * FROM plot_memberships', []);
   }
 
   // ─── Full snapshot ────────────────────────────────────────────────────────

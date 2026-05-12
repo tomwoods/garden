@@ -17,6 +17,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { ScheduleCareModal } from './ScheduleCareModal';
 import { MapOverlay } from './MapOverlay';
 import { GardenChangeLogCard } from './GardenChangeLogCard';
+import { ActivityReportModal } from './ActivityReportModal';
 import { InviteToSharedGardenModal } from './InviteToSharedGardenModal';
 import { ToastContainer } from './ToastContainer';
 import { useToast } from '../hooks/useToast';
@@ -277,6 +278,7 @@ export const SharedGardenView: React.FC = () => {
   const [showMembersPanel, setShowMembersPanel] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showBulkSunlight, setShowBulkSunlight] = useState(false);
+  const [showActivityReport, setShowActivityReport] = useState(false);
 
   // Modals
   const [showAddPlant, setShowAddPlant] = useState(false);
@@ -617,7 +619,11 @@ export const SharedGardenView: React.FC = () => {
 
       {/* Change log — full width */}
       <div className="px-4 pb-8">
-        <GardenChangeLogCard gardenId={gardenId} refreshKey={refreshKey} />
+        <GardenChangeLogCard
+          gardenId={gardenId}
+          refreshKey={refreshKey}
+          onGenerateReport={() => setShowActivityReport(true)}
+        />
       </div>
 
       {/* FAB */}
@@ -717,6 +723,14 @@ export const SharedGardenView: React.FC = () => {
           location={mapModal.location}
           plantName=""
           onClose={() => setMapModal(null)}
+        />
+      )}
+
+      {showActivityReport && gardenId && (
+        <ActivityReportModal
+          gardenId={gardenId}
+          plants={plants}
+          onClose={() => setShowActivityReport(false)}
         />
       )}
 
