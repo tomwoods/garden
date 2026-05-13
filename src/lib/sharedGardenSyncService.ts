@@ -261,7 +261,7 @@ export async function deepSyncSharedGarden(
       return { ok: false, failedStep: 'fetch' };
     }
 
-    // Step 2: decrypt and apply all deltas (not just since lastSyncTs)
+    // Step 2: decrypt and apply snapshot + deltas from server
     let remoteObj: SharedGardenObject;
     try {
       remoteObj = await decryptGardenObject(remote.encryptedData, gardenPrivKeyBase64);
@@ -269,6 +269,7 @@ export async function deepSyncSharedGarden(
       return { ok: false, failedStep: 'decrypt' };
     }
 
+    SharedGardenDatabase.applySnapshot(ref.gardenId, remoteObj.snapshot);
     const conflicts = SharedGardenDatabase.applyDeltas(ref.gardenId, remoteObj.deltas);
 
     // Mirror own incoming activities to personal garden
@@ -316,6 +317,7 @@ export async function deepSyncSharedGarden(
       // Re-fetch, rebuild compaction on top of latest server state, retry once
       try {
         const serverObj = await decryptGardenObject(pushResult.conflict.encryptedData, gardenPrivKeyBase64);
+        SharedGardenDatabase.applySnapshot(ref.gardenId, serverObj.snapshot);
         SharedGardenDatabase.applyDeltas(ref.gardenId, serverObj.deltas);
         const retrySnapshot = SharedGardenDatabase.getFullSnapshot(ref.gardenId);
         const retryObj: SharedGardenObject = {

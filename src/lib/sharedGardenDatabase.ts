@@ -1084,14 +1084,30 @@ export class SharedGardenDatabase {
     for (const [table, rows] of tables) {
       for (const row of rows) {
         if (this.hasTombstone(gardenId, row.id as string)) continue;
-        const existing = this.run<unknown[]>(gardenId, `SELECT id FROM ${table} WHERE id = ?`, [row.id]);
-        if ((existing as unknown[]).length > 0) continue;
-        const cols = Object.keys(row).join(', ');
-        const placeholders = Object.keys(row).map(() => '?').join(', ');
-        try {
-          this.run(gardenId, `INSERT INTO ${table} (${cols}) VALUES (${placeholders})`, Object.values(row));
-        } catch {
-          // silently skip duplicate
+        const existing = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM ${table} WHERE id = ?`, [row.id]);
+        if ((existing as unknown[]).length === 0) {
+          const cols = Object.keys(row).join(', ');
+          const placeholders = Object.keys(row).map(() => '?').join(', ');
+          try {
+            this.run(gardenId, `INSERT INTO ${table} (${cols}) VALUES (${placeholders})`, Object.values(row));
+          } catch {
+            // silently skip
+          }
+        } else {
+          // Last-write-wins: update if incoming row is newer
+          const localTs: number = (existing[0].updated_at as number) ?? (existing[0].occurred_at as number) ?? 0;
+          const incomingTs: number = (row.updated_at as number) ?? (row.occurred_at as number) ?? 0;
+          if (incomingTs >= localTs) {
+            const fields = Object.keys(row).filter(k => k !== 'id').map(k => `${k} = ?`).join(', ');
+            const values = Object.keys(row).filter(k => k !== 'id').map(k => row[k]);
+            if (fields) {
+              try {
+                this.run(gardenId, `UPDATE ${table} SET ${fields} WHERE id = ?`, [...values, row.id]);
+              } catch {
+                // silently skip
+              }
+            }
+          }
         }
       }
     }
