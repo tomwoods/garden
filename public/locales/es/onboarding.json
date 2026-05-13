@@ -1,8 +1,8 @@
 {
   "welcome": "Bienvenido a Garden",
   "tagline": "Un espacio privado para nutrir y cultivar tus relaciones. Tu jardín crece a través del cuidado, la atención y el amor.",
-  "plantFirstSeed": "Planta Tu Primera Semilla",
-  "openWithKey": "Abrir Jardín con Archivo de Clave",
+  "plantFirstSeed": "Empieza un Nuevo Jardín",
+  "openWithKey": "Usa Tu Llave para Regresar a tu Jardín",
   "privacyNote": "Privado y Seguro:",
   "privacyDescription": "Los datos de tu jardín están cifrados y almacenados localmente. Tu clave de jardín contiene tus claves de cifrado.",
   "languageLabel": "Idioma"
