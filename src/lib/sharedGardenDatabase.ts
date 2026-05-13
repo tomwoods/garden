@@ -13,6 +13,7 @@ export interface GardenMember {
   display_name: string;
   joined_at: number;
   added_by_uuid: string;
+  updated_at?: number;
 }
 
 export interface GardenChangeLogEntry {
@@ -249,7 +250,7 @@ export class SharedGardenDatabase {
       `],
       ['garden_members', `
         id STRING PRIMARY KEY, user_uuid STRING NOT NULL, display_name STRING NOT NULL,
-        joined_at NUMBER NOT NULL, added_by_uuid STRING NOT NULL
+        joined_at NUMBER NOT NULL, added_by_uuid STRING NOT NULL, updated_at NUMBER NOT NULL
       `],
       ['garden_change_log', `
         id STRING PRIMARY KEY, actor_uuid STRING NOT NULL, actor_display_name STRING NOT NULL,
@@ -380,22 +381,36 @@ export class SharedGardenDatabase {
   }
 
   static upsertMember(gardenId: string, member: GardenMember): void {
+    const now = Date.now();
     const existing = this.getMember(gardenId, member.user_uuid);
     if (existing) {
       this.run(gardenId,
-        'UPDATE garden_members SET display_name = ? WHERE user_uuid = ?',
-        [member.display_name, member.user_uuid]
+        'UPDATE garden_members SET display_name = ?, updated_at = ? WHERE user_uuid = ?',
+        [member.display_name, now, member.user_uuid]
       );
     } else {
       this.run(gardenId,
-        'INSERT INTO garden_members (id, user_uuid, display_name, joined_at, added_by_uuid) VALUES (?,?,?,?,?)',
-        [member.id, member.user_uuid, member.display_name, member.joined_at, member.added_by_uuid]
+        'INSERT INTO garden_members (id, user_uuid, display_name, joined_at, added_by_uuid, updated_at) VALUES (?,?,?,?,?,?)',
+        [member.id, member.user_uuid, member.display_name, member.joined_at, member.added_by_uuid, now]
       );
     }
   }
 
   static removeMember(gardenId: string, userUuid: string): void {
     this.run(gardenId, 'DELETE FROM garden_members WHERE user_uuid = ?', [userUuid]);
+  }
+
+  static clearGarden(gardenId: string): void {
+    const name = dbName(gardenId);
+    const tables = [
+      'plants','tendings','waterings','sunlight','fruits','prunings',
+      'companions','scheduled_events','plots','plot_memberships',
+      'buds','notchings','capabilities','garden_members','garden_change_log','garden_tombstones',
+    ];
+    for (const table of tables) {
+      try { alasql(`DELETE FROM ${name}.${table}`); } catch { /* table may not exist */ }
+    }
+    initializedGardens.delete(gardenId);
   }
 
   // ─── Plants ───────────────────────────────────────────────────────────────

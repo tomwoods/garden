@@ -6,7 +6,7 @@ import {
   Trash2, UserMinus, AlertTriangle, Sun, LayoutGrid
 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef } from '../lib/sharedGardenDatabase';
-import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile } from '../lib/sharedGardenSyncService';
+import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden } from '../lib/sharedGardenSyncService';
 import type { Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion } from '../lib/database';
 import { parseAgeInfoFromPlant, resolveAgeGroup, type AgeGroup } from '../lib/harvestService';
 import { PlantCard } from './PlantCard';
@@ -85,12 +85,16 @@ interface MembersPanelProps {
   onClose: () => void;
   onInvite: () => void;
   onMemberRemoved: () => void;
+  onLeft: () => void;
 }
 
-const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClose, onInvite, onMemberRemoved }) => {
+const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClose, onInvite, onMemberRemoved, onLeft }) => {
   const { t } = useTranslation('garden_shared');
   const members = SharedGardenDatabase.getMembers(gardenId);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
 
   const handleRemove = async (targetUuid: string, targetName: string) => {
     if (!user) return;
@@ -100,6 +104,19 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
     await removeMemberFromGarden(gardenId, targetUuid, user.userId, myDisplayName, user);
     setRemoving(null);
     onMemberRemoved();
+  };
+
+  const handleLeave = async () => {
+    if (!user) return;
+    setLeaving(true);
+    setLeaveError(null);
+    const result = await leaveSharedGarden(gardenId, user);
+    if (result.ok) {
+      onLeft();
+    } else {
+      setLeaving(false);
+      setLeaveError(result.error === 'offline' ? t('leaveGardenErrorOffline') : t('leaveGardenErrorServer'));
+    }
   };
 
   return (
@@ -120,7 +137,19 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
                 <p className="text-sm font-medium text-gray-900">{member.display_name}</p>
                 <p className="text-xs text-gray-500">{t('joinedTime', { time: dayjs(member.joined_at).fromNow() })}</p>
               </div>
-              {member.user_uuid !== user?.userId && (
+              {member.user_uuid === user?.userId ? (
+                <button
+                  onClick={() => setShowLeaveConfirm(true)}
+                  disabled={leaving}
+                  className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  title={t('leaveGarden')}
+                >
+                  {leaving
+                    ? <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    : <UserMinus className="w-4 h-4" />
+                  }
+                </button>
+              ) : (
                 <button
                   onClick={() => handleRemove(member.user_uuid, member.display_name)}
                   disabled={removing === member.user_uuid}
@@ -154,6 +183,42 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
           </button>
         </div>
       </div>
+
+      {showLeaveConfirm && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-60 z-[60]" />
+          <div className="fixed inset-0 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">{t('leaveGardenConfirmTitle')}</h3>
+                  <p className="text-sm text-gray-600">{t('leaveGardenConfirmBody')}</p>
+                </div>
+              </div>
+              {leaveError && (
+                <p className="text-sm text-red-600 mb-3">{leaveError}</p>
+              )}
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => { setShowLeaveConfirm(false); setLeaveError(null); }}
+                  disabled={leaving}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                >
+                  {t('leaveGardenCancel')}
+                </button>
+                <button
+                  onClick={handleLeave}
+                  disabled={leaving}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {leaving ? t('leaveGardenLeaving') : t('leaveGardenConfirm')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };
@@ -646,6 +711,7 @@ export const SharedGardenView: React.FC = () => {
           onClose={() => setShowMembersPanel(false)}
           onInvite={() => { setShowMembersPanel(false); setShowInviteModal(true); }}
           onMemberRemoved={() => { setRefreshKey(k => k + 1); success('Done', 'Gardener removed.'); }}
+          onLeft={() => navigate('/shared-gardens')}
         />
       )}
 

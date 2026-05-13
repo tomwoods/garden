@@ -19,6 +19,7 @@ import {
   setGardenSyncTs,
   markGardenDisconnected,
   addSharedGardenRef,
+  removeSharedGardenRef,
 } from './sharedGardenDatabase';
 import { importCryptoKey, encryptData, decryptData, generateRSAKeyPair, exportCryptoKey, generateEphemeralECDHKeyPair, encryptWithECDHKey, decryptWithECDHKey } from './cryptoService';
 import { signData, importSigningKey } from './signatureService';
@@ -546,7 +547,7 @@ export async function claimGardenInvite(
   });
 
   // Register garden ref
-  addSharedGardenRef({
+  const ref: SharedGardenRef = {
     gardenId,
     sharedGardenId,
     gardenName: gardenObj.garden_name,
@@ -554,7 +555,11 @@ export async function claimGardenInvite(
     myUuid: user.userId,
     gardenPublicKeyBase64: data.gardenPublicKey,
     lastSyncTs: Date.now(),
-  });
+  };
+  addSharedGardenRef(ref);
+
+  // Push self membership to server so other gardeners see B immediately
+  await deepSyncSharedGarden(ref, user);
 
   return { gardenId, gardenName: gardenObj.garden_name };
 }
@@ -583,6 +588,27 @@ export async function removeMemberFromGarden(
   // Trigger sync to propagate the change
   await syncSharedGarden(ref, user);
   return true;
+}
+
+// ─── Leave a garden (self-removal) ───────────────────────────────────────────
+
+export async function leaveSharedGarden(
+  gardenId: string,
+  user: GardenSyncUser
+): Promise<{ ok: boolean; error?: string }> {
+  if (!navigator.onLine) return { ok: false, error: 'offline' };
+
+  const ref = getSharedGardenRefs().find(r => r.gardenId === gardenId);
+  if (!ref) return { ok: false, error: 'not_found' };
+
+  const ok = await removeMemberOnServer(ref.sharedGardenId, user.userId, user);
+  if (!ok) return { ok: false, error: 'server' };
+
+  SharedGardenDatabase.clearGarden(gardenId);
+  removeSharedGardenRef(gardenId);
+  localStorage.removeItem(`shared_garden_key_${gardenId}`);
+
+  return { ok: true };
 }
 
 // ─── Download garden key file ─────────────────────────────────────────────────
