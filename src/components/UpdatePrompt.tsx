@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { RefreshCw, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function UpdatePrompt() {
+  const { t } = useTranslation('modals');
+  const [updating, setUpdating] = useState(false);
+
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
@@ -22,6 +26,21 @@ export function UpdatePrompt() {
   };
 
   const handleUpdate = () => {
+    if (updating) return;
+    setUpdating(true);
+
+    const onControllerChange = () => {
+      clearTimeout(fallback);
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, { once: true });
+
+    // Safety fallback: if controllerchange hasn't fired within 3s, reload anyway
+    const fallback = setTimeout(() => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      window.location.reload();
+    }, 3000);
+
     updateServiceWorker(true);
   };
 
@@ -36,7 +55,7 @@ export function UpdatePrompt() {
           <>
             <div className="flex-shrink-0">
               <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <RefreshCw className="w-5 h-5 text-green-600" />
+                <RefreshCw className={`w-5 h-5 text-green-600 ${updating ? 'animate-spin' : ''}`} />
               </div>
             </div>
             <div className="flex-1">
@@ -48,17 +67,20 @@ export function UpdatePrompt() {
             <div className="flex gap-2">
               <button
                 onClick={handleUpdate}
-                className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
+                disabled={updating}
+                className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Update
+                {updating ? t('updatingBtn') : 'Update'}
               </button>
-              <button
-                onClick={close}
-                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label="Dismiss"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              {!updating && (
+                <button
+                  onClick={close}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </>
         ) : (
