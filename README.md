@@ -275,7 +275,6 @@ For the full rationale behind each decision, see `MEMORY.md`.
 - **No authentication service:** The garden key file is the identity. This eliminates the account recovery problem and makes the app usable without any server.
 - **RSA-PSS for all Edge Function signatures:** A unified signing scheme for backups, images, and shared garden operations. The same key pair is used across all server-side verification.
 - **E2EE images stored as Postgres text columns:** Images are AES-GCM encrypted client-side and stored as base64 blobs in `plant_images`. No CDN URLs — the server sees only ciphertext.
-- **Face detection on upload:** Protects the user from accidentally uploading photos of people, preserving the anonymity of their spiritual relationships.
 - **Single RSA key pair per shared garden:** All members encrypt/decrypt the same ciphertext blob. The garden private key is distributed via ephemeral RSA handshake at invite time — the server never holds it. See Decision 18 in `MEMORY.md`.
 - **Snapshot + delta log for shared sync:** Rather than replacing the full garden on every write, members append deltas. Compaction at 50 deltas keeps the payload size bounded. See Decision 17 in `MEMORY.md`.
 - **Plant-to-garden links via `additional_info`:** Bidirectional links between personal plants and shared garden plants are stored as JSON sub-fields, avoiding schema changes. See Decision 19 in `MEMORY.md`.
