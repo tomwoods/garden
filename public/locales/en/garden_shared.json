@@ -161,6 +161,7 @@
     "junior_youth": "Junior Youth",
     "child": "Child"
   },
+  "ageYears": "{{age}} yrs",
   "changeLog": {
     "title": "Garden activity",
     "showMore": "Show more ({{count}} remaining)",

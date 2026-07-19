@@ -161,6 +161,7 @@
     "junior_youth": "Jenn Jinyò",
     "child": "Timoun"
   },
+  "ageYears": "{{age}} ane",
   "changeLog": {
     "title": "Aktivite jaden",
     "showMore": "Montre plis ({{count}} ki rete)",

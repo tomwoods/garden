@@ -13,6 +13,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { useToast } from '../hooks/useToast';
 import type { Plot, Plant, Tending, Watering, Sunlight, Fruit, Notching } from '../lib/database';
+import { parseAgeInfoFromPlant, resolveEffectiveAge } from '../lib/harvestService';
 
 function getUser() {
   try {
@@ -308,7 +309,20 @@ export const SharedPlotDetailView: React.FC = () => {
                 >
                   <span className="text-base">🌱</span>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                      {(() => {
+                        const ageInfo = parseAgeInfoFromPlant(member);
+                        if (!ageInfo || ageInfo.is_over_21) return null;
+                        const age = resolveEffectiveAge(ageInfo);
+                        if (age >= 21) return null;
+                        return (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">
+                            {t('ageYears', { age })}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     {member.phone && (
                       <PhoneLink
                         phone={member.phone}

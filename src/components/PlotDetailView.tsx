@@ -10,6 +10,7 @@ import { BulkNotchingModal } from './BulkNotchingModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { DatabaseService, type PlotWithMembers, type Plant } from '../lib/database';
+import { parseAgeInfoFromPlant, resolveEffectiveAge } from '../lib/harvestService';
 import { uploadService } from '../lib/uploadService';
 import { useToast } from '../hooks/useToast';
 
@@ -299,7 +300,20 @@ export const PlotDetailView: React.FC = () => {
                   >
                     <span className="text-lg">🌱</span>
                     <div>
-                      <div className="font-medium text-gray-900">{member.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="font-medium text-gray-900">{member.name}</div>
+                        {(() => {
+                          const ageInfo = parseAgeInfoFromPlant(member);
+                          if (!ageInfo || ageInfo.is_over_21) return null;
+                          const age = resolveEffectiveAge(ageInfo);
+                          if (age >= 21) return null;
+                          return (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">
+                              {t('ageYears', { age })}
+                            </span>
+                          );
+                        })()}
+                      </div>
                       {member.phone && (
                         <PhoneLink
                           phone={member.phone}

@@ -161,6 +161,7 @@
     "junior_youth": "Prejoven",
     "child": "Niñ@"
   },
+  "ageYears": "{{age}} años",
   "changeLog": {
     "title": "Actividad del jardín",
     "showMore": "Mostrar más ({{count}} restantes)",
