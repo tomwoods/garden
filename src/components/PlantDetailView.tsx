@@ -9,6 +9,7 @@ import isToday from 'dayjs/plugin/isToday';
 import isTomorrow from 'dayjs/plugin/isTomorrow';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import { DatabaseService, type Plant, type Tending, type Watering, type Sunlight, type Fruit, type Pruning, type Companion, type Bud, type Notching, type Capability } from '../lib/database';
+import { parseAgeInfoFromPlant, resolveEffectiveAge } from '../lib/harvestService';
 import { ActivityModal } from './ActivityModal';
 import { BranchesModal, type BranchesSubType } from './BranchesModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -995,7 +996,20 @@ export const PlantDetailView: React.FC = () => {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold text-gray-900">{plant.name}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl font-bold text-gray-900">{plant.name}</h1>
+                  {(() => {
+                    const ageInfo = parseAgeInfoFromPlant(plant);
+                    if (!ageInfo || ageInfo.is_over_21) return null;
+                    const age = resolveEffectiveAge(ageInfo);
+                    if (age >= 21) return null;
+                    return (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">
+                        {t('ageYears', { age })}
+                      </span>
+                    );
+                  })()}
+                </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-gray-400" />

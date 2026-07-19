@@ -19,6 +19,7 @@ import type {
   Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion,
   Bud, Notching, Capability, ScheduledEvent
 } from '../lib/database';
+import { parseAgeInfoFromPlant, resolveEffectiveAge } from '../lib/harvestService';
 import { ActivityModal } from './ActivityModal';
 import { BranchesModal, type BranchesSubType } from './BranchesModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -645,6 +646,17 @@ export const SharedPlantDetailView: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-xl font-bold text-gray-900">{plant.name}</h1>
+                  {(() => {
+                    const ageInfo = parseAgeInfoFromPlant(plant);
+                    if (!ageInfo || ageInfo.is_over_21) return null;
+                    const age = resolveEffectiveAge(ageInfo);
+                    if (age >= 21) return null;
+                    return (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">
+                        {t('ageYears', { age })}
+                      </span>
+                    );
+                  })()}
                   {ref_ && (
                     <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{ref_.gardenName}</span>
                   )}

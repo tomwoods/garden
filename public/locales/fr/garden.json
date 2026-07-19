@@ -107,5 +107,6 @@
     "cancel": "Annuler",
     "saving": "Enregistrement...",
     "save": "Enregistrer"
-  }
+  },
+  "ageYears": "{{age}} ans"
 }

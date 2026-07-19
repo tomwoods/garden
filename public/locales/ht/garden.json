@@ -107,5 +107,6 @@
     "cancel": "Anile",
     "saving": "Ap sove...",
     "save": "Sove"
-  }
+  },
+  "ageYears": "{{age}} ane"
 }
