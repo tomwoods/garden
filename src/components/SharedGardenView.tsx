@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef } from '../lib/sharedGardenDatabase';
 import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden } from '../lib/sharedGardenSyncService';
+import { syncMissingSharedImages, type SharedImageUser } from '../lib/sharedImageSync';
 import type { Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion } from '../lib/database';
 import { parseAgeInfoFromPlant, resolveAgeGroup, type AgeGroup } from '../lib/harvestService';
 import { PlantCard } from './PlantCard';
@@ -393,6 +394,12 @@ export const SharedGardenView: React.FC = () => {
     }));
   }, [searchTerm, ageFilter, plants]);
 
+  useEffect(() => {
+    if (!gardenId || !ref_ || !user || ref_.disconnected) return;
+    const sharedUser: SharedImageUser = { userId: user.userId, signingPrivateKey: user.signingPrivateKey };
+    syncMissingSharedImages(ref_, plants, sharedUser);
+  }, [gardenId, ref_, user, plants, refreshKey]);
+
   const runSync = async (ref: SharedGardenRef, showSuccessToast: boolean) => {
     if (!user || isSyncing) return;
     setIsSyncing(true);
@@ -675,6 +682,7 @@ export const SharedGardenView: React.FC = () => {
                     if (p) setEditPlantModal({ isOpen: true, plant: p });
                   }}
                   authorName={extra.authored_by_display_name}
+                  sharedGardenRef={ref_}
                 />
               );
             })}

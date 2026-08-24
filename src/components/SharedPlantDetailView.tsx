@@ -27,6 +27,19 @@ import { EditPlantModal } from './EditPlantModal';
 import { ScheduleCareModal } from './ScheduleCareModal';
 import { ToastContainer } from './ToastContainer';
 import { useToast } from '../hooks/useToast';
+import { SharedPlantImageViewer } from './SharedPlantImageViewer';
+import {
+  getSharedImageLocally,
+  downloadAndCacheSharedThumbnail,
+  deleteSharedGardenImage,
+  type SharedImageUser,
+} from '../lib/sharedImageSync';
+import {
+  getSharedImageLocally,
+  downloadAndCacheSharedThumbnail,
+  deleteSharedGardenImage,
+  type SharedImageUser,
+} from '../lib/sharedImageSync';
 
 dayjs.extend(relativeTime);
 dayjs.extend(isToday);
@@ -93,6 +106,9 @@ export const SharedPlantDetailView: React.FC = () => {
   }>({ isOpen: false, plantName: '' });
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [plantImage, setPlantImage] = useState<string | null>(null);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [imageRefreshKey, setImageRefreshKey] = useState(0);
 
   const getActorInfo = useCallback(() => {
     if (!gardenId || !user) return { uuid: '', displayName: 'Unknown' };
@@ -133,6 +149,32 @@ export const SharedPlantDetailView: React.FC = () => {
     setRef_(r);
     loadData();
   }, [gardenId, plantId, loadData]);
+
+  useEffect(() => {
+    if (!gardenId || !plantId || !ref_ || !user) return;
+    const cached = getSharedImageLocally(gardenId, plantId);
+    if (cached) {
+      setPlantImage(cached);
+    } else {
+      setPlantImage(null);
+      const sharedUser: SharedImageUser = { userId: user.userId, signingPrivateKey: user.signingPrivateKey };
+      downloadAndCacheSharedThumbnail(ref_, plantId, sharedUser).then((dataUrl) => {
+        if (dataUrl) setPlantImage(dataUrl);
+      });
+    }
+  }, [gardenId, plantId, ref_, user, imageRefreshKey]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.gardenId === gardenId && detail?.plantId === plantId) {
+        const cached = getSharedImageLocally(gardenId!, plantId!);
+        setPlantImage(cached);
+      }
+    };
+    window.addEventListener('shared-plant-image-synced', handler);
+    return () => window.removeEventListener('shared-plant-image-synced', handler);
+  }, [gardenId, plantId]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -643,6 +685,14 @@ export const SharedPlantDetailView: React.FC = () => {
                   </>
                 )}
               </div>
+              {plantImage && (
+                <div
+                  className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 hover:border-green-400 cursor-pointer transition-colors duration-200 flex-shrink-0 mt-1"
+                  onClick={(e) => { e.stopPropagation(); setShowImageViewer(true); }}
+                >
+                  <img src={plantImage} alt={plant.name} className="w-full h-full object-cover" />
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-xl font-bold text-gray-900">{plant.name}</h1>
@@ -791,6 +841,25 @@ export const SharedPlantDetailView: React.FC = () => {
         plantName={scheduleCareModal.plantName}
         onSchedule={handleScheduleSubmit}
       />
+
+      {showImageViewer && plantImage && ref_ && user && (() => {
+        const sharedUser: SharedImageUser = { userId: user.userId, signingPrivateKey: user.signingPrivateKey };
+        return (
+          <SharedPlantImageViewer
+            thumbnailUrl={plantImage}
+            ref_={ref_}
+            plantId={plant.id}
+            user={sharedUser}
+            onClose={() => setShowImageViewer(false)}
+            onDelete={!isDisconnected ? async () => {
+              await deleteSharedGardenImage(ref_, plant.id, sharedUser);
+              setPlantImage(null);
+              setShowImageViewer(false);
+              setImageRefreshKey(k => k + 1);
+            } : undefined}
+          />
+        );
+      })()}
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>

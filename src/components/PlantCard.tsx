@@ -10,6 +10,9 @@ import isYesterday from 'dayjs/plugin/isYesterday';
 import type { Plant } from '../lib/database';
 import { DatabaseService } from '../lib/database';
 import { PlantImageViewer } from './PlantImageViewer';
+import { SharedPlantImageViewer } from './SharedPlantImageViewer';
+import { getSharedImageLocally } from '../lib/sharedImageSync';
+import type { SharedGardenRef } from '../lib/sharedGardenDatabase';
 
 function getViewerUser() {
   const gardenKey = localStorage.getItem('garden-key');
@@ -48,6 +51,7 @@ interface PlantCardProps {
   onShowMap?: (location: { lat: number; lng: number }) => void;
   imageRefreshKey?: number;
   authorName?: string;
+  sharedGardenRef?: SharedGardenRef | null;
 }
 
 export const PlantCard: React.FC<PlantCardProps> = ({
@@ -65,7 +69,8 @@ export const PlantCard: React.FC<PlantCardProps> = ({
   onSharePlant,
   onShowMap,
   imageRefreshKey,
-  authorName
+  authorName,
+  sharedGardenRef
 }) => {
   const { t } = useTranslation('garden');
   const [plantState, setPlantState] = useState<any>(null);
@@ -103,21 +108,37 @@ export const PlantCard: React.FC<PlantCardProps> = ({
     };
     loadPlantState();
 
-    const images = DatabaseService.getImagesForPlant(plant.id);
-    setPlantImages(images.slice(0, 1));
-  }, [plant, getPlantState, imageRefreshKey]);
+    if (sharedGardenRef) {
+      const cached = getSharedImageLocally(sharedGardenRef.gardenId, plant.id);
+      setPlantImages(cached ? [cached] : []);
+    } else {
+      const images = DatabaseService.getImagesForPlant(plant.id);
+      setPlantImages(images.slice(0, 1));
+    }
+  }, [plant, getPlantState, imageRefreshKey, sharedGardenRef]);
 
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.plantId === plant.id) {
-        const images = DatabaseService.getImagesForPlant(plant.id);
-        setPlantImages(images.slice(0, 1));
+        if (sharedGardenRef) {
+          if (detail?.gardenId === sharedGardenRef.gardenId) {
+            const cached = getSharedImageLocally(sharedGardenRef.gardenId, plant.id);
+            setPlantImages(cached ? [cached] : []);
+          }
+        } else {
+          const images = DatabaseService.getImagesForPlant(plant.id);
+          setPlantImages(images.slice(0, 1));
+        }
       }
     };
     window.addEventListener('plant-image-synced', handler);
-    return () => window.removeEventListener('plant-image-synced', handler);
-  }, [plant.id]);
+    window.addEventListener('shared-plant-image-synced', handler);
+    return () => {
+      window.removeEventListener('plant-image-synced', handler);
+      window.removeEventListener('shared-plant-image-synced', handler);
+    };
+  }, [plant.id, sharedGardenRef]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -446,14 +467,26 @@ export const PlantCard: React.FC<PlantCardProps> = ({
 
     {selectedImageIndex !== null && plantImages.length > 0 && (() => {
       const viewerUser = getViewerUser();
-      return viewerUser ? (
+      if (!viewerUser) return null;
+      if (sharedGardenRef) {
+        return (
+          <SharedPlantImageViewer
+            thumbnailUrl={plantImages[0]}
+            ref_={sharedGardenRef}
+            plantId={plant.id}
+            user={{ userId: viewerUser.userId, signingPrivateKey: viewerUser.signingPrivateKey }}
+            onClose={() => setSelectedImageIndex(null)}
+          />
+        );
+      }
+      return (
         <PlantImageViewer
           thumbnailUrl={plantImages[0]}
           plantId={plant.id}
           user={viewerUser}
           onClose={() => setSelectedImageIndex(null)}
         />
-      ) : null;
+      );
     })()}
     </>
   );
