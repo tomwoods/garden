@@ -5,6 +5,14 @@ import { DatabaseService } from '../lib/database';
 import { useToast } from '../hooks/useToast';
 import { ImageQuotaModal } from './ImageQuotaModal';
 import { CropModal } from './CropModal';
+import {
+  uploadSharedGardenImage,
+  deleteSharedGardenImage,
+  saveSharedImageLocally,
+  getSharedImageLocally,
+  type SharedImageUser,
+} from '../lib/sharedImageSync';
+import type { SharedGardenRef } from '../lib/sharedGardenDatabase';
 
 interface PlantImageCaptureProps {
   plantId: string | null;
@@ -12,6 +20,8 @@ interface PlantImageCaptureProps {
   image: string | null;
   onImageChange: (image: string | null) => void;
   onClose: () => void;
+  sharedGardenRef?: SharedGardenRef | null;
+  sharedUser?: SharedImageUser | null;
 }
 
 type CaptureState =
@@ -26,7 +36,10 @@ export const PlantImageCapture: React.FC<PlantImageCaptureProps> = ({
   image,
   onImageChange,
   onClose,
+  sharedGardenRef,
+  sharedUser,
 }) => {
+  const isShared = !!(sharedGardenRef && sharedUser);
   const [captureState, setCaptureState] = useState<CaptureState>({ status: 'idle' });
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
@@ -65,7 +78,18 @@ export const PlantImageCapture: React.FC<PlantImageCaptureProps> = ({
     onImageChange(dataUrl);
     setCaptureState({ status: 'idle' });
 
-    if (plantId) {
+    if (!plantId) return;
+
+    if (isShared && sharedGardenRef && sharedUser) {
+      try {
+        saveSharedImageLocally(sharedGardenRef.gardenId, plantId, dataUrl);
+        await uploadSharedGardenImage(sharedGardenRef, plantId, dataUrl, sharedUser);
+        addToast('Image uploaded to shared garden', 'success');
+      } catch (err) {
+        console.error('[PlantImageCapture] Shared upload failed:', err);
+        addToast('Image saved locally but shared upload failed', 'error');
+      }
+    } else {
       try {
         await uploadService.queueUpload(plantId, plantName, dataUrl);
         addToast('Image queued for upload', 'success');
@@ -121,11 +145,15 @@ export const PlantImageCapture: React.FC<PlantImageCaptureProps> = ({
 
   const handleDeleteImage = async () => {
     if (!plantId) return;
-    await DatabaseService.deleteImageLocally(plantId, 0);
-    await DatabaseService.updatePlantImageId(plantId, null);
-    uploadService.deleteImageFromServer(plantId);
+    if (isShared && sharedGardenRef && sharedUser) {
+      await deleteSharedGardenImage(sharedGardenRef, plantId, sharedUser);
+    } else {
+      await DatabaseService.deleteImageLocally(plantId, 0);
+      await DatabaseService.updatePlantImageId(plantId, null);
+      uploadService.deleteImageFromServer(plantId);
+    }
     onImageChange(null);
-    setQuotaInfo(uploadService.getQuotaInfo());
+    if (!isShared) setQuotaInfo(uploadService.getQuotaInfo());
   };
 
   const isProcessing = captureState.status === 'processing';
@@ -150,7 +178,7 @@ export const PlantImageCapture: React.FC<PlantImageCaptureProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {quotaInfo.imagesUsed >= Math.floor(quotaInfo.maxImages * 0.85) && (
+            {!isShared && quotaInfo.imagesUsed >= Math.floor(quotaInfo.maxImages * 0.85) && (
               <div className="mb-4 p-4 bg-blue-50 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -219,7 +247,7 @@ export const PlantImageCapture: React.FC<PlantImageCaptureProps> = ({
                   </button>
                 </div>
               ) : (
-                !quotaInfo.hasReachedLimit && (
+                (isShared || !quotaInfo.hasReachedLimit) && (
                   <button
                     onClick={() => {
                       if (!isProcessing && !isCropping) {

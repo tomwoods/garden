@@ -8,6 +8,8 @@ import { AgePicker } from './AgePicker';
 import { DatabaseService } from '../lib/database';
 import type { Plant } from '../lib/database';
 import type { AgeInfo } from '../lib/harvestService';
+import { getSharedImageLocally, type SharedImageUser } from '../lib/sharedImageSync';
+import type { SharedGardenRef } from '../lib/sharedGardenDatabase';
 
 interface EditPlantModalProps {
   isOpen: boolean;
@@ -21,14 +23,19 @@ interface EditPlantModalProps {
     care_frequency_unit: 'days' | 'weeks';
     additional_info?: string;
   }) => Promise<void>;
+  sharedGardenRef?: SharedGardenRef | null;
+  sharedUser?: SharedImageUser | null;
 }
 
 export const EditPlantModal: React.FC<EditPlantModalProps> = ({
   isOpen,
   onClose,
   plant,
-  onUpdate
+  onUpdate,
+  sharedGardenRef,
+  sharedUser,
 }) => {
+  const isShared = !!(sharedGardenRef && sharedUser);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -71,9 +78,14 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
         setAgeInfo(null);
       }
 
-      // Load existing images from database
-      const existingImages = DatabaseService.getImagesForPlant(plant.id);
-      setImages(existingImages);
+      // Load existing images
+      if (isShared && sharedGardenRef) {
+        const cached = getSharedImageLocally(sharedGardenRef.gardenId, plant.id);
+        setImages(cached ? [cached] : []);
+      } else {
+        const existingImages = DatabaseService.getImagesForPlant(plant.id);
+        setImages(existingImages);
+      }
     }
   }, [plant, isOpen]);
 
@@ -346,6 +358,8 @@ export const EditPlantModal: React.FC<EditPlantModalProps> = ({
             image={images[0] ?? null}
             onImageChange={(img) => setImages(img ? [img] : [])}
             onClose={() => setShowImageCapture(false)}
+            sharedGardenRef={sharedGardenRef}
+            sharedUser={sharedUser}
           />
         )}
       </div>

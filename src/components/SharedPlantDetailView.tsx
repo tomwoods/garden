@@ -391,6 +391,7 @@ export const SharedPlantDetailView: React.FC = () => {
     const { uuid, displayName } = getActorInfo();
     SharedGardenDatabase.updatePlant(gardenId, plantId, updates, uuid, displayName);
     await loadData();
+    setImageRefreshKey(k => k + 1);
     triggerSync();
     success('Updated', 'Plant details saved');
   };
@@ -827,6 +828,8 @@ export const SharedPlantDetailView: React.FC = () => {
         onClose={() => setEditPlantModal({ isOpen: false, plant: null })}
         plant={editPlantModal.plant}
         onUpdate={handleUpdatePlant}
+        sharedGardenRef={ref_}
+        sharedUser={user ? { userId: user.userId, signingPrivateKey: user.signingPrivateKey } : null}
       />
 
       <ScheduleCareModal
