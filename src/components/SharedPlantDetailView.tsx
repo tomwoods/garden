@@ -34,12 +34,6 @@ import {
   deleteSharedGardenImage,
   type SharedImageUser,
 } from '../lib/sharedImageSync';
-import {
-  getSharedImageLocally,
-  downloadAndCacheSharedThumbnail,
-  deleteSharedGardenImage,
-  type SharedImageUser,
-} from '../lib/sharedImageSync';
 
 dayjs.extend(relativeTime);
 dayjs.extend(isToday);
