@@ -768,6 +768,8 @@ export const SharedGardenView: React.FC = () => {
           plant={editPlantModal.plant}
           onClose={() => setEditPlantModal({ isOpen: false, plant: null })}
           onUpdate={handleEditSave}
+          sharedGardenRef={ref_}
+          sharedUser={user ? { userId: user.userId, signingPrivateKey: user.signingPrivateKey } : null}
         />
       )}
 
