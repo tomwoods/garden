@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Settings, Plus, Search, X, Users, Download,
-  Trash2, UserMinus, AlertTriangle, Sun, LayoutGrid
+  Trash2, UserMinus, AlertTriangle, Sun
 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef } from '../lib/sharedGardenDatabase';
 import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden } from '../lib/sharedGardenSyncService';
@@ -22,6 +22,7 @@ import { SharedGardenOverviewCard } from './SharedGardenOverviewCard';
 import { ActivityReportModal } from './ActivityReportModal';
 import { InviteToSharedGardenModal } from './InviteToSharedGardenModal';
 import { ToastContainer } from './ToastContainer';
+import { SharedGardenSlidingMenu } from './SharedGardenSlidingMenu';
 import { useToast } from '../hooks/useToast';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -346,6 +347,7 @@ export const SharedGardenView: React.FC = () => {
   const [showMembersPanel, setShowMembersPanel] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showBulkSunlight, setShowBulkSunlight] = useState(false);
+  const [showSlidingMenu, setShowSlidingMenu] = useState(false);
   const [showActivityReport, setShowActivityReport] = useState(false);
 
   // Modals
@@ -551,38 +553,22 @@ export const SharedGardenView: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             {!isDisconnected && (
-              <>
-                <button
-                  onClick={() => {
-                    setShowSearch(s => !s);
-                    if (showSearch) { setSearchTerm(''); setAgeFilter('all'); }
-                    else { setShowAllPlants(true); }
-                  }}
-                  className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <Search className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setShowBulkSunlight(true)}
-                  className="p-2 text-gray-500 hover:text-yellow-600 transition-colors"
-                  title="Sunlight for several"
-                >
-                  <Sun className="w-5 h-5" />
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  setShowSearch(s => !s);
+                  if (showSearch) { setSearchTerm(''); setAgeFilter('all'); }
+                  else { setShowAllPlants(true); }
+                }}
+                className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <Search className="w-5 h-5" />
+              </button>
             )}
             <button
-              onClick={() => navigate(`/shared-garden/${gardenId}/plots`)}
-              className="p-2 text-gray-500 hover:text-green-700 transition-colors"
-              title="Plots"
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setShowMembersPanel(true)}
+              onClick={() => setShowSlidingMenu(true)}
               className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <Users className="w-5 h-5" />
+              <Settings className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -726,6 +712,17 @@ export const SharedGardenView: React.FC = () => {
 
 
       {/* Panels and modals */}
+      {showSlidingMenu && (
+        <SharedGardenSlidingMenu
+          isOpen={showSlidingMenu}
+          onClose={() => setShowSlidingMenu(false)}
+          onBulkSunlight={() => setShowBulkSunlight(true)}
+          onPlots={() => navigate(`/shared-garden/${gardenId}/plots`)}
+          onGardeners={() => setShowMembersPanel(true)}
+          isDisconnected={!!isDisconnected}
+        />
+      )}
+
       {showMembersPanel && ref_ && user && (
         <MembersPanel
           gardenId={gardenId}

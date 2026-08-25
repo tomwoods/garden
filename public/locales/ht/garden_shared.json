@@ -244,5 +244,14 @@
     "errorGenerate": "Enposib jenere lyen pataje a. Tanpri eseye ankò.",
     "errorGeneral": "Yon bagay te mal pase. Tanpri eseye ankò.",
     "copyLink": "Kopye Lyen"
+  },
+  "menu": {
+    "title": "Meni",
+    "sunlightSeveral": "Limyè pou plizyè",
+    "sunlightSeveralDesc": "Priye pou plizyè plant an menm tan",
+    "managePlots": "Parèl",
+    "managePlotsDesc": "Gwoupe plant ansanm epi anregistre aktivite ansanm",
+    "gardeners": "Jedinik Yo",
+    "gardenersDesc": "Wè, envite, epi jere manm jaden an"
   }
 }

@@ -244,5 +244,14 @@
     "errorGenerate": "Impossible de générer le lien de partage. Veuillez réessayer.",
     "errorGeneral": "Quelque chose s'est mal passé. Veuillez réessayer.",
     "copyLink": "Copier le Lien"
+  },
+  "menu": {
+    "title": "Menu",
+    "sunlightSeveral": "Lumière pour plusieurs",
+    "sunlightSeveralDesc": "Priez pour plusieurs plantes à la fois",
+    "managePlots": "Parcelles",
+    "managePlotsDesc": "Regroupez des plantes et enregistrez des activités ensemble",
+    "gardeners": "Jardiniers",
+    "gardenersDesc": "Voir, inviter et gérer les membres du jardin"
   }
 }

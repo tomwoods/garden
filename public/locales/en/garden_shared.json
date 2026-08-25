@@ -244,5 +244,14 @@
     "errorGenerate": "Could not generate the share link. Please try again.",
     "errorGeneral": "Something went wrong. Please try again.",
     "copyLink": "Copy Link"
+  },
+  "menu": {
+    "title": "Menu",
+    "sunlightSeveral": "Sunlight for several",
+    "sunlightSeveralDesc": "Pray for multiple plants at once",
+    "managePlots": "Plots",
+    "managePlotsDesc": "Group plants and log activities together",
+    "gardeners": "Gardeners",
+    "gardenersDesc": "View, invite, and manage garden members"
   }
 }

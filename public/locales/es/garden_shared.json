@@ -244,5 +244,14 @@
     "errorGenerate": "No se pudo generar el enlace de compartir. Por favor, inténtalo de nuevo.",
     "errorGeneral": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "copyLink": "Copiar Enlace"
+  },
+  "menu": {
+    "title": "Menú",
+    "sunlightSeveral": "Luz para varios",
+    "sunlightSeveralDesc": "Ora por varias plantas a la vez",
+    "managePlots": "Parcelas",
+    "managePlotsDesc": "Agrupa plantas y registra actividades juntos",
+    "gardeners": "Jardineros",
+    "gardenersDesc": "Ver, invitar y gestionar los miembros del jardín"
   }
 }
