@@ -1,12 +1,18 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastProps {
   id: string;
   type: 'success' | 'error' | 'warning';
   title: string;
   message?: string;
   duration?: number;
+  action?: ToastAction;
   onClose: (id: string) => void;
 }
 
@@ -16,6 +22,7 @@ export const Toast: React.FC<ToastProps> = ({
   title,
   message,
   duration = 4000,
+  action,
   onClose
 }) => {
   useEffect(() => {
@@ -73,6 +80,14 @@ export const Toast: React.FC<ToastProps> = ({
             <p className={`${config.messageColor} text-sm mt-1`}>
               {message}
             </p>
+          )}
+          {action && (
+            <button
+              onClick={() => { action.onClick(); onClose(id); }}
+              className={`mt-2 text-xs font-medium ${config.titleColor} underline hover:no-underline transition-all`}
+            >
+              {action.label}
+            </button>
           )}
         </div>
         <button

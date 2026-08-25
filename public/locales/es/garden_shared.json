@@ -275,6 +275,8 @@
   "restoredReturnSuccess": "Vuelto al estado actual",
   "restoredReturnError": "No se pudo conectar con el servidor. Por favor, inténtalo más tarde.",
   "restoredNewGardenError": "No se pudo crear un nuevo jardín. Por favor, inténtalo más tarde.",
+  "restoredNewGardenSuccess": "Se ha creado un nuevo jardín a partir de este estado. El jardín A permanece aquí en su estado restaurado.",
+  "restoredNewGardenAction": "Ir al nuevo jardín",
   "rename": {
     "title": "Renombrar jardín",
     "warning": "Esto cambiará el nombre del jardín para todos los jardineros.",

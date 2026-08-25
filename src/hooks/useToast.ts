@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { ToastProps } from '../components/Toast';
+import { Toast, type ToastProps, type ToastAction } from '../components/Toast';
 
 export const useToast = () => {
   const [toasts, setToasts] = useState<ToastProps[]>([]);
@@ -9,7 +9,8 @@ export const useToast = () => {
     type: 'success' | 'error' | 'warning',
     title: string,
     message?: string,
-    duration?: number
+    duration?: number,
+    action?: ToastAction
   ) => {
     const id = uuidv4();
     const newToast: ToastProps = {
@@ -18,6 +19,7 @@ export const useToast = () => {
       title,
       message,
       duration,
+      action,
       onClose: removeToast
     };
 
@@ -29,16 +31,16 @@ export const useToast = () => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
 
-  const success = useCallback((title: string, message?: string, duration?: number) => {
-    return addToast('success', title, message, duration);
+  const success = useCallback((title: string, message?: string, duration?: number, action?: ToastAction) => {
+    return addToast('success', title, message, duration, action);
   }, [addToast]);
 
-  const error = useCallback((title: string, message?: string, duration?: number) => {
-    return addToast('error', title, message, duration);
+  const error = useCallback((title: string, message?: string, duration?: number, action?: ToastAction) => {
+    return addToast('error', title, message, duration, action);
   }, [addToast]);
 
-  const warning = useCallback((title: string, message?: string, duration?: number) => {
-    return addToast('warning', title, message, duration);
+  const warning = useCallback((title: string, message?: string, duration?: number, action?: ToastAction) => {
+    return addToast('warning', title, message, duration, action);
   }, [addToast]);
 
   return {

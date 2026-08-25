@@ -275,6 +275,8 @@
   "restoredReturnSuccess": "Retounen nan eta aktyèl la",
   "restoredReturnError": "Enposib rive nan sèvè a. Tanpri eseye ankò pita.",
   "restoredNewGardenError": "Enposib kreye yon nouvo jaden. Tanpri eseye ankò pita.",
+  "restoredNewGardenSuccess": "Yon nouvo jaden te kreye depi eta sa a. Jaden A rete la nan eta restorasyon li.",
+  "restoredNewGardenAction": "Ale nan nouvo jaden an",
   "rename": {
     "title": "Chanje non jaden",
     "warning": "Sa ap chanje non jaden a pou tout jedinik yo.",

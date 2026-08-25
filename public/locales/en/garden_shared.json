@@ -275,6 +275,8 @@
   "restoredReturnSuccess": "Returned to current state",
   "restoredReturnError": "Could not reach the server. Please try again later.",
   "restoredNewGardenError": "Could not create a new garden. Please try again later.",
+  "restoredNewGardenSuccess": "A new garden was created from this state. Garden A remains here in its restored state.",
+  "restoredNewGardenAction": "Go to new garden",
   "rename": {
     "title": "Rename garden",
     "warning": "This will change the garden name for all gardeners.",

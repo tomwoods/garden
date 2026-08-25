@@ -5,7 +5,7 @@ import {
   ArrowLeft, Settings, Plus, Search, X, Users, Download,
   Trash2, UserMinus, AlertTriangle, Sun, RotateCcw, FileDown, FileUp
 } from 'lucide-react';
-import { SharedGardenDatabase, getSharedGardenRef, markGardenRestored, markGardenDisconnected, clearGardenRestored, type SharedGardenRef } from '../lib/sharedGardenDatabase';
+import { SharedGardenDatabase, getSharedGardenRef, markGardenRestored, clearGardenRestored, type SharedGardenRef } from '../lib/sharedGardenDatabase';
 import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden, createSharedGardenFromSnapshot, renameSharedGarden } from '../lib/sharedGardenSyncService';
 import { exportEncryptedSnapshot, decryptSnapshotFile, downloadSnapshotBlob } from '../lib/sharedGardenBackupService';
 import { syncMissingSharedImages, type SharedImageUser } from '../lib/sharedImageSync';
@@ -873,9 +873,11 @@ export const SharedGardenView: React.FC = () => {
                       user
                     );
                     if (result) {
-                      markGardenDisconnected(gardenId);
-                      clearGardenRestored(gardenId);
-                      navigate(`/shared-garden/${result.gardenId}`);
+                      setRefreshKey(k => k + 1);
+                      success(t('restoredNewGardenSuccess'), '', 8000, {
+                        label: t('restoredNewGardenAction'),
+                        onClick: () => navigate(`/shared-garden/${result.gardenId}`),
+                      });
                     } else {
                       error(t('restoredNewGardenError'), '');
                     }
