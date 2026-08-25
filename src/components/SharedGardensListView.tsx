@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Users, Leaf, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Leaf, RefreshCw, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { getSharedGardenRefs, type SharedGardenRef, SharedGardenDatabase } from '../lib/sharedGardenDatabase';
@@ -122,6 +122,12 @@ export const SharedGardensListView: React.FC = () => {
                           <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
                             <AlertTriangle className="w-3 h-3" />
                             {t('disconnected')}
+                          </span>
+                        )}
+                        {ref.restored && (
+                          <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                            <RotateCcw className="w-3 h-3" />
+                            {t('restored')}
                           </span>
                         )}
                       </div>

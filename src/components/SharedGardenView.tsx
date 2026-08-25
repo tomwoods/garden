@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Settings, Plus, Search, X, Users, Download,
-  Trash2, UserMinus, AlertTriangle, Sun
+  Trash2, UserMinus, AlertTriangle, Sun, RotateCcw, FileDown, FileUp
 } from 'lucide-react';
-import { SharedGardenDatabase, getSharedGardenRef, type SharedGardenRef } from '../lib/sharedGardenDatabase';
-import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden } from '../lib/sharedGardenSyncService';
+import { SharedGardenDatabase, getSharedGardenRef, markGardenRestored, markGardenDisconnected, clearGardenRestored, type SharedGardenRef } from '../lib/sharedGardenDatabase';
+import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden, createSharedGardenFromSnapshot } from '../lib/sharedGardenSyncService';
+import { exportEncryptedSnapshot, decryptSnapshotFile, downloadSnapshotBlob } from '../lib/sharedGardenBackupService';
 import { syncMissingSharedImages, type SharedImageUser } from '../lib/sharedImageSync';
 import type { Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion } from '../lib/database';
 import { parseAgeInfoFromPlant, resolveAgeGroup, type AgeGroup } from '../lib/harvestService';
@@ -98,6 +99,54 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
+  const [showBackupMenu, setShowBackupMenu] = useState(false);
+  const [showRestoreWarning, setShowRestoreWarning] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreateSnapshot = async () => {
+    setShowBackupMenu(false);
+    try {
+      const privKey = localStorage.getItem(`shared_garden_key_${gardenId}`);
+      if (!privKey) return;
+      const blob = await exportEncryptedSnapshot(gardenId, ref_.gardenName, ref_.gardenPublicKeyBase64);
+      downloadSnapshotBlob(blob, ref_.gardenName);
+    } catch {
+      // silently fail — could add toast
+    }
+  };
+
+  const handleRestoreClick = () => {
+    setShowBackupMenu(false);
+    setShowRestoreWarning(true);
+  };
+
+  const handleRestoreConfirm = () => {
+    setShowRestoreWarning(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRestoring(true);
+    setRestoreError(null);
+    try {
+      const privKey = localStorage.getItem(`shared_garden_key_${gardenId}`);
+      if (!privKey) throw new Error('No garden key');
+      const { snapshot } = await decryptSnapshotFile(file, privKey);
+      SharedGardenDatabase.clearGarden(gardenId);
+      SharedGardenDatabase.applySnapshot(gardenId, snapshot);
+      markGardenRestored(gardenId);
+      onClose();
+    } catch {
+      setRestoreError(t('restoreError'));
+    } finally {
+      setRestoring(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleRemove = async (targetUuid: string, targetName: string) => {
     if (!user) return;
@@ -127,11 +176,49 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
       <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">{t('gardeners')}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-gray-900">{t('gardeners')}</h2>
+            <button
+              onClick={() => setShowBackupMenu(s => !s)}
+              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              title={t('backup.title')}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {showBackupMenu && (
+          <div className="px-4 pt-3 pb-2 border-b border-gray-100 space-y-1">
+            <button
+              onClick={handleCreateSnapshot}
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-xl transition-colors"
+            >
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileDown className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">{t('backup.createSnapshot')}</div>
+                <div className="text-xs text-gray-500">{t('backup.createSnapshotDesc')}</div>
+              </div>
+            </button>
+            <button
+              onClick={handleRestoreClick}
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-xl transition-colors"
+            >
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                <FileUp className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">{t('backup.restoreSnapshot')}</div>
+                <div className="text-xs text-gray-500">{t('backup.restoreSnapshotDesc')}</div>
+              </div>
+            </button>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {members.map(member => (
@@ -186,6 +273,50 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
           </button>
         </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".gardenbackup"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
+      {showRestoreWarning && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-60 z-[60]" />
+          <div className="fixed inset-0 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">{t('backup.restoreWarningTitle')}</h3>
+                  <p className="text-sm text-gray-600">{t('backup.restoreWarningBody')}</p>
+                </div>
+              </div>
+              {restoreError && (
+                <p className="text-sm text-red-600 mb-3">{restoreError}</p>
+              )}
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowRestoreWarning(false)}
+                  disabled={restoring}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                >
+                  {t('backup.restoreCancel')}
+                </button>
+                <button
+                  onClick={handleRestoreConfirm}
+                  disabled={restoring}
+                  className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {restoring ? t('backup.restoring') : t('backup.restoreConfirm')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {showLeaveConfirm && (
         <>
@@ -378,7 +509,7 @@ export const SharedGardenView: React.FC = () => {
     setRef_(r);
     loadPlants().then(() => {
       const stale = !r || !r.lastSyncTs || (Date.now() - r.lastSyncTs > AUTO_SYNC_THRESHOLD_MS);
-      if (stale && r && !r.disconnected && user) {
+      if (stale && r && !r.disconnected && !r.restored && user) {
         runSync(r, false);
       }
     });
@@ -401,7 +532,7 @@ export const SharedGardenView: React.FC = () => {
   }, [searchTerm, ageFilter, plants]);
 
   useEffect(() => {
-    if (!gardenId || !ref_ || !user || ref_.disconnected) return;
+    if (!gardenId || !ref_ || !user || ref_.disconnected || ref_.restored) return;
     const sharedUser: SharedImageUser = { userId: user.userId, signingPrivateKey: user.signingPrivateKey };
     syncMissingSharedImages(ref_, plants, sharedUser);
   }, [gardenId, ref_, user, plants, refreshKey]);
@@ -445,7 +576,7 @@ export const SharedGardenView: React.FC = () => {
     setRefreshKey(k => k + 1);
     setShowAddPlant(false);
     success('Planted', `${plantData.name} has been added to the garden.`);
-    if (ref_ && !ref_.disconnected) runSync(ref_, false);
+    if (ref_ && !ref_.disconnected && !ref_.restored) runSync(ref_, false);
   };
 
   const handleTend = (plantId: string) => {
@@ -491,7 +622,7 @@ export const SharedGardenView: React.FC = () => {
     await loadPlants();
     setRefreshKey(k => k + 1);
     setActivityModal(null);
-    if (ref_ && !ref_.disconnected) runSync(ref_, false);
+    if (ref_ && !ref_.disconnected && !ref_.restored) runSync(ref_, false);
   };
 
   const handleEditSave = async (_plantId: string, updates: Partial<Plant>) => {
@@ -503,7 +634,7 @@ export const SharedGardenView: React.FC = () => {
     setRefreshKey(k => k + 1);
     setEditPlantModal({ isOpen: false, plant: null });
     success('Updated', 'Plant details saved.');
-    if (ref_ && !ref_.disconnected) runSync(ref_, false);
+    if (ref_ && !ref_.disconnected && !ref_.restored) runSync(ref_, false);
   };
 
   const handleRemovePlant = async () => {
@@ -514,17 +645,18 @@ export const SharedGardenView: React.FC = () => {
     await loadPlants();
     setRefreshKey(k => k + 1);
     setConfirmModal(null);
-    if (ref_ && !ref_.disconnected) runSync(ref_, false);
+    if (ref_ && !ref_.disconnected && !ref_.restored) runSync(ref_, false);
   };
 
   const handleBulkSunlightDone = async () => {
     setShowBulkSunlight(false);
     await loadPlants();
     setRefreshKey(k => k + 1);
-    if (ref_ && !ref_.disconnected) runSync(ref_, false);
+    if (ref_ && !ref_.disconnected && !ref_.restored) runSync(ref_, false);
   };
 
   const isDisconnected = ref_?.disconnected;
+  const isRestored = ref_?.restored;
 
   if (!gardenId || !ref_) {
     return (
@@ -552,7 +684,7 @@ export const SharedGardenView: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isDisconnected && (
+            {!isDisconnected && !isRestored && (
               <button
                 onClick={() => {
                   setShowSearch(s => !s);
@@ -572,7 +704,7 @@ export const SharedGardenView: React.FC = () => {
             </button>
           </div>
         </div>
-        {showSearch && !isDisconnected && (
+        {showSearch && !isDisconnected && !isRestored && (
           <div className="max-w-2xl mx-auto px-4 pb-3 space-y-2">
             <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl">
               <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -625,8 +757,64 @@ export const SharedGardenView: React.FC = () => {
         </div>
       )}
 
+      {/* Restored banner */}
+      {isRestored && (
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+            <RotateCcw className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800">{t('restoredBannerTitle')}</p>
+              <p className="text-xs text-blue-700 mt-0.5">{t('restoredBannerBody')}</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={async () => {
+                    if (!ref_ || !user) return;
+                    SharedGardenDatabase.clearGarden(gardenId);
+                    const result = await deepSyncSharedGarden(ref_, user);
+                    if (result.ok) {
+                      clearGardenRestored(gardenId);
+                      setRef_(getSharedGardenRef(gardenId));
+                      await loadPlants();
+                      setRefreshKey(k => k + 1);
+                      success(t('restoredReturnSuccess'), '');
+                    } else {
+                      error(t('restoredReturnError'), '');
+                    }
+                  }}
+                  className="text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {t('restoredReturnToCurrent')}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!ref_ || !user) return;
+                    const snapshot = SharedGardenDatabase.getFullSnapshot(gardenId);
+                    const result = await createSharedGardenFromSnapshot(
+                      `${ref_.gardenName} (restored)`,
+                      ref_.myDisplayName,
+                      snapshot,
+                      user
+                    );
+                    if (result) {
+                      markGardenDisconnected(gardenId);
+                      clearGardenRestored(gardenId);
+                      navigate(`/shared-garden/${result.gardenId}`);
+                    } else {
+                      error(t('restoredNewGardenError'), '');
+                    }
+                  }}
+                  className="text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {t('restoredNewGarden')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sync button */}
-      {!isDisconnected && (
+      {!isDisconnected && !isRestored && (
         <div className="max-w-2xl mx-auto px-4 pt-4 flex justify-end">
           <button
             onClick={handleSync}
@@ -671,14 +859,14 @@ export const SharedGardenView: React.FC = () => {
                   urgency={getUrgency(plant)}
                   urgencyColor={getUrgencyColor(plant)}
                   getPlantState={(p) => getPlantState(p, gardenId)}
-                  onTend={() => !isDisconnected && handleTend(plant.id)}
-                  onWater={() => !isDisconnected && handleWater(plant.id)}
+                  onTend={() => !isDisconnected && !isRestored && handleTend(plant.id)}
+                  onWater={() => !isDisconnected && !isRestored && handleWater(plant.id)}
                   onViewDetails={() => navigate(`/shared-garden/${gardenId}/plants/${plant.id}`)}
-                  onRemove={() => !isDisconnected && setConfirmModal({ isOpen: true, plantId: plant.id, plantName: plant.name })}
-                  onShowConfirmation={(id, name) => !isDisconnected && setConfirmModal({ isOpen: true, plantId: id, plantName: name })}
-                  onScheduleCare={(id, name) => !isDisconnected && setScheduleCareModal({ isOpen: true, plantId: id, plantName: name })}
+                  onRemove={() => !isDisconnected && !isRestored && setConfirmModal({ isOpen: true, plantId: plant.id, plantName: plant.name })}
+                  onShowConfirmation={(id, name) => !isDisconnected && !isRestored && setConfirmModal({ isOpen: true, plantId: id, plantName: name })}
+                  onScheduleCare={(id, name) => !isDisconnected && !isRestored && setScheduleCareModal({ isOpen: true, plantId: id, plantName: name })}
                   onEditPlant={(id) => {
-                    if (isDisconnected) return;
+                    if (isDisconnected || isRestored) return;
                     const p = plants.find(pl => pl.id === id);
                     if (p) setEditPlantModal({ isOpen: true, plant: p });
                   }}
@@ -701,7 +889,7 @@ export const SharedGardenView: React.FC = () => {
       </div>
 
       {/* FAB */}
-      {!isDisconnected && (
+      {!isDisconnected && !isRestored && (
         <button
           onClick={() => setShowAddPlant(true)}
           className="fixed bottom-6 right-6 w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 z-20"

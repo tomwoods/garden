@@ -253,5 +253,26 @@
     "managePlotsDesc": "Regroupez des plantes et enregistrez des activités ensemble",
     "gardeners": "Jardiniers",
     "gardenersDesc": "Voir, inviter et gérer les membres du jardin"
-  }
+  },
+  "backup": {
+    "title": "Sauvegarde",
+    "createSnapshot": "Créer un instantané local",
+    "createSnapshotDesc": "Enregistre une copie chiffrée de ce jardin sur votre appareil",
+    "restoreSnapshot": "Restaurer un instantané local",
+    "restoreSnapshotDesc": "Restaure à partir d'un fichier d'instantané précédemment enregistré",
+    "restoreWarningTitle": "Restaurer depuis l'instantané",
+    "restoreWarningBody": "Cela remplacera le jardin actuel par un état antérieur. Le jardin passera hors ligne et la synchronisation sera désactivée jusqu'à ce que vous reveniez à l'état actuel ou que vous créiez un nouveau jardin à partir de cet instantané.",
+    "restoreConfirm": "Continuer",
+    "restoreCancel": "Annuler",
+    "restoring": "Restauration...",
+    "restoreError": "Impossible de restaurer le fichier d'instantané. Il peut être corrompu ou provenir d'un autre jardin."
+  },
+  "restored": "Restauré",
+  "restoredBannerTitle": "Affichage d'une version restaurée",
+  "restoredBannerBody": "Ce jardin affiche un instantané restauré localement. La synchronisation est désactivée.",
+  "restoredReturnToCurrent": "Revenir à l'état actuel",
+  "restoredNewGarden": "Créer un nouveau jardin depuis cet état",
+  "restoredReturnSuccess": "Revenu à l'état actuel",
+  "restoredReturnError": "Impossible de joindre le serveur. Veuillez réessayer plus tard.",
+  "restoredNewGardenError": "Impossible de créer un nouveau jardin. Veuillez réessayer plus tard."
 }

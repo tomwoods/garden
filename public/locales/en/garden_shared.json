@@ -253,5 +253,26 @@
     "managePlotsDesc": "Group plants and log activities together",
     "gardeners": "Gardeners",
     "gardenersDesc": "View, invite, and manage garden members"
-  }
+  },
+  "backup": {
+    "title": "Backup",
+    "createSnapshot": "Create local snapshot",
+    "createSnapshotDesc": "Save an encrypted copy of this garden to your device",
+    "restoreSnapshot": "Restore local snapshot",
+    "restoreSnapshotDesc": "Restore from a previously saved snapshot file",
+    "restoreWarningTitle": "Restore from snapshot",
+    "restoreWarningBody": "This will replace the current garden with a previous state. The garden will go offline and syncing will be disabled until you either return to the current state or create a new garden from this snapshot.",
+    "restoreConfirm": "Continue",
+    "restoreCancel": "Cancel",
+    "restoring": "Restoring...",
+    "restoreError": "Could not restore the snapshot file. It may be corrupted or from a different garden."
+  },
+  "restored": "Restored",
+  "restoredBannerTitle": "Showing a restored version",
+  "restoredBannerBody": "This garden is displaying a locally restored snapshot. Syncing is disabled.",
+  "restoredReturnToCurrent": "Return to current state",
+  "restoredNewGarden": "Create new garden from this state",
+  "restoredReturnSuccess": "Returned to current state",
+  "restoredReturnError": "Could not reach the server. Please try again later.",
+  "restoredNewGardenError": "Could not create a new garden. Please try again later."
 }

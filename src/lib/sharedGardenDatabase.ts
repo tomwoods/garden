@@ -82,6 +82,7 @@ export interface SharedGardenRef {
   gardenPublicKeyBase64: string;
   lastSyncTs: number;
   disconnected?: boolean;     // set to true if removed from garden
+  restored?: boolean;         // set to true when viewing a locally restored snapshot
 }
 
 const GARDEN_REFS_KEY = 'shared_garden_refs_v1';
@@ -120,6 +121,18 @@ export function markGardenDisconnected(gardenId: string): void {
   const refs = getSharedGardenRefs();
   const idx = refs.findIndex(r => r.gardenId === gardenId);
   if (idx >= 0) { refs[idx].disconnected = true; saveSharedGardenRefs(refs); }
+}
+
+export function markGardenRestored(gardenId: string): void {
+  const refs = getSharedGardenRefs();
+  const idx = refs.findIndex(r => r.gardenId === gardenId);
+  if (idx >= 0) { refs[idx].restored = true; saveSharedGardenRefs(refs); }
+}
+
+export function clearGardenRestored(gardenId: string): void {
+  const refs = getSharedGardenRefs();
+  const idx = refs.findIndex(r => r.gardenId === gardenId);
+  if (idx >= 0) { refs[idx].restored = false; saveSharedGardenRefs(refs); }
 }
 
 export function setGardenSyncTs(gardenId: string, ts: number): void {

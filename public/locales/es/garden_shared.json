@@ -253,5 +253,26 @@
     "managePlotsDesc": "Agrupa plantas y registra actividades juntos",
     "gardeners": "Jardineros",
     "gardenersDesc": "Ver, invitar y gestionar los miembros del jardín"
-  }
+  },
+  "backup": {
+    "title": "Copia de seguridad",
+    "createSnapshot": "Crear instantánea local",
+    "createSnapshotDesc": "Guarda una copia cifrada de este jardín en tu dispositivo",
+    "restoreSnapshot": "Restaurar instantánea local",
+    "restoreSnapshotDesc": "Restaura desde un archivo de instantánea guardado anteriormente",
+    "restoreWarningTitle": "Restaurar desde instantánea",
+    "restoreWarningBody": "Esto reemplazará el jardín actual con un estado anterior. El jardín se desconectará y la sincronización se deshabilitará hasta que vuelvas al estado actual o crees un nuevo jardín desde esta instantánea.",
+    "restoreConfirm": "Continuar",
+    "restoreCancel": "Cancelar",
+    "restoring": "Restaurando...",
+    "restoreError": "No se pudo restaurar el archivo de instantánea. Puede estar dañado o ser de un jardín diferente."
+  },
+  "restored": "Restaurado",
+  "restoredBannerTitle": "Mostrando una versión restaurada",
+  "restoredBannerBody": "Este jardín muestra una instantánea restaurada localmente. La sincronización está deshabilitada.",
+  "restoredReturnToCurrent": "Volver al estado actual",
+  "restoredNewGarden": "Crear nuevo jardín desde este estado",
+  "restoredReturnSuccess": "Vuelto al estado actual",
+  "restoredReturnError": "No se pudo conectar con el servidor. Por favor, inténtalo más tarde.",
+  "restoredNewGardenError": "No se pudo crear un nuevo jardín. Por favor, inténtalo más tarde."
 }

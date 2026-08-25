@@ -253,5 +253,26 @@
     "managePlotsDesc": "Gwoupe plant ansanm epi anregistre aktivite ansanm",
     "gardeners": "Jedinik Yo",
     "gardenersDesc": "Wè, envite, epi jere manm jaden an"
-  }
+  },
+  "backup": {
+    "title": "Sauvegard",
+    "createSnapshot": "Kreye yon kopi lokal",
+    "createSnapshotDesc": "Sove yon kopi chifre nan jaden sa a sou aparèy ou",
+    "restoreSnapshot": "Restabli kopi lokal",
+    "restoreSnapshotDesc": "Restabli depi yon fichye kopi ki te sove anvan an",
+    "restoreWarningTitle": "Restabli depi kopi a",
+    "restoreWarningBody": "Sa a ap ranplase jaden aktyèl la ak yon eta anvan an. Jaden an ap desann nan liy epi senkronizasyon ap dezaktive jouk ou retounen nan eta aktyèl la oswa ou kreye yon nouvo jaden depi kopi sa a.",
+    "restoreConfirm": "Kontinye",
+    "restoreCancel": "Anile",
+    "restoring": "Ap restabli...",
+    "restoreError": "Enposib restabli fichye kopi a. Ka li koronpou oswa li soti nan yon lòt jaden."
+  },
+  "restored": "Restabli",
+  "restoredBannerTitle": "Ap afiche yon vèsyon restabli",
+  "restoredBannerBody": "Jaden sa a ap afiche yon kopi restabli lokalman. Senkronizasyon dezaktive.",
+  "restoredReturnToCurrent": "Retounen nan eta aktyèl la",
+  "restoredNewGarden": "Kreye yon nouvo jaden depi eta sa a",
+  "restoredReturnSuccess": "Retounen nan eta aktyèl la",
+  "restoredReturnError": "Enposib rive nan sèvè a. Tanpri eseye ankò pita.",
+  "restoredNewGardenError": "Enposib kreye yon nouvo jaden. Tanpri eseye ankò pita."
 }

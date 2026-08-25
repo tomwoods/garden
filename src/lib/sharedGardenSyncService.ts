@@ -15,6 +15,7 @@ import {
   type SharedGardenObject,
   type SharedGardenDelta,
   type SharedGardenRef,
+  type SharedGardenSnapshot,
   getSharedGardenRefs,
   setGardenSyncTs,
   markGardenDisconnected,
@@ -730,4 +731,85 @@ export async function restoreSharedGardenFromKeyFile(
   });
 
   return { gardenId, gardenName: gardenObj.garden_name ?? gardenName };
+}
+
+// ─── Create a new garden from a restored snapshot ──────────────────────────────
+
+export async function createSharedGardenFromSnapshot(
+  gardenName: string,
+  myDisplayName: string,
+  snapshot: SharedGardenSnapshot,
+  user: GardenSyncUser & { signingPublicKey?: string }
+): Promise<{ gardenId: string } | null> {
+  const gardenKeyPair = await generateRSAKeyPair();
+  const gardenPublicKeyBase64 = await exportCryptoKey(gardenKeyPair.encryptionKeys.publicKey, 'spki');
+  const gardenPrivateKeyBase64 = await exportCryptoKey(gardenKeyPair.encryptionKeys.privateKey, 'pkcs8');
+
+  const gardenId = uuidv4();
+
+  await SharedGardenDatabase.init(gardenId);
+
+  // Apply the restored snapshot's data (plants, activities, plots, etc.)
+  // but skip the old member list — only this gardener will be a member.
+  const snapshotWithoutMembers: SharedGardenSnapshot = {
+    ...snapshot,
+    members: [],
+    change_log: [],
+  };
+  SharedGardenDatabase.applySnapshot(gardenId, snapshotWithoutMembers);
+
+  // Add creator as the sole member
+  SharedGardenDatabase.upsertMember(gardenId, {
+    id: uuidv4(),
+    user_uuid: user.userId,
+    display_name: myDisplayName,
+    joined_at: Date.now(),
+    added_by_uuid: user.userId,
+  });
+
+  // Build initial snapshot from the populated local DB
+  const freshSnapshot = SharedGardenDatabase.getFullSnapshot(gardenId);
+  const gardenObj: SharedGardenObject = { snapshot: freshSnapshot, deltas: [], schema_version: 1, garden_name: gardenName };
+
+  const encryptedStr = await encryptGardenObject(gardenObj, gardenPublicKeyBase64);
+
+  const timestamp = Date.now();
+  const message = `create-shared-garden:${user.userId}:${timestamp}:${gardenName}`;
+  const signingKey = await importSigningKey(user.signingPrivateKey, 'pkcs8', ['sign']);
+  const signature = await signData(message, signingKey);
+
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/create-shared-garden`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${user.userId}`,
+      'Apikey': SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      encryptedData: encryptedStr,
+      gardenPublicKey: gardenPublicKeyBase64,
+      gardenName,
+      displayName: myDisplayName,
+      timestamp,
+      signature,
+    }),
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  const sharedGardenId: string = data.sharedGardenId;
+
+  localStorage.setItem(`shared_garden_key_${gardenId}`, gardenPrivateKeyBase64);
+
+  addSharedGardenRef({
+    gardenId,
+    sharedGardenId,
+    gardenName,
+    myDisplayName,
+    myUuid: user.userId,
+    gardenPublicKeyBase64,
+    lastSyncTs: Date.now(),
+  });
+
+  return { gardenId };
 }
