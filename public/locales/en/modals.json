@@ -350,7 +350,15 @@
     "gardenRestored": "{{name}} restored",
     "gardenRestoredDesc": "Your garden has been restored from the key file.",
     "alreadyExists": "This garden is already on your device.",
-    "chooseDifferent": "Choose a different file"
+    "chooseDifferent": "Choose a different file",
+    "qrTab": "QR",
+    "qrScanHint": "Point the camera at a shared garden invitation QR code from another gardener.",
+    "qrInvalidUrl": "This QR code does not contain a valid garden invitation link.",
+    "qrValidated": "A valid garden invitation was found. Enter your name to join.",
+    "qrJoinBtn": "Join garden",
+    "qrJoining": "Joining garden...",
+    "qrJoinFailed": "The invitation could not be claimed. It may have expired or already been used.",
+    "qrScanAgain": "Scan again"
   },
   "inviteToSharedGarden": {
     "title": "Invite Gardener",

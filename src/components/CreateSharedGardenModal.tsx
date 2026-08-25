@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Leaf, Download, Upload, AlertCircle } from 'lucide-react';
+import { X, Leaf, Download, Upload, AlertCircle, QrCode } from 'lucide-react';
 import {
   createSharedGarden,
   downloadGardenKeyFile,
   restoreSharedGardenFromKeyFile,
   parseGardenKeyFile,
+  claimGardenInvite,
   type GardenKeyFileData,
 } from '../lib/sharedGardenSyncService';
 import { getSharedGardenRef } from '../lib/sharedGardenDatabase';
+import { QRScanner } from './QRScanner';
 
 interface CreateSharedGardenModalProps {
   isOpen: boolean;
@@ -20,8 +22,9 @@ interface CreateSharedGardenModalProps {
   onCreated: (gardenId: string) => void;
 }
 
-type Tab = 'new' | 'restore';
+type Tab = 'new' | 'restore' | 'qr';
 type Step = 'form' | 'working' | 'done' | 'already-exists';
+type QrStep = 'scanning' | 'preview' | 'joining' | 'done' | 'error' | 'already-exists';
 
 export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = ({
   isOpen,
@@ -50,6 +53,17 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
   const [restoredGardenName, setRestoredGardenName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- QR scan state ---
+  const [qrStep, setQrStep] = useState<QrStep>('scanning');
+  const [qrError, setQrError] = useState('');
+  const [qrDisplayName, setQrDisplayName] = useState('');
+  const [qrSharedGardenId, setQrSharedGardenId] = useState('');
+  const [qrShortCode, setQrShortCode] = useState('');
+  const [qrEphemeralKey, setQrEphemeralKey] = useState('');
+  const [qrGardenId, setQrGardenId] = useState('');
+  const [qrJoinedGardenId, setQrJoinedGardenId] = useState('');
+  const [qrJoinedGardenName, setQrJoinedGardenName] = useState('');
+
   const resetAll = () => {
     setTab('new');
     setGardenName('');
@@ -65,6 +79,15 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
     setRestoreError('');
     setRestoredGardenId('');
     setRestoredGardenName('');
+    setQrStep('scanning');
+    setQrError('');
+    setQrDisplayName('');
+    setQrSharedGardenId('');
+    setQrShortCode('');
+    setQrEphemeralKey('');
+    setQrGardenId('');
+    setQrJoinedGardenId('');
+    setQrJoinedGardenName('');
   };
 
   const handleClose = () => {
@@ -92,6 +115,90 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
       setCreateError('Something went wrong. Please try again.');
       setCreateStep('form');
     }
+  };
+
+  // ─── QR scan handlers ───────────────────────────────────────────────────────
+
+  const validateInviteUrl = (raw: string): { sharedGardenId: string; shortCode: string; ephemeralKey: string; gardenId: string } | null => {
+    let url: URL;
+    try {
+      url = new URL(raw);
+    } catch {
+      return null;
+    }
+    // Must be same origin as the app
+    if (url.origin !== window.location.origin) return null;
+    // Must match the join-shared-garden path
+    const pathMatch = url.pathname.match(/^\/join-shared-garden\/([^/?#]+)$/);
+    if (!pathMatch) return null;
+    const sharedGardenId = pathMatch[1];
+    // Fragment must contain gate and key
+    const fragment = url.hash.slice(1);
+    const params = new URLSearchParams(fragment);
+    const gate = params.get('gate');
+    const key = params.get('key');
+    const gid = params.get('gid');
+    if (!gate || !key || !gid) return null;
+    return { sharedGardenId, shortCode: gate, ephemeralKey: decodeURIComponent(key), gardenId: gid };
+  };
+
+  const handleQrScan = (data: string) => {
+    setQrError('');
+    const parsed = validateInviteUrl(data);
+    if (!parsed) {
+      setQrError(t('createSharedGarden.qrInvalidUrl'));
+      setQrStep('error');
+      return;
+    }
+    // Check if already on device
+    const existing = getSharedGardenRef(parsed.gardenId);
+    if (existing) {
+      setQrJoinedGardenId(parsed.gardenId);
+      setQrJoinedGardenName(existing.gardenName);
+      setQrStep('already-exists');
+      return;
+    }
+    setQrSharedGardenId(parsed.sharedGardenId);
+    setQrShortCode(parsed.shortCode);
+    setQrEphemeralKey(parsed.ephemeralKey);
+    setQrGardenId(parsed.gardenId);
+    setQrStep('preview');
+  };
+
+  const handleQrJoin = async () => {
+    if (!qrDisplayName.trim() || !qrSharedGardenId || !qrShortCode || !qrEphemeralKey) return;
+    setQrError('');
+    setQrStep('joining');
+    try {
+      const result = await claimGardenInvite(
+        qrSharedGardenId,
+        qrShortCode,
+        qrEphemeralKey,
+        qrDisplayName.trim(),
+        user
+      );
+      if (!result) {
+        setQrError(t('createSharedGarden.qrJoinFailed'));
+        setQrStep('error');
+        return;
+      }
+      setQrJoinedGardenId(result.gardenId);
+      setQrJoinedGardenName(result.gardenName);
+      setQrStep('done');
+    } catch {
+      setQrError(t('createSharedGarden.qrJoinFailed'));
+      setQrStep('error');
+    }
+  };
+
+  const handleQrRetry = () => {
+    setQrStep('scanning');
+    setQrError('');
+    setQrDisplayName('');
+    setQrSharedGardenId('');
+    setQrShortCode('');
+    setQrEphemeralKey('');
+    setQrGardenId('');
   };
 
   // ─── Restore handlers ──────────────────────────────────────────────────────
@@ -150,7 +257,7 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
 
   if (!isOpen) return null;
 
-  const isWorking = (tab === 'new' && createStep === 'working') || (tab === 'restore' && restoreStep === 'working');
+  const isWorking = (tab === 'new' && createStep === 'working') || (tab === 'restore' && restoreStep === 'working') || (tab === 'qr' && qrStep === 'joining');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -174,7 +281,7 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
         </div>
 
         {/* Tab bar — only shown while on the form step */}
-        {((tab === 'new' && createStep === 'form') || (tab === 'restore' && restoreStep === 'form')) && (
+        {((tab === 'new' && createStep === 'form') || (tab === 'restore' && restoreStep === 'form') || (tab === 'qr' && (qrStep === 'scanning' || qrStep === 'preview'))) && (
           <div className="flex border-b border-gray-100">
             <button
               onClick={() => setTab('new')}
@@ -195,6 +302,16 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
               }`}
             >
               {t('createSharedGarden.restoreTab')}
+            </button>
+            <button
+              onClick={() => setTab('qr')}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                tab === 'qr'
+                  ? 'text-green-700 border-b-2 border-green-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t('createSharedGarden.qrTab')}
             </button>
           </div>
         )}
@@ -420,6 +537,144 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
                     className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors text-sm"
                   >
                     {t('createSharedGarden.chooseDifferent')}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          {/* ── QR SCAN ── */}
+          {tab === 'qr' && (
+            <>
+              {qrStep === 'scanning' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-500 leading-relaxed text-center">
+                    {t('createSharedGarden.qrScanHint')}
+                  </p>
+                  <QRScanner onScan={handleQrScan} />
+                  {qrError && (
+                    <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>{qrError}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleClose}
+                    className="w-full px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors text-sm"
+                  >
+                    {t('createSharedGarden.cancelBtn')}
+                  </button>
+                </div>
+              )}
+
+              {qrStep === 'preview' && (
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <QrCode className="w-6 h-6 text-green-700" />
+                    </div>
+                    <p className="text-sm text-gray-600 text-center leading-relaxed">
+                      {t('createSharedGarden.qrValidated')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('createSharedGarden.displayNameLabel')}</label>
+                    <input
+                      type="text"
+                      value={qrDisplayName}
+                      onChange={e => setQrDisplayName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleQrJoin()}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-sm"
+                      placeholder={t('createSharedGarden.displayNamePlaceholder')}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      onClick={handleQrRetry}
+                      className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors text-sm"
+                    >
+                      {t('createSharedGarden.qrScanAgain')}
+                    </button>
+                    <button
+                      onClick={handleQrJoin}
+                      disabled={!qrDisplayName.trim()}
+                      className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-medium transition-colors text-sm"
+                    >
+                      {t('createSharedGarden.qrJoinBtn')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {qrStep === 'joining' && (
+                <div className="flex flex-col items-center py-8 gap-3">
+                  <div className="w-10 h-10 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500">{t('createSharedGarden.qrJoining')}</p>
+                </div>
+              )}
+
+              {qrStep === 'done' && (
+                <div className="space-y-4">
+                  <div className="bg-green-50 rounded-xl p-4 text-center">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Leaf className="w-6 h-6 text-green-700" />
+                    </div>
+                    <p className="font-medium text-green-900 text-sm">{t('createSharedGarden.gardenReady', { name: qrJoinedGardenName })}</p>
+                    <p className="text-xs text-green-700 mt-1">{t('createSharedGarden.saveKeyHint')}</p>
+                  </div>
+                  <button
+                    onClick={() => downloadGardenKeyFile(qrJoinedGardenId)}
+                    className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors text-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    {t('createSharedGarden.downloadKey')}
+                  </button>
+                  <button
+                    onClick={() => { resetAll(); onCreated(qrJoinedGardenId); }}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors text-sm"
+                  >
+                    {t('createSharedGarden.openGarden')}
+                  </button>
+                </div>
+              )}
+
+              {qrStep === 'error' && (
+                <div className="space-y-4">
+                  <div className="bg-red-50 rounded-xl p-4 text-center">
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    </div>
+                    <p className="text-sm text-red-800 leading-relaxed">{qrError || t('createSharedGarden.qrJoinFailed')}</p>
+                  </div>
+                  <button
+                    onClick={handleQrRetry}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors text-sm"
+                  >
+                    {t('createSharedGarden.qrScanAgain')}
+                  </button>
+                </div>
+              )}
+
+              {qrStep === 'already-exists' && (
+                <div className="space-y-4">
+                  <div className="bg-amber-50 rounded-xl p-4 text-center">
+                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Leaf className="w-6 h-6 text-amber-700" />
+                    </div>
+                    <p className="font-medium text-amber-900 text-sm">{qrJoinedGardenName}</p>
+                    <p className="text-xs text-amber-700 mt-1">{t('createSharedGarden.alreadyExists')}</p>
+                  </div>
+                  <button
+                    onClick={() => { resetAll(); onCreated(qrJoinedGardenId); }}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors text-sm"
+                  >
+                    {t('createSharedGarden.openGarden')}
+                  </button>
+                  <button
+                    onClick={handleQrRetry}
+                    className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-4 rounded-xl transition-colors text-sm"
+                  >
+                    {t('createSharedGarden.qrScanAgain')}
                   </button>
                 </div>
               )}

@@ -350,7 +350,15 @@
     "gardenRestored": "{{name}} restaurado",
     "gardenRestoredDesc": "Tu jardín ha sido restaurado desde el archivo de clave.",
     "alreadyExists": "Este jardín ya está en tu dispositivo.",
-    "chooseDifferent": "Elegir un archivo diferente"
+    "chooseDifferent": "Elegir un archivo diferente",
+    "qrTab": "QR",
+    "qrScanHint": "Apunta la cámara al código QR de invitación de un jardín compartido de otro jardinero.",
+    "qrInvalidUrl": "Este código QR no contiene un enlace de invitación de jardín válido.",
+    "qrValidated": "Se encontró una invitación de jardín válida. Ingresa tu nombre para unirte.",
+    "qrJoinBtn": "Unirse al jardín",
+    "qrJoining": "Uniéndose al jardín...",
+    "qrJoinFailed": "No se pudo reclamar la invitación. Puede haber expirado o ya haber sido usada.",
+    "qrScanAgain": "Escanear de nuevo"
   },
   "inviteToSharedGarden": {
     "title": "Invitar Jardinero",

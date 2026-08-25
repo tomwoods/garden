@@ -350,7 +350,15 @@
     "gardenRestored": "{{name}} restore",
     "gardenRestoredDesc": "Jaden ou te restore depi fichye kle a.",
     "alreadyExists": "Jaden sa a deja sou aparèy ou.",
-    "chooseDifferent": "Chwazi yon fichye diferan"
+    "chooseDifferent": "Chwazi yon fichye diferan",
+    "qrTab": "QR",
+    "qrScanHint": "Pwen kamera a sou kòd QR envitasyon yon jaden pataje ki soti nan yon lòt jadinye.",
+    "qrInvalidUrl": "Kòd QR sa a pa gen yon lyen envitasyon jaden valab.",
+    "qrValidated": "Yon envitasyon jaden valab te jwenn. Antre non ou pou w rantre.",
+    "qrJoinBtn": "Rantre nan jaden",
+    "qrJoining": "Ap rantre nan jaden...",
+    "qrJoinFailed": "Envitasyon an pa t ka reklame. Petèt li ekspire oswa li deja itilize.",
+    "qrScanAgain": "Eskanye ankò"
   },
   "inviteToSharedGarden": {
     "title": "Envite yon Jediné",
