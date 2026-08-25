@@ -384,10 +384,12 @@ export const SharedGardenView: React.FC = () => {
   }, [gardenId, loadPlants]);
 
   useEffect(() => {
-    const nameTerm = searchTerm.trim().toLowerCase();
+    const term = searchTerm.trim().toLowerCase();
     setFilteredPlants(plants.filter(p => {
-      const nameMatch = !nameTerm || p.name.toLowerCase().includes(nameTerm);
-      if (!nameMatch) return false;
+      const textMatch = !term ||
+        p.name.toLowerCase().includes(term) ||
+        (p.description ?? '').toLowerCase().includes(term);
+      if (!textMatch) return false;
       if (ageFilter === 'all') return true;
       const ageInfo = parseAgeInfoFromPlant(p);
       const group = resolveAgeGroup(ageInfo);
