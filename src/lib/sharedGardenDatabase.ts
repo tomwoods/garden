@@ -85,6 +85,7 @@ export interface SharedGardenRef {
 }
 
 const GARDEN_REFS_KEY = 'shared_garden_refs_v1';
+const PLOT_MEMBERSHIP_CLEANUP_KEY = 'shared_garden_plot_membership_cleanup_v1';
 
 export function getSharedGardenRefs(): SharedGardenRef[] {
   try {
@@ -172,6 +173,8 @@ export class SharedGardenDatabase {
 
     await this._createTables(gardenId);
     initializedGardens.add(gardenId);
+
+    this._cleanupDuplicatePlotMemberships(gardenId);
 
     // Restore the personal garden's database context so that subsequent
     // DatabaseService calls (which use unqualified table names) continue to
@@ -834,15 +837,77 @@ export class SharedGardenDatabase {
     actorDisplayName: string,
     plotName: string
   ): void {
-    this.run(gardenId, 'DELETE FROM plot_memberships WHERE plot_id = ?', [plotId]);
     const now = Date.now();
-    for (const plantId of plantIds) {
-      this.run(gardenId,
-        'INSERT INTO plot_memberships (id,plot_id,plant_id,updated_at) VALUES (?,?,?,?)',
-        [uuidv4(), plotId, plantId, now]
-      );
+
+    const existing = this.run<Array<{ id: string; plant_id: string }>>(gardenId,
+      'SELECT id, plant_id FROM plot_memberships WHERE plot_id = ?', [plotId]
+    );
+    const existingByPlantId = new Map<string, { id: string; plant_id: string }>();
+    for (const row of existing) {
+      if (!existingByPlantId.has(row.plant_id)) existingByPlantId.set(row.plant_id, row);
     }
+
+    const desiredSet = new Set(plantIds);
+
+    for (const [plantId, row] of existingByPlantId) {
+      if (!desiredSet.has(plantId)) {
+        this.run(gardenId, 'DELETE FROM plot_memberships WHERE id = ?', [row.id]);
+        this.recordTombstone(gardenId, row.id, 'plot_memberships');
+      }
+    }
+
+    for (const plantId of plantIds) {
+      const existingRow = existingByPlantId.get(plantId);
+      if (existingRow) {
+        this.run(gardenId,
+          'UPDATE plot_memberships SET updated_at = ? WHERE id = ?',
+          [now, existingRow.id]
+        );
+      } else {
+        this.run(gardenId,
+          'INSERT INTO plot_memberships (id,plot_id,plant_id,updated_at) VALUES (?,?,?,?)',
+          [uuidv4(), plotId, plantId, now]
+        );
+      }
+    }
+
     this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_plot_members', 'plots', plotId, plotName);
+  }
+
+  private static _cleanupDuplicatePlotMemberships(gardenId: string): void {
+    let done: Record<string, boolean> = {};
+    try {
+      const raw = localStorage.getItem(PLOT_MEMBERSHIP_CLEANUP_KEY);
+      done = raw ? JSON.parse(raw) : {};
+    } catch { done = {}; }
+    if (done[gardenId]) return;
+
+    try {
+      const all = this.run<Array<{ id: string; plot_id: string; plant_id: string; updated_at: number }>>(gardenId,
+        'SELECT id, plot_id, plant_id, updated_at FROM plot_memberships', []
+      );
+      const byKey = new Map<string, Array<{ id: string; plot_id: string; plant_id: string; updated_at: number }>>();
+      for (const row of all) {
+        const key = `${row.plot_id}|${row.plant_id}`;
+        if (!byKey.has(key)) byKey.set(key, []);
+        byKey.get(key)!.push(row);
+      }
+      for (const [, rows] of byKey) {
+        if (rows.length <= 1) continue;
+        rows.sort((a, b) => a.updated_at - b.updated_at);
+        const keep = rows[0];
+        for (let i = 1; i < rows.length; i++) {
+          this.run(gardenId, 'DELETE FROM plot_memberships WHERE id = ?', [rows[i].id]);
+          this.recordTombstone(gardenId, rows[i].id, 'plot_memberships');
+        }
+        void keep;
+      }
+    } catch {
+      // table might not exist yet — skip
+    }
+
+    done[gardenId] = true;
+    localStorage.setItem(PLOT_MEMBERSHIP_CLEANUP_KEY, JSON.stringify(done));
   }
 
   static logPlotBulkActivity(
@@ -1030,6 +1095,20 @@ export class SharedGardenDatabase {
         existing = [];
       }
 
+      if (delta.table === 'plot_memberships' && existing.length === 0 && delta.data) {
+        const plotId = delta.data.plot_id as string;
+        const plantId = delta.data.plant_id as string;
+        if (plotId && plantId) {
+          try {
+            const byKey = this.run<Array<Record<string, unknown>>>(gardenId,
+              'SELECT * FROM plot_memberships WHERE plot_id = ? AND plant_id = ?',
+              [plotId, plantId]
+            );
+            if (byKey.length > 0) existing = byKey;
+          } catch { /* table might not exist */ }
+        }
+      }
+
       if (existing.length === 0) {
         // Insert new record
         const cols = Object.keys(delta.data).join(', ');
@@ -1084,7 +1163,20 @@ export class SharedGardenDatabase {
     for (const [table, rows] of tables) {
       for (const row of rows) {
         if (this.hasTombstone(gardenId, row.id as string)) continue;
-        const existing = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM ${table} WHERE id = ?`, [row.id]);
+        let existing = this.run<Array<Record<string, unknown>>>(gardenId, `SELECT * FROM ${table} WHERE id = ?`, [row.id]);
+        if (table === 'plot_memberships' && (existing as unknown[]).length === 0) {
+          const plotId = (row as Record<string, unknown>).plot_id as string;
+          const plantId = (row as Record<string, unknown>).plant_id as string;
+          if (plotId && plantId) {
+            try {
+              const byKey = this.run<Array<Record<string, unknown>>>(gardenId,
+                'SELECT * FROM plot_memberships WHERE plot_id = ? AND plant_id = ?',
+                [plotId, plantId]
+              );
+              if (byKey.length > 0) existing = byKey;
+            } catch { /* table might not exist */ }
+          }
+        }
         if ((existing as unknown[]).length === 0) {
           const cols = Object.keys(row).join(', ');
           const placeholders = Object.keys(row).map(() => '?').join(', ');
