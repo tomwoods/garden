@@ -18,6 +18,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { ScheduleCareModal } from './ScheduleCareModal';
 import { MapOverlay } from './MapOverlay';
 import { GardenChangeLogCard } from './GardenChangeLogCard';
+import { SharedGardenOverviewCard } from './SharedGardenOverviewCard';
 import { ActivityReportModal } from './ActivityReportModal';
 import { InviteToSharedGardenModal } from './InviteToSharedGardenModal';
 import { ToastContainer } from './ToastContainer';
@@ -339,6 +340,7 @@ export const SharedGardenView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [ageFilter, setAgeFilter] = useState<AgeGroup | 'all'>('all');
   const [showSearch, setShowSearch] = useState(false);
+  const [showAllPlants, setShowAllPlants] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showMembersPanel, setShowMembersPanel] = useState(false);
@@ -549,7 +551,11 @@ export const SharedGardenView: React.FC = () => {
             {!isDisconnected && (
               <>
                 <button
-                  onClick={() => { setShowSearch(s => !s); if (showSearch) { setSearchTerm(''); setAgeFilter('all'); } }}
+                  onClick={() => {
+                    setShowSearch(s => !s);
+                    if (showSearch) { setSearchTerm(''); setAgeFilter('all'); }
+                    else { setShowAllPlants(true); }
+                  }}
                   className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   <Search className="w-5 h-5" />
@@ -647,7 +653,14 @@ export const SharedGardenView: React.FC = () => {
 
       {/* Plant grid */}
       <div className="max-w-2xl mx-auto px-4 py-4">
-        {filteredPlants.length === 0 ? (
+        {plants.length > 10 && !showAllPlants && !showSearch ? (
+          <SharedGardenOverviewCard
+            gardenId={gardenId}
+            plants={plants}
+            refreshKey={refreshKey}
+            onShowAllPlants={() => setShowAllPlants(true)}
+          />
+        ) : filteredPlants.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-green-500" />
