@@ -358,7 +358,10 @@
     "qrJoinBtn": "Rantre nan jaden",
     "qrJoining": "Ap rantre nan jaden...",
     "qrJoinFailed": "Envitasyon an pa t ka reklame. Petèt li ekspire oswa li deja itilize.",
-    "qrScanAgain": "Eskanye ankò"
+    "qrScanAgain": "Eskanye ankò",
+    "qrManualLinkLabel": "Oswa kole yon lyen envitasyon",
+    "qrManualLinkPlaceholder": "https://...",
+    "qrManualLinkBtn": "Itilize lyen an"
   },
   "inviteToSharedGarden": {
     "title": "Envite yon Jediné",

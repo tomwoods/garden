@@ -358,7 +358,10 @@
     "qrJoinBtn": "Join garden",
     "qrJoining": "Joining garden...",
     "qrJoinFailed": "The invitation could not be claimed. It may have expired or already been used.",
-    "qrScanAgain": "Scan again"
+    "qrScanAgain": "Scan again",
+    "qrManualLinkLabel": "Or paste an invitation link",
+    "qrManualLinkPlaceholder": "https://...",
+    "qrManualLinkBtn": "Use link"
   },
   "inviteToSharedGarden": {
     "title": "Invite Gardener",

@@ -358,7 +358,10 @@
     "qrJoinBtn": "Rejoindre le jardin",
     "qrJoining": "Rejoindre le jardin...",
     "qrJoinFailed": "L'invitation n'a pas pu être réclamée. Elle a peut-être expiré ou déjà été utilisée.",
-    "qrScanAgain": "Scanner à nouveau"
+    "qrScanAgain": "Scanner à nouveau",
+    "qrManualLinkLabel": "Ou collez un lien d'invitation",
+    "qrManualLinkPlaceholder": "https://...",
+    "qrManualLinkBtn": "Utiliser le lien"
   },
   "inviteToSharedGarden": {
     "title": "Inviter un Jardinier",

@@ -63,6 +63,7 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
   const [qrGardenId, setQrGardenId] = useState('');
   const [qrJoinedGardenId, setQrJoinedGardenId] = useState('');
   const [qrJoinedGardenName, setQrJoinedGardenName] = useState('');
+  const [manualLink, setManualLink] = useState('');
 
   const resetAll = () => {
     setTab('new');
@@ -88,6 +89,7 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
     setQrGardenId('');
     setQrJoinedGardenId('');
     setQrJoinedGardenName('');
+    setManualLink('');
   };
 
   const handleClose = () => {
@@ -199,6 +201,13 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
     setQrShortCode('');
     setQrEphemeralKey('');
     setQrGardenId('');
+    setManualLink('');
+  };
+
+  const handleManualLink = () => {
+    const trimmed = manualLink.trim();
+    if (!trimmed) return;
+    handleQrScan(trimmed);
   };
 
   // ─── Restore handlers ──────────────────────────────────────────────────────
@@ -557,6 +566,26 @@ export const CreateSharedGardenModal: React.FC<CreateSharedGardenModalProps> = (
                       <span>{qrError}</span>
                     </div>
                   )}
+                  <div className="pt-2 border-t border-gray-100">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('createSharedGarden.qrManualLinkLabel')}</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={manualLink}
+                        onChange={e => setManualLink(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleManualLink()}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-sm"
+                        placeholder={t('createSharedGarden.qrManualLinkPlaceholder')}
+                      />
+                      <button
+                        onClick={handleManualLink}
+                        disabled={!manualLink.trim()}
+                        className="px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-medium transition-colors text-sm whitespace-nowrap"
+                      >
+                        {t('createSharedGarden.qrManualLinkBtn')}
+                      </button>
+                    </div>
+                  </div>
                   <button
                     onClick={handleClose}
                     className="w-full px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors text-sm"
