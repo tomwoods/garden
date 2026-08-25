@@ -436,6 +436,50 @@ export async function createSharedGarden(
   return { gardenId };
 }
 
+// ─── Rename a shared garden ────────────────────────────────────────────────────
+
+export async function renameSharedGarden(
+  gardenId: string,
+  newName: string,
+  user: GardenSyncUser
+): Promise<{ ok: boolean; error?: string }> {
+  if (!navigator.onLine) return { ok: false, error: 'offline' };
+
+  const ref = getSharedGardenRefs().find(r => r.gardenId === gardenId);
+  if (!ref) return { ok: false, error: 'not_found' };
+
+  const gardenPrivKeyBase64 = localStorage.getItem(`shared_garden_key_${gardenId}`);
+  if (!gardenPrivKeyBase64) return { ok: false, error: 'no_key' };
+
+  try {
+    const remote = await fetchSharedGarden(ref.sharedGardenId, user);
+    if (!remote) return { ok: false, error: 'fetch' };
+
+    const remoteObj = await decryptGardenObject(remote.encryptedData, gardenPrivKeyBase64);
+    const updatedObj: SharedGardenObject = { ...remoteObj, garden_name: newName };
+
+    const encryptedStr = await encryptGardenObject(updatedObj, ref.gardenPublicKeyBase64);
+    const pushResult = await pushSharedGarden(ref.sharedGardenId, encryptedStr, remote.lastModified, false, user);
+
+    if (pushResult.conflict) {
+      const serverObj = await decryptGardenObject(pushResult.conflict.encryptedData, gardenPrivKeyBase64);
+      const retryObj: SharedGardenObject = { ...serverObj, garden_name: newName };
+      const retryEncrypted = await encryptGardenObject(retryObj, ref.gardenPublicKeyBase64);
+      await pushSharedGarden(ref.sharedGardenId, retryEncrypted, pushResult.conflict.lastModified, false, user);
+    }
+
+    addSharedGardenRef({
+      ...ref,
+      gardenName: newName,
+      lastSyncTs: Date.now(),
+    });
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'unknown' };
+  }
+}
+
 // ─── Create an invitation link ────────────────────────────────────────────────
 
 export async function createGardenInvite(

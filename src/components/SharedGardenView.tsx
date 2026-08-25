@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Settings, Plus, Search, X, Users, Download,
-  Trash2, UserMinus, AlertTriangle, Sun, RotateCcw, FileDown, FileUp
+  Trash2, UserMinus, AlertTriangle, Sun, RotateCcw, FileDown, FileUp, Pencil
 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef, markGardenRestored, markGardenDisconnected, clearGardenRestored, type SharedGardenRef } from '../lib/sharedGardenDatabase';
-import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden, createSharedGardenFromSnapshot } from '../lib/sharedGardenSyncService';
+import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden, createSharedGardenFromSnapshot, renameSharedGarden } from '../lib/sharedGardenSyncService';
 import { exportEncryptedSnapshot, decryptSnapshotFile, downloadSnapshotBlob } from '../lib/sharedGardenBackupService';
 import { syncMissingSharedImages, type SharedImageUser } from '../lib/sharedImageSync';
 import type { Plant, Tending, Watering, Sunlight, Fruit, Pruning, Companion } from '../lib/database';
@@ -481,6 +481,9 @@ export const SharedGardenView: React.FC = () => {
   const [showBulkSunlight, setShowBulkSunlight] = useState(false);
   const [showSlidingMenu, setShowSlidingMenu] = useState(false);
   const [showActivityReport, setShowActivityReport] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
 
   // Modals
   const [showAddPlant, setShowAddPlant] = useState(false);
@@ -566,6 +569,30 @@ export const SharedGardenView: React.FC = () => {
   const handleSync = async () => {
     if (!ref_ || isSyncing) return;
     await runSync(ref_, true);
+  };
+
+  const handleRename = async () => {
+    if (!gardenId || !user || !ref_) return;
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === ref_.gardenName) {
+      setShowRenameModal(false);
+      return;
+    }
+    setRenaming(true);
+    try {
+      const result = await renameSharedGarden(gardenId, trimmed, user);
+      if (result.ok) {
+        setRef_(getSharedGardenRef(gardenId));
+        setShowRenameModal(false);
+        success(t('rename.successTitle'), t('rename.successDesc'));
+      } else {
+        error(t('rename.title'), result.error === 'offline' ? t('rename.errorOffline') : t('rename.errorGeneral'));
+      }
+    } catch {
+      error(t('rename.title'), t('rename.errorGeneral'));
+    } finally {
+      setRenaming(false);
+    }
   };
 
   const handleAddPlant = async (plantData: Omit<Plant, 'id' | 'created_at' | 'updated_at'>) => {
@@ -679,8 +706,19 @@ export const SharedGardenView: React.FC = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">{ref_.gardenName}</h1>
+            <div
+              onDoubleClick={() => {
+                if (!isDisconnected && !isRestored) {
+                  setRenameValue(ref_.gardenName);
+                  setShowRenameModal(true);
+                }
+              }}
+              className={!isDisconnected && !isRestored ? 'cursor-pointer select-none' : ''}
+            >
+              <h1 className="text-lg font-semibold text-gray-900 flex items-center gap-1.5">
+                {ref_.gardenName}
+                {!isDisconnected && !isRestored && <Pencil className="w-3 h-3 text-gray-400" />}
+              </h1>
               <p className="text-xs text-gray-500">{ref_.myDisplayName}</p>
             </div>
           </div>
@@ -744,6 +782,47 @@ export const SharedGardenView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Rename modal */}
+      {showRenameModal && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => !renaming && setShowRenameModal(false)} />
+          <div className="fixed inset-0 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-1">{t('rename.title')}</h3>
+              <p className="text-sm text-amber-600 mb-4 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                {t('rename.warning')}
+              </p>
+              <input
+                type="text"
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                placeholder={t('rename.placeholder')}
+                className="w-full px-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
+                autoFocus
+                onKeyDown={e => { if (e.key === 'Enter' && renameValue.trim() && !renaming) handleRename(); }}
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowRenameModal(false)}
+                  disabled={renaming}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {t('rename.cancel')}
+                </button>
+                <button
+                  onClick={handleRename}
+                  disabled={renaming || !renameValue.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {renaming ? t('rename.saving') : t('rename.save')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Disconnected banner */}
       {isDisconnected && (

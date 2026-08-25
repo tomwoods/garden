@@ -274,5 +274,17 @@
   "restoredNewGarden": "Kreye yon nouvo jaden depi eta sa a",
   "restoredReturnSuccess": "Retounen nan eta aktyèl la",
   "restoredReturnError": "Enposib rive nan sèvè a. Tanpri eseye ankò pita.",
-  "restoredNewGardenError": "Enposib kreye yon nouvo jaden. Tanpri eseye ankò pita."
+  "restoredNewGardenError": "Enposib kreye yon nouvo jaden. Tanpri eseye ankò pita.",
+  "rename": {
+    "title": "Chanje non jaden",
+    "warning": "Sa ap chanje non jaden a pou tout jedinik yo.",
+    "placeholder": "Non jaden",
+    "save": "Sove",
+    "cancel": "Anile",
+    "saving": "Ap sove...",
+    "successTitle": "Jaden non chanje",
+    "successDesc": "Nouvo non an ap parèt pou tout jedinik yo apre pwochen senkronizasyon yo.",
+    "errorOffline": "Ou dwe konekte pou chanje non yon jaden.",
+    "errorGeneral": "Enposib chanje non jaden an. Tanpri eseye ankò."
+  }
 }

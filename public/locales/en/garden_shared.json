@@ -274,5 +274,17 @@
   "restoredNewGarden": "Create new garden from this state",
   "restoredReturnSuccess": "Returned to current state",
   "restoredReturnError": "Could not reach the server. Please try again later.",
-  "restoredNewGardenError": "Could not create a new garden. Please try again later."
+  "restoredNewGardenError": "Could not create a new garden. Please try again later.",
+  "rename": {
+    "title": "Rename garden",
+    "warning": "This will change the garden name for all gardeners.",
+    "placeholder": "Garden name",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "successTitle": "Garden renamed",
+    "successDesc": "The new name will appear for all gardeners after their next sync.",
+    "errorOffline": "You must be online to rename a garden.",
+    "errorGeneral": "Could not rename the garden. Please try again."
+  }
 }

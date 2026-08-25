@@ -274,5 +274,17 @@
   "restoredNewGarden": "Créer un nouveau jardin depuis cet état",
   "restoredReturnSuccess": "Revenu à l'état actuel",
   "restoredReturnError": "Impossible de joindre le serveur. Veuillez réessayer plus tard.",
-  "restoredNewGardenError": "Impossible de créer un nouveau jardin. Veuillez réessayer plus tard."
+  "restoredNewGardenError": "Impossible de créer un nouveau jardin. Veuillez réessayer plus tard.",
+  "rename": {
+    "title": "Renommer le jardin",
+    "warning": "Cela changera le nom du jardin pour tous les jardiniers.",
+    "placeholder": "Nom du jardin",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "successTitle": "Jardin renommé",
+    "successDesc": "Le nouveau nom apparaîtra pour tous les jardiniers après leur prochaine synchronisation.",
+    "errorOffline": "Vous devez être en ligne pour renommer un jardin.",
+    "errorGeneral": "Impossible de renommer le jardin. Veuillez réessayer."
+  }
 }
