@@ -90,9 +90,10 @@ interface MembersPanelProps {
   onInvite: () => void;
   onMemberRemoved: () => void;
   onLeft: () => void;
+  onRestored: () => void;
 }
 
-const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClose, onInvite, onMemberRemoved, onLeft }) => {
+const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClose, onInvite, onMemberRemoved, onLeft, onRestored }) => {
   const { t } = useTranslation('garden_shared');
   const members = SharedGardenDatabase.getMembers(gardenId);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -139,7 +140,7 @@ const MembersPanel: React.FC<MembersPanelProps> = ({ gardenId, ref_, user, onClo
       SharedGardenDatabase.clearGarden(gardenId);
       SharedGardenDatabase.applySnapshot(gardenId, snapshot);
       markGardenRestored(gardenId);
-      onClose();
+      onRestored();
     } catch {
       setRestoreError(t('restoreError'));
     } finally {
@@ -920,6 +921,12 @@ export const SharedGardenView: React.FC = () => {
           onInvite={() => { setShowMembersPanel(false); setShowInviteModal(true); }}
           onMemberRemoved={() => { setRefreshKey(k => k + 1); success('Done', 'Gardener removed.'); }}
           onLeft={() => navigate('/shared-gardens')}
+          onRestored={async () => {
+            setShowMembersPanel(false);
+            setRef_(getSharedGardenRef(gardenId ?? ''));
+            await loadPlants();
+            setRefreshKey(k => k + 1);
+          }}
         />
       )}
 
