@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Settings, Plus, Search, X, Users, Download,
-  Trash2, UserMinus, AlertTriangle, Sun, RotateCcw, FileDown, FileUp, Pencil
+  Trash2, UserMinus, AlertTriangle, Sun, RotateCcw, FileDown, FileUp
 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef, markGardenRestored, markGardenDisconnected, clearGardenRestored, type SharedGardenRef } from '../lib/sharedGardenDatabase';
 import { deepSyncSharedGarden, removeMemberFromGarden, downloadGardenKeyFile, leaveSharedGarden, createSharedGardenFromSnapshot, renameSharedGarden } from '../lib/sharedGardenSyncService';
@@ -715,10 +715,7 @@ export const SharedGardenView: React.FC = () => {
               }}
               className={!isDisconnected && !isRestored ? 'cursor-pointer select-none' : ''}
             >
-              <h1 className="text-lg font-semibold text-gray-900 flex items-center gap-1.5">
-                {ref_.gardenName}
-                {!isDisconnected && !isRestored && <Pencil className="w-3 h-3 text-gray-400" />}
-              </h1>
+              <h1 className="text-lg font-semibold text-gray-900">{ref_.gardenName}</h1>
               <p className="text-xs text-gray-500">{ref_.myDisplayName}</p>
             </div>
           </div>
