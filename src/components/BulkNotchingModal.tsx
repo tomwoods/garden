@@ -135,7 +135,7 @@ export const BulkNotchingModal: React.FC<BulkNotchingModalProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100">
-              <span className="text-xl">📖</span>
+              <span className="text-xl">🌿</span>
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">{t('bulkNotching.title')}</h2>
