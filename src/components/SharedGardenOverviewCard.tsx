@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sprout, Heart, Droplets, Sun, Flower2, Scissors, BookOpen, Users, ChevronRight } from 'lucide-react';
+import { Sprout, Users, ChevronRight } from 'lucide-react';
 import { SharedGardenDatabase } from '../lib/sharedGardenDatabase';
 import { parseAgeInfoFromPlant, resolveAgeGroup, type AgeGroup } from '../lib/harvestService';
 import type { Plant } from '../lib/database';
@@ -59,12 +59,12 @@ function computeAgeCounts(plants: Plant[]): AgeCounts {
 }
 
 const activityConfig = [
-  { key: 'tendings', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
-  { key: 'waterings', icon: Droplets, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { key: 'sunlight', icon: Sun, color: 'text-amber-500', bg: 'bg-amber-50' },
-  { key: 'fruits', icon: Flower2, color: 'text-green-500', bg: 'bg-green-50' },
-  { key: 'prunings', icon: Scissors, color: 'text-orange-500', bg: 'bg-orange-50' },
-  { key: 'notchings', icon: BookOpen, color: 'text-purple-500', bg: 'bg-purple-50' },
+  { key: 'tendings', emoji: '🪴', color: 'text-green-700', bg: 'bg-green-50' },
+  { key: 'waterings', emoji: '🚿', color: 'text-blue-700', bg: 'bg-blue-50' },
+  { key: 'sunlight', emoji: '☀️', color: 'text-yellow-700', bg: 'bg-yellow-50' },
+  { key: 'fruits', emoji: '🍎', color: 'text-red-700', bg: 'bg-red-50' },
+  { key: 'prunings', emoji: '✂️', color: 'text-orange-700', bg: 'bg-orange-50' },
+  { key: 'notchings', emoji: '📖', color: 'text-amber-700', bg: 'bg-amber-50' },
 ] as const;
 
 const ageGroupConfig = [
@@ -164,11 +164,11 @@ export const SharedGardenOverviewCard: React.FC<SharedGardenOverviewCardProps> =
 
         {/* Activity rows */}
         <div className="space-y-1">
-          {activityConfig.map(({ key, icon: Icon, color, bg }) => (
+          {activityConfig.map(({ key, emoji, color, bg }) => (
             <div key={key} className="grid grid-cols-4 gap-2 items-center py-1.5">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={`w-6 h-6 ${bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                  <Icon className={`w-3.5 h-3.5 ${color}`} />
+                  <span className={`text-sm ${color} leading-none`} aria-hidden="true">{emoji}</span>
                 </div>
                 <span className="text-xs text-gray-600 truncate">
                   {t(`overview.${key}`)}
