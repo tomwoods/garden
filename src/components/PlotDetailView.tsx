@@ -165,18 +165,20 @@ export const PlotDetailView: React.FC = () => {
       const timestamp = activityData.datetime || Date.now();
       await DatabaseService.logBulkActivity(bulkActivityModal.type, activityData, selectedPlantIds, timestamp);
 
-      const summary = activityData.summary || activityData.topic || activityData.source || activityData.description || activityData.progress_description || '';
-      await DatabaseService.addPlotActivity({
+      const summary = activityData.summary || activityData.topic || activityData.source || activityData.description || '';
+      const progressDesc = activityData.progress_description || '';
+      const additionalInfo = [progressDesc, activityData.additional_info].filter(Boolean).join('\n\n');
+      const plotActivity = await DatabaseService.addPlotActivity({
         plot_id: plot.id,
         activity_type: bulkActivityModal.type,
         datetime: timestamp,
         summary,
-        additional_info: activityData.additional_info || '',
+        additional_info: additionalInfo,
         image_ids: JSON.stringify(images.map((_, i) => i)),
       });
 
       for (let i = 0; i < images.length; i++) {
-        localStorage.setItem(`plot_activity_image_${plot.id}_${Date.now()}_${i}`, JSON.stringify({ dataUrl: images[i], timestamp: Date.now() }));
+        localStorage.setItem(`plot_activity_image_${plot.id}_${plotActivity.id}_${i}`, JSON.stringify({ dataUrl: images[i], timestamp: Date.now() }));
       }
 
       const activities = await DatabaseService.getPlotActivities(plot.id);
@@ -196,6 +198,20 @@ export const PlotDetailView: React.FC = () => {
       for (const plantId of selectedPlantIds) {
         await DatabaseService.addNotching({ plant_id: plantId, ...notchingData, datetime: timestamp });
       }
+
+      const summary = notchingData.progress_description || notchingData.book || '';
+      await DatabaseService.addPlotActivity({
+        plot_id: plot.id,
+        activity_type: 'notching',
+        datetime: timestamp,
+        summary,
+        additional_info: notchingData.additional_info || '',
+        image_ids: '[]',
+      });
+
+      const activities = await DatabaseService.getPlotActivities(plot.id);
+      setPlotActivities(activities);
+
       success(t('toasts.notchingLoggedTitle'), t('toasts.notchingLogged', { count: selectedPlantIds.length }));
     } catch (err) {
       console.error('Failed to log bulk notching:', err);

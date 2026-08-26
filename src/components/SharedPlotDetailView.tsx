@@ -170,9 +170,11 @@ export const SharedPlotDetailView: React.FC = () => {
         }
       }
 
-      const summary = activityData.summary || activityData.topic || activityData.source || activityData.description || activityData.progress_description || '';
+      const summary = activityData.summary || activityData.topic || activityData.source || activityData.description || '';
+      const progressDesc = activityData.progress_description || '';
+      const additionalInfo = [progressDesc, activityData.additional_info].filter(Boolean).join('\n\n');
       const plotActivity = SharedGardenDatabase.addPlotActivity(gardenId,
-        { plot_id: plot.id, activity_type: type, datetime: now, summary, additional_info: activityData.additional_info || '', image_ids: JSON.stringify(images.map((_, i) => i)) },
+        { plot_id: plot.id, activity_type: type, datetime: now, summary, additional_info: additionalInfo, image_ids: JSON.stringify(images.map((_, i) => i)) },
         actor, name
       );
 
@@ -218,8 +220,16 @@ export const SharedPlotDetailView: React.FC = () => {
           actor, name
         );
       }
+
+      const summary = notchingData.progress_description || notchingData.book || '';
+      SharedGardenDatabase.addPlotActivity(gardenId,
+        { plot_id: plot.id, activity_type: 'notching', datetime: now, summary, additional_info: notchingData.additional_info || '', image_ids: '[]' },
+        actor, name
+      );
+
       SharedGardenDatabase.logPlotBulkActivity(gardenId, actor, name, 'notching', plot.id, plot.name);
       syncSharedGarden(gardenId, user).catch(() => {});
+      setPlotActivities(SharedGardenDatabase.getPlotActivities(gardenId, plot.id));
       success('Study session recorded', `Logged for ${selectedPlantIds.length} plants`);
     } catch (err) {
       console.error('Failed to log notching:', err);

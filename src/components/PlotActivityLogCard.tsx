@@ -68,7 +68,7 @@ export const PlotActivityLogCard: React.FC<PlotActivityLogCardProps> = ({
         } else {
           const local: string[] = [];
           for (let i = 0; i < imageIds.length; i++) {
-            const key = `plot_activity_image_${plotId}_${activity.datetime}_${i}`;
+            const key = `plot_activity_image_${plotId}_${activity.id}_${i}`;
             const raw = localStorage.getItem(key);
             if (raw) {
               try { local.push(JSON.parse(raw).dataUrl); } catch { /* skip */ }

@@ -89,7 +89,7 @@ export const PlotActivityEditModal: React.FC<PlotActivityEditModalProps> = ({
           try { return JSON.parse(activity.image_ids || '[]'); } catch { return []; }
         })();
         for (const idx of imageIds) {
-          localStorage.removeItem(`plot_activity_image_${plotId}_${activity.datetime}_${idx}`);
+          localStorage.removeItem(`plot_activity_image_${plotId}_${activity.id}_${idx}`);
         }
       }
       onDeleted();
