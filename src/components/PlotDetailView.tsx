@@ -177,13 +177,25 @@ export const PlotDetailView: React.FC = () => {
         image_ids: JSON.stringify(images.map((_, i) => i)),
       });
 
+      let imageSaveFailed = false;
+      console.log('[PlotActivity] Saving images:', { count: images.length, plotId: plot.id, activityId: plotActivity.id });
       for (let i = 0; i < images.length; i++) {
-        localStorage.setItem(`plot_activity_image_${plot.id}_${plotActivity.id}_${i}`, JSON.stringify({ dataUrl: images[i], timestamp: Date.now() }));
+        const key = `plot_activity_image_${plot.id}_${plotActivity.id}_${i}`;
+        try {
+          localStorage.setItem(key, JSON.stringify({ dataUrl: images[i], timestamp: Date.now() }));
+          console.log('[PlotActivity] Saved image key:', key);
+        } catch (storageErr) {
+          console.error('[PlotActivity] Failed to save image to localStorage:', key, storageErr);
+          imageSaveFailed = true;
+        }
       }
 
       const activities = await DatabaseService.getPlotActivities(plot.id);
       setPlotActivities(activities);
 
+      if (imageSaveFailed && images.length > 0) {
+        error(t('toasts.activityLoggedTitle'), t('toasts.imageSaveFailed', { defaultValue: 'Activity logged but images could not be saved. Storage may be full.' }));
+      }
       success(t('toasts.activityLoggedTitle'), t('toasts.activityLogged', { type: bulkActivityModal.type, count: selectedPlantIds.length }));
     } catch (err) {
       console.error('Failed to log bulk activity:', err);
