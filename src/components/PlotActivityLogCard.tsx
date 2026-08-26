@@ -20,7 +20,7 @@ const activityConfig: Record<string, { emoji: string; color: string; bg: string 
   sunlight: { emoji: '☀️', color: 'text-yellow-700', bg: 'bg-yellow-50' },
   fruit: { emoji: '🍎', color: 'text-red-700', bg: 'bg-red-50' },
   pruning: { emoji: '✂️', color: 'text-orange-700', bg: 'bg-orange-50' },
-  notching: { emoji: '📖', color: 'text-amber-700', bg: 'bg-amber-50' },
+  notching: { emoji: '🌿', color: 'text-amber-700', bg: 'bg-amber-50' },
 };
 
 function getUser() {
