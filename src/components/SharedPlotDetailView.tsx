@@ -45,6 +45,7 @@ export const SharedPlotDetailView: React.FC = () => {
   const [plotActivities, setPlotActivities] = useState<PlotActivity[]>([]);
 
   const { t } = useTranslation('garden_shared');
+  const { t: tModals } = useTranslation('modals');
   const ref_ = gardenId ? getSharedGardenRef(gardenId) : null;
   const user = getUser();
   const isDisconnected = ref_?.disconnected_at != null;
@@ -221,9 +222,11 @@ export const SharedPlotDetailView: React.FC = () => {
         );
       }
 
-      const summary = notchingData.progress_description || notchingData.book || '';
+      const summary = notchingData.book ? tModals(`ruhiBooks.${notchingData.book}`) : '';
+      const progressDesc = notchingData.progress_description || '';
+      const additionalInfo = [progressDesc, notchingData.additional_info].filter(Boolean).join('\n\n');
       SharedGardenDatabase.addPlotActivity(gardenId,
-        { plot_id: plot.id, activity_type: 'notching', datetime: now, summary, additional_info: notchingData.additional_info || '', image_ids: '[]' },
+        { plot_id: plot.id, activity_type: 'notching', datetime: now, summary, additional_info: additionalInfo, image_ids: '[]' },
         actor, name
       );
 

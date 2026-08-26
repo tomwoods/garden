@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Trash2 } from 'lucide-react';
 import type { PlotActivity } from '../lib/database';
+import { RUHI_BOOKS } from '../lib/ruhiBooks';
 import { DatabaseService } from '../lib/database';
 import { SharedGardenDatabase, getSharedGardenRef } from '../lib/sharedGardenDatabase';
 import { deletePlotActivityImage } from '../lib/plotActivityImageSync';
@@ -41,7 +42,12 @@ export const PlotActivityEditModal: React.FC<PlotActivityEditModalProps> = ({
   onDeleted,
 }) => {
   const { t } = useTranslation('garden_shared');
-  const [summary, setSummary] = useState(activity.summary || '');
+  const { t: tModals } = useTranslation('modals');
+  const ruhiBookValues = new Set(RUHI_BOOKS.map(b => b.value));
+  const initialSummary = activity.activity_type === 'notching' && activity.summary && ruhiBookValues.has(activity.summary)
+    ? tModals(`ruhiBooks.${activity.summary}`)
+    : activity.summary || '';
+  const [summary, setSummary] = useState(initialSummary);
   const [additionalInfo, setAdditionalInfo] = useState(activity.additional_info || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

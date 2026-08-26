@@ -46,6 +46,7 @@ export const PlotDetailView: React.FC = () => {
   });
 
   const { t } = useTranslation('garden_shared');
+  const { t: tModals } = useTranslation('modals');
   const { toasts, success, error, removeToast } = useToast();
 
   useEffect(() => {
@@ -199,13 +200,15 @@ export const PlotDetailView: React.FC = () => {
         await DatabaseService.addNotching({ plant_id: plantId, ...notchingData, datetime: timestamp });
       }
 
-      const summary = notchingData.progress_description || notchingData.book || '';
+      const summary = notchingData.book ? tModals(`ruhiBooks.${notchingData.book}`) : '';
+      const progressDesc = notchingData.progress_description || '';
+      const additionalInfo = [progressDesc, notchingData.additional_info].filter(Boolean).join('\n\n');
       await DatabaseService.addPlotActivity({
         plot_id: plot.id,
         activity_type: 'notching',
         datetime: timestamp,
         summary,
-        additional_info: notchingData.additional_info || '',
+        additional_info: additionalInfo,
         image_ids: '[]',
       });
 

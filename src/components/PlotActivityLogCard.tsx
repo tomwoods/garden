@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ImageIcon } from 'lucide-react';
+import { RUHI_BOOKS } from '../lib/ruhiBooks';
 import type { PlotActivity } from '../lib/database';
 import { PlotActivityEditModal } from './PlotActivityEditModal';
 import { getAllPlotActivityImagesLocally, downloadPlotActivityThumbnails } from '../lib/plotActivityImageSync';
@@ -43,6 +44,17 @@ function formatRelativeTime(timestamp: number, t: (key: string, options?: any) =
   return new Date(timestamp).toLocaleDateString();
 }
 
+const ruhiBookValues = new Set(RUHI_BOOKS.map(b => b.value));
+
+function resolveNotchingSummary(activity: PlotActivity, tModals: (key: string) => string): string {
+  if (activity.activity_type !== 'notching') return activity.summary;
+  if (!activity.summary) return '';
+  if (ruhiBookValues.has(activity.summary)) {
+    return tModals(`ruhiBooks.${activity.summary}`);
+  }
+  return activity.summary;
+}
+
 export const PlotActivityLogCard: React.FC<PlotActivityLogCardProps> = ({
   activities,
   gardenId,
@@ -50,6 +62,7 @@ export const PlotActivityLogCard: React.FC<PlotActivityLogCardProps> = ({
   onActivityUpdated,
 }) => {
   const { t } = useTranslation('garden_shared');
+  const { t: tModals } = useTranslation('modals');
   const [editingActivity, setEditingActivity] = useState<PlotActivity | null>(null);
   const [imageCache, setImageCache] = useState<Record<string, string[]>>({});
 
@@ -118,14 +131,20 @@ export const PlotActivityLogCard: React.FC<PlotActivityLogCardProps> = ({
                   </span>
 
                   {/* Summary - truncated, fills available space */}
-                  {activity.summary && (
-                    <span className="text-sm text-gray-500 truncate flex-1 min-w-0">
-                      {activity.summary}
-                    </span>
-                  )}
+                  {(() => {
+                    const displaySummary = resolveNotchingSummary(activity, tModals);
+                    return displaySummary ? (
+                      <span className="text-sm text-gray-500 truncate flex-1 min-w-0">
+                        {displaySummary}
+                      </span>
+                    ) : null;
+                  })()}
 
                   {/* Spacer when no summary */}
-                  {!activity.summary && <span className="flex-1" />}
+                  {(() => {
+                    const displaySummary = resolveNotchingSummary(activity, tModals);
+                    return !displaySummary ? <span className="flex-1" /> : null;
+                  })()}
 
                   {/* Author */}
                   {activity.authored_by_display_name && (
