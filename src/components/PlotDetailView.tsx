@@ -404,7 +404,7 @@ export const PlotDetailView: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
                 >
-                  <span className="text-2xl">📖</span>
+                  <span className="text-2xl">🌿</span>
                   <div className="text-left">
                     <div className="font-medium">{t('plotActivities.notching')}</div>
                     <div className="text-sm opacity-80">{t('plotActivities.notchingDesc')}</div>
