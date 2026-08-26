@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, Droplets, Sun, Flower2, Scissors, BookOpen, ImageIcon } from 'lucide-react';
+import { ImageIcon } from 'lucide-react';
 import type { PlotActivity } from '../lib/database';
 import { PlotActivityEditModal } from './PlotActivityEditModal';
 import { getAllPlotActivityImagesLocally, downloadPlotActivityThumbnails } from '../lib/plotActivityImageSync';
@@ -13,13 +13,13 @@ interface PlotActivityLogCardProps {
   onActivityUpdated: () => void;
 }
 
-const activityConfig: Record<string, { icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string; bg: string }> = {
-  tending: { icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
-  watering: { icon: Droplets, color: 'text-blue-500', bg: 'bg-blue-50' },
-  sunlight: { icon: Sun, color: 'text-amber-500', bg: 'bg-amber-50' },
-  fruit: { icon: Flower2, color: 'text-green-500', bg: 'bg-green-50' },
-  pruning: { icon: Scissors, color: 'text-orange-500', bg: 'bg-orange-50' },
-  notching: { icon: BookOpen, color: 'text-teal-500', bg: 'bg-teal-50' },
+const activityConfig: Record<string, { emoji: string; color: string; bg: string }> = {
+  tending: { emoji: '🪴', color: 'text-green-700', bg: 'bg-green-50' },
+  watering: { emoji: '🚿', color: 'text-blue-700', bg: 'bg-blue-50' },
+  sunlight: { emoji: '☀️', color: 'text-yellow-700', bg: 'bg-yellow-50' },
+  fruit: { emoji: '🍎', color: 'text-red-700', bg: 'bg-red-50' },
+  pruning: { emoji: '✂️', color: 'text-orange-700', bg: 'bg-orange-50' },
+  notching: { emoji: '📖', color: 'text-amber-700', bg: 'bg-amber-50' },
 };
 
 function getUser() {
@@ -102,21 +102,18 @@ export const PlotActivityLogCard: React.FC<PlotActivityLogCardProps> = ({
           {activities.map((activity) => {
             const images = imageCache[activity.id] || [];
             const config = activityConfig[activity.activity_type] || activityConfig.tending;
-            const Icon = config.icon;
             return (
               <button
                 key={activity.id}
                 onClick={() => setEditingActivity(activity)}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors group"
+                className={`w-full text-left px-3 py-2 ${config.bg} hover:brightness-95 rounded-lg transition-all group`}
               >
                 <div className="flex items-center gap-2.5">
-                  {/* Activity type icon */}
-                  <div className={`w-7 h-7 ${config.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                    <Icon className={`w-3.5 h-3.5 ${config.color}`} />
-                  </div>
+                  {/* Activity emoji */}
+                  <span className="text-base flex-shrink-0 leading-none">{config.emoji}</span>
 
                   {/* Activity label */}
-                  <span className="text-sm font-medium text-gray-900 flex-shrink-0">
+                  <span className={`text-sm font-medium ${config.color} flex-shrink-0`}>
                     {t(`plotActivities.${activity.activity_type}`) || activity.activity_type}
                   </span>
 
