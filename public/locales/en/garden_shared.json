@@ -167,6 +167,8 @@
   "changeLog": {
     "title": "Garden activity",
     "showMore": "Show more ({{count}} remaining)",
+    "showActivity": "Show activity",
+    "hideActivity": "Hide activity",
     "add_plant": "{{actor}} added {{label}}",
     "edit_plant": "{{actor}} updated {{label}}",
     "remove_plant": "{{actor}} removed {{label}}",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardList, ChevronDown, FileText } from 'lucide-react';
+import { ClipboardList, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { SharedGardenDatabase, type GardenChangeLogEntry } from '../lib/sharedGardenDatabase';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -21,6 +21,7 @@ export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ garden
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const formatEntry = (entry: GardenChangeLogEntry): string => {
     const actor = entry.actor_display_name || 'Someone';
@@ -77,32 +78,43 @@ export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ garden
             {t('activityReport.generate')}
           </button>
         )}
-      </div>
-
-      <div className="space-y-2">
-        {entries.map(entry => (
-          <div key={entry.id} className="flex items-start justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
-            <p className="text-sm text-gray-700 leading-relaxed flex-1">{formatEntry(entry)}</p>
-            <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">{dayjs(entry.occurred_at).fromNow()}</span>
-          </div>
-        ))}
-      </div>
-
-      {hasMore && (
         <button
-          onClick={handleShowMore}
-          disabled={loading}
-          className="w-full mt-3 flex items-center justify-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors py-1"
+          onClick={() => setExpanded(prev => !prev)}
+          aria-label={expanded ? t('changeLog.hideActivity') : t('changeLog.showActivity')}
+          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
         >
-          {loading ? (
-            <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <ChevronDown className="w-4 h-4" />
-              {t('changeLog.showMore', { count: totalCount - entries.length })}
-            </>
-          )}
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
+      </div>
+
+      {expanded && (
+        <>
+          <div className="space-y-2">
+            {entries.map(entry => (
+              <div key={entry.id} className="flex items-start justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+                <p className="text-sm text-gray-700 leading-relaxed flex-1">{formatEntry(entry)}</p>
+                <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">{dayjs(entry.occurred_at).fromNow()}</span>
+              </div>
+            ))}
+          </div>
+
+          {hasMore && (
+            <button
+              onClick={handleShowMore}
+              disabled={loading}
+              className="w-full mt-3 flex items-center justify-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors py-1"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  {t('changeLog.showMore', { count: totalCount - entries.length })}
+                </>
+              )}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

@@ -167,6 +167,8 @@
   "changeLog": {
     "title": "Aktivite jaden",
     "showMore": "Montre plis ({{count}} ki rete)",
+    "showActivity": "Montre aktivite",
+    "hideActivity": "Kache aktivite",
     "add_plant": "{{actor}} ajoute {{label}}",
     "edit_plant": "{{actor}} mete ajou {{label}}",
     "remove_plant": "{{actor}} retire {{label}}",
