@@ -64,7 +64,7 @@ const activityConfig = [
   { key: 'sunlight', emoji: '☀️', color: 'text-yellow-700', bg: 'bg-yellow-50' },
   { key: 'fruits', emoji: '🍎', color: 'text-red-700', bg: 'bg-red-50' },
   { key: 'prunings', emoji: '✂️', color: 'text-orange-700', bg: 'bg-orange-50' },
-  { key: 'notchings', emoji: '📖', color: 'text-amber-700', bg: 'bg-amber-50' },
+  { key: 'notchings', emoji: '🌿', color: 'text-amber-700', bg: 'bg-amber-50' },
 ] as const;
 
 const ageGroupConfig = [
