@@ -377,7 +377,7 @@ async function checkMissedCare() {
       const overduePlants = getOverduePlants(schedules, now);
       if (overduePlants.length >= 2) {
         const templates = await getGardenOverdueTemplates();
-        const title = templates?.gardenOverdueTitle || 'Your garden is calling';
+        const title = templates?.gardenOverdueTitle || 'Your garden needs attention';
         const bodyTemplate = templates?.gardenOverdueBody || '{{count}} plants are waiting to be tended';
         const body = bodyTemplate.replace('{{count}}', overduePlants.length);
 
@@ -450,7 +450,7 @@ self.addEventListener('message', async (event) => {
         const now = Date.now();
         const overdueTitle    = payload.overdueTitle    || 'Time to tend your garden';
         const overdueTemplate = payload.overdueTemplate || null;
-        const gardenOverdueTitle = payload.gardenOverdueTitle || 'Your garden is calling';
+        const gardenOverdueTitle = payload.gardenOverdueTitle || 'Your garden needs attention';
         const gardenOverdueBody = payload.gardenOverdueBody || '{{count}} plants are waiting to be tended';
 
         const overduePlants = [];

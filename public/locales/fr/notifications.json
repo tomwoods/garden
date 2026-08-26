@@ -18,7 +18,7 @@
   "swOverdue_other": "{{name}} attend d'être soigné — {{days}} jours de retard",
   "swGardenTime": "Il est temps de soigner votre jardin",
   "swGardenBody": "Certaines de vos plantes ont besoin d'attention",
-  "swGardenOverdueTitle": "Votre jardin vous appelle",
+  "swGardenOverdueTitle": "Votre jardin a besoin d'attention",
   "swGardenOverdueBody": "{{count}} plante attend d'être soignée",
   "swGardenOverdueBody_other": "{{count}} plantes attendent d'être soignées",
   "imageQueued": "Image en attente de téléchargement",
