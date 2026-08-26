@@ -539,7 +539,7 @@ export const SharedGardenView: React.FC = () => {
     if (!gardenId || !ref_ || !user || ref_.disconnected || ref_.restored) return;
     const sharedUser: SharedImageUser = { userId: user.userId, signingPrivateKey: user.signingPrivateKey };
     syncMissingSharedImages(ref_, plants, sharedUser);
-  }, [gardenId, ref_, user, plants, refreshKey]);
+  }, [gardenId, ref_, user, plants]);
 
   const runSync = async (ref: SharedGardenRef, showSuccessToast: boolean) => {
     if (!user || isSyncing) return;

@@ -270,6 +270,16 @@ export async function deleteSharedGardenImage(
   }
 }
 
+export function plantHasImageRecord(plant: { additional_info?: string }): boolean {
+  if (!plant.additional_info) return false;
+  try {
+    const info = JSON.parse(plant.additional_info);
+    return Boolean(info.imageId);
+  } catch {
+    return false;
+  }
+}
+
 export async function syncMissingSharedImages(
   ref: SharedGardenRef,
   plants: Array<{ id: string; additional_info?: string }>,
@@ -278,6 +288,7 @@ export async function syncMissingSharedImages(
   if (!navigator.onLine) return;
 
   for (const plant of plants) {
+    if (!plantHasImageRecord(plant)) continue;
     const cached = getSharedImageLocally(ref.gardenId, plant.id);
     if (cached) continue;
     await downloadAndCacheSharedThumbnail(ref, plant.id, user);

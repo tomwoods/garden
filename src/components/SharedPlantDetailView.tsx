@@ -32,6 +32,7 @@ import {
   getSharedImageLocally,
   downloadAndCacheSharedThumbnail,
   deleteSharedGardenImage,
+  plantHasImageRecord,
   type SharedImageUser,
 } from '../lib/sharedImageSync';
 
@@ -145,7 +146,11 @@ export const SharedPlantDetailView: React.FC = () => {
   }, [gardenId, plantId, loadData]);
 
   useEffect(() => {
-    if (!gardenId || !plantId || !ref_ || !user) return;
+    if (!gardenId || !plantId || !ref_ || !user || !plant) return;
+    if (!plantHasImageRecord(plant)) {
+      setPlantImage(null);
+      return;
+    }
     const cached = getSharedImageLocally(gardenId, plantId);
     if (cached) {
       setPlantImage(cached);
@@ -156,7 +161,7 @@ export const SharedPlantDetailView: React.FC = () => {
         if (dataUrl) setPlantImage(dataUrl);
       });
     }
-  }, [gardenId, plantId, ref_, user, imageRefreshKey]);
+  }, [gardenId, plantId, ref_, user, plant, imageRefreshKey]);
 
   useEffect(() => {
     const handler = (e: Event) => {
