@@ -249,7 +249,7 @@ export const BranchesModal: React.FC<BranchesModalProps> = ({
 
   const getConfig = () => {
     if (subType === 'bud') return { title: t('branches.addBud'), emoji: '🌿', description: t('branches.addBudDesc', { name: plantName }) };
-    if (subType === 'notching') return { title: t('branches.recordNotching'), emoji: '📖', description: t('branches.notchingDesc', { name: plantName }) };
+    if (subType === 'notching') return { title: t('branches.recordNotching'), emoji: '🌿', description: t('branches.notchingDesc', { name: plantName }) };
     return { title: t('branches.recordCapability'), emoji: '✨', description: t('branches.capabilityDesc', { name: plantName }) };
   };
 
