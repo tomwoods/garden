@@ -163,7 +163,7 @@ export async function downloadPlotActivityThumbnails(
       thumbnails[img.imageIndex] = dataUrl;
     }
 
-    return thumbnails.filter((thumbnail): thumbnail is string => Boolean(thumbnail));
+    return thumbnails;
   } catch (error) {
     console.debug('[plotActivityImageSync] Download thumbnails failed:', error);
     return [];
