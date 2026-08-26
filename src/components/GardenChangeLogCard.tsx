@@ -68,7 +68,16 @@ export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ garden
         <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <ClipboardList className="w-4 h-4 text-gray-600" />
         </div>
-        <h3 className="font-medium text-gray-900 text-sm flex-1">{t('changeLog.title')}</h3>
+        <h3 className="font-medium text-gray-900 text-sm flex-1 flex items-center gap-1.5">
+          {t('changeLog.title')}
+          <button
+            onClick={() => setExpanded(prev => !prev)}
+            aria-label={expanded ? t('changeLog.hideActivity') : t('changeLog.showActivity')}
+            className="p-1 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
+          >
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </h3>
         {onGenerateReport && (
           <button
             onClick={onGenerateReport}
@@ -78,13 +87,6 @@ export const GardenChangeLogCard: React.FC<GardenChangeLogCardProps> = ({ garden
             {t('activityReport.generate')}
           </button>
         )}
-        <button
-          onClick={() => setExpanded(prev => !prev)}
-          aria-label={expanded ? t('changeLog.hideActivity') : t('changeLog.showActivity')}
-          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
-        >
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
       </div>
 
       {expanded && (
