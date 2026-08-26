@@ -18,6 +18,9 @@
   "swOverdue_other": "{{name}} está esperando ser cuidado — {{days}} días de retraso",
   "swGardenTime": "Es hora de cuidar tu jardín",
   "swGardenBody": "Algunas de tus plantas necesitan atención",
+  "swGardenOverdueTitle": "Tu jardín te llama",
+  "swGardenOverdueBody": "{{count}} planta está esperando ser cuidada",
+  "swGardenOverdueBody_other": "{{count}} plantas están esperando ser cuidadas",
   "imageQueued": "Imagen en cola para subir",
   "imageLocalOnly": "Imagen guardada localmente pero la subida falló"
 }

@@ -137,16 +137,33 @@ async function getAllNotifications() {
 
 // ─── Plant schedule store (persists across SW restarts) ───────────────────────
 
-async function savePlantSchedules(plants) {
+async function savePlantSchedules(plants, gardenOverdueTitle, gardenOverdueBody) {
   const db = await openNotificationDB();
   const tx = db.transaction([PLANT_SCHEDULE_STORE], 'readwrite');
   const store = tx.objectStore(PLANT_SCHEDULE_STORE);
   for (const plant of plants) {
     store.put({ plantId: plant.id, name: plant.name, nextScheduledCare: plant.next_scheduled_care });
   }
+  if (gardenOverdueTitle && gardenOverdueBody) {
+    store.put({
+      plantId: '__garden_overdue_templates__',
+      gardenOverdueTitle,
+      gardenOverdueBody
+    });
+  }
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror   = () => reject(tx.error);
+  });
+}
+
+async function getGardenOverdueTemplates() {
+  const db = await openNotificationDB();
+  const tx = db.transaction([PLANT_SCHEDULE_STORE], 'readonly');
+  const request = tx.objectStore(PLANT_SCHEDULE_STORE).get('__garden_overdue_templates__');
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror   = () => reject(request.error);
   });
 }
 
@@ -319,35 +336,67 @@ async function checkAndFireNotifications() {
 
 // ─── Overdue care checks — works with or without an open window ───────────────
 
+function buildGardenOverviewOptions(title, body, tag) {
+  return {
+    body,
+    icon: '/icon-192x192.png',
+    badge: '/icon-badge.png',
+    tag,
+    renotify: false,
+    data: {
+      url: self.location.origin
+    },
+    actions: [
+      { action: 'open', title: 'Open garden' }
+    ]
+  };
+}
+
+function getOverduePlants(schedules, now) {
+  const overdue = [];
+  for (const plant of schedules) {
+    if (plant.plantId === '__garden_overdue_templates__') continue;
+    if (plant.nextScheduledCare && plant.nextScheduledCare < now) {
+      const hoursSinceDue = (now - plant.nextScheduledCare) / (1000 * 60 * 60);
+      if (hoursSinceDue >= 24) {
+        overdue.push(plant);
+      }
+    }
+  }
+  return overdue;
+}
+
 async function checkMissedCare() {
   try {
     const now = Date.now();
-    const oneDayMs = 24 * 60 * 60 * 1000;
 
     // Prefer reading from local IndexedDB so this works when no window is open
     const schedules = await getAllPlantSchedules();
 
     if (schedules.length > 0) {
-      for (const plant of schedules) {
-        if (plant.nextScheduledCare && plant.nextScheduledCare < now) {
-          const hoursSinceDue = (now - plant.nextScheduledCare) / (1000 * 60 * 60);
-          if (hoursSinceDue >= 24) {
-            const daysOverdue = Math.floor(hoursSinceDue / 24);
-            const body = plant.overdueBodyTemplate
-              ? plant.overdueBodyTemplate.replace('{{days}}', daysOverdue)
-              : (daysOverdue === 1
-                ? `${plant.name} is waiting to be tended — a day overdue.`
-                : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`);
-            const notifTitle = plant.overdueTitle || 'Time to tend your garden';
+      const overduePlants = getOverduePlants(schedules, now);
+      if (overduePlants.length >= 2) {
+        const templates = await getGardenOverdueTemplates();
+        const title = templates?.gardenOverdueTitle || 'Your garden is calling';
+        const bodyTemplate = templates?.gardenOverdueBody || '{{count}} plants are waiting to be tended';
+        const body = bodyTemplate.replace('{{count}}', overduePlants.length);
 
-            await self.registration.showNotification(notifTitle, buildNotificationOptions(
-              plant.plantId,
-              notifTitle,
-              body,
-              `plant-overdue-${plant.plantId}`
-            ));
-          }
-        }
+        await self.registration.showNotification(
+          title,
+          buildGardenOverviewOptions(title, body, 'garden-overdue')
+        );
+      } else if (overduePlants.length === 1) {
+        const plant = overduePlants[0];
+        const hoursSinceDue = (now - plant.nextScheduledCare) / (1000 * 60 * 60);
+        const daysOverdue = Math.floor(hoursSinceDue / 24);
+        const body = daysOverdue === 1
+          ? `${plant.name} is waiting to be tended — a day overdue.`
+          : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`;
+
+        await self.registration.showNotification(
+          'Time to tend your garden',
+          buildNotificationOptions(plant.plantId, 'Time to tend your garden', body, `plant-overdue-${plant.plantId}`)
+        );
       }
       return;
     }
@@ -392,38 +441,61 @@ self.addEventListener('message', async (event) => {
 
     case 'PLANTS_DATA':
       if (payload.plants && Array.isArray(payload.plants)) {
-        await savePlantSchedules(payload.plants);
+        await savePlantSchedules(
+          payload.plants,
+          payload.gardenOverdueTitle,
+          payload.gardenOverdueBody
+        );
 
         const now = Date.now();
         const overdueTitle    = payload.overdueTitle    || 'Time to tend your garden';
         const overdueTemplate = payload.overdueTemplate || null;
+        const gardenOverdueTitle = payload.gardenOverdueTitle || 'Your garden is calling';
+        const gardenOverdueBody = payload.gardenOverdueBody || '{{count}} plants are waiting to be tended';
 
+        const overduePlants = [];
         for (const plant of payload.plants) {
           if (plant.next_scheduled_care && plant.next_scheduled_care < now) {
             const hoursSinceDue = (now - plant.next_scheduled_care) / (1000 * 60 * 60);
             if (hoursSinceDue >= 24) {
-              const daysOverdue = Math.floor(hoursSinceDue / 24);
-              const body = overdueTemplate
-                ? overdueTemplate.replace('{{name}}', plant.name).replace('{{days}}', daysOverdue)
-                : (daysOverdue === 1
-                  ? `${plant.name} is waiting to be tended — a day overdue.`
-                  : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`);
-
-              await self.registration.showNotification(overdueTitle, buildNotificationOptions(
-                plant.id,
-                overdueTitle,
-                body,
-                `plant-overdue-${plant.id}`
-              ));
+              overduePlants.push(plant);
             }
           }
+        }
+
+        if (overduePlants.length >= 2) {
+          const body = gardenOverdueBody.replace('{{count}}', overduePlants.length);
+          await self.registration.showNotification(
+            gardenOverdueTitle,
+            buildGardenOverviewOptions(gardenOverdueTitle, body, 'garden-overdue')
+          );
+        } else if (overduePlants.length === 1) {
+          const plant = overduePlants[0];
+          const hoursSinceDue = (now - plant.next_scheduled_care) / (1000 * 60 * 60);
+          const daysOverdue = Math.floor(hoursSinceDue / 24);
+          const body = overdueTemplate
+            ? overdueTemplate.replace('{{name}}', plant.name).replace('{{days}}', daysOverdue)
+            : (daysOverdue === 1
+              ? `${plant.name} is waiting to be tended — a day overdue.`
+              : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`);
+
+          await self.registration.showNotification(overdueTitle, buildNotificationOptions(
+            plant.id,
+            overdueTitle,
+            body,
+            `plant-overdue-${plant.id}`
+          ));
         }
       }
       break;
 
     case 'SYNC_PLANT_SCHEDULES':
       if (payload.plants && Array.isArray(payload.plants)) {
-        await savePlantSchedules(payload.plants);
+        await savePlantSchedules(
+          payload.plants,
+          payload.gardenOverdueTitle,
+          payload.gardenOverdueBody
+        );
       }
       break;
 

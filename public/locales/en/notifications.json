@@ -18,6 +18,9 @@
   "swOverdue_other": "{{name}} is waiting to be tended — {{days}} days overdue",
   "swGardenTime": "Time to tend your garden",
   "swGardenBody": "Some of your plants need attention",
+  "swGardenOverdueTitle": "Your garden is calling",
+  "swGardenOverdueBody": "{{count}} plant is waiting to be tended",
+  "swGardenOverdueBody_other": "{{count}} plants are waiting to be tended",
   "imageQueued": "Image queued for upload",
   "imageLocalOnly": "Image saved locally but upload failed"
 }

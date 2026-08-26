@@ -132,7 +132,11 @@ function App() {
               const plants = await DatabaseService.getAllPlants();
               registration.active?.postMessage({
                 type: 'SYNC_PLANT_SCHEDULES',
-                payload: { plants }
+                payload: {
+                  plants,
+                  gardenOverdueTitle: i18n.t('swGardenOverdueTitle', { ns: 'notifications' }),
+                  gardenOverdueBody: i18n.t('swGardenOverdueBody_other', { ns: 'notifications', count: '{{count}}' }),
+                }
               });
             } catch (_) {
               // non-critical
@@ -149,6 +153,8 @@ function App() {
                   plants,
                   overdueTitle: i18n.t('swGardenTime', { ns: 'notifications' }),
                   overdueTemplate: i18n.t('swOverdue_other', { ns: 'notifications', name: '{{name}}', days: '{{days}}' }),
+                  gardenOverdueTitle: i18n.t('swGardenOverdueTitle', { ns: 'notifications' }),
+                  gardenOverdueBody: i18n.t('swGardenOverdueBody_other', { ns: 'notifications', count: '{{count}}' }),
                 }
               });
             }

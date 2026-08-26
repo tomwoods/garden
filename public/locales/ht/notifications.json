@@ -18,6 +18,9 @@
   "swOverdue_other": "{{name}} ap tann pou okipe — {{days}} jou anreta",
   "swGardenTime": "Li lè pou okipe jaden ou",
   "swGardenBody": "Kèk plant ou yo bezwen atansyon",
+  "swGardenOverdueTitle": "Jaden ou ap rele ou",
+  "swGardenOverdueBody": "{{count}} plant ap tann pou okipe",
+  "swGardenOverdueBody_other": "{{count}} plant ap tann pou okipe",
   "imageQueued": "Imaj an atant pou voye",
   "imageLocalOnly": "Imaj sovgade lokalman men telechajman echwe"
 }
