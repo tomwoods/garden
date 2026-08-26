@@ -156,8 +156,8 @@ export const ActivityListView: React.FC = () => {
         buttonColor: 'bg-indigo-600 hover:bg-indigo-700'
       },
       notching: {
-        emoji: '📖',
-        title: 'Notching',
+        emoji: '🌿',
+        title: 'Branches',
         color: 'text-amber-700',
         bgColor: 'bg-amber-50',
         borderColor: 'border-amber-200',
