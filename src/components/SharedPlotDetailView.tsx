@@ -179,9 +179,9 @@ export const SharedPlotDetailView: React.FC = () => {
       );
 
       if (images.length > 0 && ref_) {
-        for (let i = 0; i < images.length; i++) {
-          uploadPlotActivityImage(ref_, plotActivity.id, i, images[i], { userId: user.userId, signingPrivateKey: user.signature_private_key }).catch(() => {});
-        }
+        await Promise.all(images.map((image, index) =>
+          uploadPlotActivityImage(ref_, plotActivity.id, index, image, { userId: user.userId, signingPrivateKey: user.signature_private_key })
+        ));
       }
 
       SharedGardenDatabase.logPlotBulkActivity(gardenId, actor, name, type, plot.id, plot.name);

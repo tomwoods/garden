@@ -91,7 +91,7 @@ export const PlotActivityLogCard: React.FC<PlotActivityLogCardProps> = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('plotActivityLog.title')}</h3>
         <div className="space-y-3">
           {activities.map((activity) => {
-            const images = imageCache[activity.id] || [];
+            const images = (imageCache[activity.id] || []).filter(Boolean);
             return (
               <button
                 key={activity.id}
