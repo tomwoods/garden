@@ -4,6 +4,7 @@ import { X, Plus, Camera, Trash2 } from 'lucide-react';
 import { PlantSelectorChecklist } from './PlantSelectorChecklist';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
 import { CropModal } from './CropModal';
+import { resizeImage } from '../lib/imageProcessing';
 import type { Plant } from '../lib/database';
 
 interface BulkActivityModalProps {
@@ -159,7 +160,8 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
 
   const handleCropConfirm = async (blob: Blob) => {
     try {
-      const dataUrl = await blobToDataUrl(blob);
+      const rawDataUrl = await blobToDataUrl(blob);
+      const dataUrl = await resizeImage(rawDataUrl, 720);
       setImages(prev => [...prev, dataUrl].slice(0, 4));
     } catch {
       // silently ignore
