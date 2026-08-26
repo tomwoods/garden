@@ -135,6 +135,17 @@ export interface Capability {
   updated_at: number;
 }
 
+export interface PlotActivity {
+  id: string;
+  plot_id: string;
+  activity_type: string;
+  datetime: number;
+  updated_at: number;
+  summary: string;
+  additional_info: string;
+  image_ids: string;
+}
+
 export interface PlotWithMembers extends Plot {
   members: Plant[];
 }
@@ -469,6 +480,17 @@ export class DatabaseService {
       updated_at NUMBER NOT NULL
     `);
 
+    await this.createTable('plot_activities', `
+      id STRING PRIMARY KEY,
+      plot_id STRING NOT NULL,
+      activity_type STRING NOT NULL,
+      datetime NUMBER NOT NULL,
+      updated_at NUMBER NOT NULL,
+      summary STRING,
+      additional_info STRING,
+      image_ids STRING
+    `);
+
     // Tombstone table — only populated for shared plants, zero overhead otherwise
     await this.createTable('shared_plant_tombstones', `
       id STRING PRIMARY KEY,
@@ -502,6 +524,7 @@ export class DatabaseService {
       { name: 'buds', ts: 'created_at' },
       { name: 'notchings', ts: 'datetime' },
       { name: 'capabilities', ts: 'created_at' },
+      { name: 'plot_activities', ts: 'datetime' },
     ];
     for (const { name, ts } of tables) {
       try {
@@ -1868,5 +1891,42 @@ export class DatabaseService {
     if (!privateKey || !publicKey || !userId) return null;
 
     return { id: userId, signature_private_key: privateKey, signature_public_key: publicKey };
+  }
+
+  // ─── Plot Activity operations ─────────────────────────────────────────────
+
+  static async addPlotActivity(activity: Omit<PlotActivity, 'id' | 'updated_at'>): Promise<PlotActivity> {
+    const now = Date.now();
+    const newActivity: PlotActivity = { id: uuidv4(), updated_at: now, ...activity };
+
+    alasql('INSERT INTO plot_activities VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
+      newActivity.id,
+      newActivity.plot_id,
+      newActivity.activity_type,
+      newActivity.datetime,
+      newActivity.updated_at,
+      newActivity.summary || null,
+      newActivity.additional_info || null,
+      newActivity.image_ids || '[]',
+    ]);
+
+    await this.saveToStorage();
+    return newActivity;
+  }
+
+  static async getPlotActivities(plotId: string): Promise<PlotActivity[]> {
+    return alasql('SELECT * FROM plot_activities WHERE plot_id = ? ORDER BY datetime DESC', [plotId]);
+  }
+
+  static async updatePlotActivity(id: string, updates: Partial<Omit<PlotActivity, 'id' | 'plot_id' | 'datetime' | 'updated_at'>>): Promise<void> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    alasql(`UPDATE plot_activities SET ${fields}, updated_at = ? WHERE id = ?`, [...values, Date.now(), id]);
+    await this.saveToStorage();
+  }
+
+  static async deletePlotActivity(id: string): Promise<void> {
+    alasql('DELETE FROM plot_activities WHERE id = ?', [id]);
+    await this.saveToStorage();
   }
 }

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Camera, Trash2 } from 'lucide-react';
 import { PlantSelectorChecklist } from './PlantSelectorChecklist';
 import { AdditionalInfoMenu } from './AdditionalInfoMenu';
+import { CropModal } from './CropModal';
 import type { Plant } from '../lib/database';
 
 interface BulkActivityModalProps {
@@ -11,7 +12,7 @@ interface BulkActivityModalProps {
   plotName: string;
   plants: Plant[];
   activityType: 'tending' | 'watering' | 'sunlight' | 'fruit';
-  onSubmit: (data: any, selectedPlantIds: string[]) => Promise<void>;
+  onSubmit: (data: any, selectedPlantIds: string[], images: string[]) => Promise<void>;
 }
 
 export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
@@ -31,6 +32,9 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
   const [customDateTime, setCustomDateTime] = useState<number>(Date.now());
   const { t } = useTranslation('modals');
   const [showDateTimeMenu, setShowDateTimeMenu] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -50,6 +54,8 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
       setShowDateTimeField(false);
       setCustomDateTime(Date.now());
       setShowDateTimeMenu(false);
+      setImages([]);
+      setCropSrc(null);
     }
   }, [isOpen, activityType, plants]);
 
@@ -69,7 +75,7 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
         datetime: showDateTimeField ? customDateTime : Date.now()
       };
 
-      await onSubmit(submitData, Array.from(selectedPlantIds));
+      await onSubmit(submitData, Array.from(selectedPlantIds), images);
       onClose();
     } catch (error) {
       console.error('Failed to save bulk activity:', error);
@@ -110,6 +116,59 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
 
   const handleSetDateTime = () => {
     setShowDateTimeField(true);
+  };
+
+  const handleAddImage = () => {
+    if (images.length >= 4) return;
+    fileInputRef.current?.click();
+  };
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) resolve(e.target.result as string);
+        else reject(new Error('Failed to read file'));
+      };
+      reader.onerror = () => reject(new Error('FileReader error'));
+      reader.readAsDataURL(file);
+    });
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      const dataUrl = await readFileAsDataUrl(files[0]);
+      setCropSrc(dataUrl);
+    } catch {
+      // silently ignore
+    }
+    e.target.value = '';
+  };
+
+  const blobToDataUrl = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) resolve(reader.result as string);
+        else reject(new Error('FileReader produced empty result'));
+      };
+      reader.onerror = () => reject(new Error('FileReader error'));
+      reader.readAsDataURL(blob);
+    });
+
+  const handleCropConfirm = async (blob: Blob) => {
+    try {
+      const dataUrl = await blobToDataUrl(blob);
+      setImages(prev => [...prev, dataUrl].slice(0, 4));
+    } catch {
+      // silently ignore
+    }
+    setCropSrc(null);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   if (!isOpen) return null;
@@ -325,8 +384,9 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
             </button>
             {showDateTimeMenu && (
               <AdditionalInfoMenu
-                mode="datetime"
+                mode="plotActivity"
                 onSetDateTime={handleSetDateTime}
+                onAddImage={handleAddImage}
                 onClose={() => setShowDateTimeMenu(false)}
               />
             )}
@@ -350,6 +410,36 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
             onSelectionChange={setSelectedPlantIds}
           />
 
+          {/* Image Thumbnails */}
+          {images.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {images.map((img, idx) => (
+                <div key={idx} className="relative group">
+                  <img
+                    src={img}
+                    alt={`Activity image ${idx + 1}`}
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    className="absolute top-0 right-0 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <button
@@ -370,6 +460,14 @@ export const BulkActivityModal: React.FC<BulkActivityModalProps> = ({
         </form>
       </div>
       </div>
+
+      {cropSrc && (
+        <CropModal
+          imageSrc={cropSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
     </>
   );
 };

@@ -35,7 +35,9 @@
     "fruit": "Fruit",
     "fruitDesc": "Enregistrer le service des membres de la parcelle",
     "notching": "Encochage",
-    "notchingDesc": "Enregistrer une session d'étude Ruhi"
+    "notchingDesc": "Enregistrer une session d'étude Ruhi",
+    "tending": "Soin",
+    "watering": "Arrosage"
   },
   "toasts": {
     "plotUpdated": "{{name}} a été mis à jour",
@@ -288,5 +290,19 @@
     "successDesc": "Le nouveau nom apparaîtra pour tous les jardiniers après leur prochaine synchronisation.",
     "errorOffline": "Vous devez être en ligne pour renommer un jardin.",
     "errorGeneral": "Impossible de renommer le jardin. Veuillez réessayer."
+  },
+  "plotActivityLog": {
+    "title": "Journal des activités de parcelle",
+    "justNow": "À l'instant",
+    "minutesAgo": "Il y a {{count}} min",
+    "hoursAgo": "Il y a {{count}}h",
+    "daysAgo": "Il y a {{count}}j",
+    "summary": "Résumé",
+    "additionalInfo": "Notes supplémentaires",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer cette activité de parcelle ? Cette action est irréversible."
   }
 }

@@ -35,7 +35,9 @@
     "fruit": "Fruto",
     "fruitDesc": "Registrar servicio por miembros de la parcela",
     "notching": "Muesca",
-    "notchingDesc": "Registrar sesión de estudio Ruhi"
+    "notchingDesc": "Registrar sesión de estudio Ruhi",
+    "tending": "Cuidado",
+    "watering": "Riego"
   },
   "toasts": {
     "plotUpdated": "{{name}} ha sido actualizado",
@@ -288,5 +290,19 @@
     "successDesc": "El nuevo nombre aparecerá para todos los jardineros después de su próxima sincronización.",
     "errorOffline": "Debes estar en línea para renombrar un jardín.",
     "errorGeneral": "No se pudo renombrar el jardín. Por favor, inténtalo de nuevo."
+  },
+  "plotActivityLog": {
+    "title": "Registro de actividades de parcela",
+    "justNow": "Justo ahora",
+    "minutesAgo": "Hace {{count}} min",
+    "hoursAgo": "Hace {{count}}h",
+    "daysAgo": "Hace {{count}}d",
+    "summary": "Resumen",
+    "additionalInfo": "Notas adicionales",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar esta actividad de parcela? Esta acción no se puede deshacer."
   }
 }

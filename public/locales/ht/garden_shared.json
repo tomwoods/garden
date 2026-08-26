@@ -35,7 +35,9 @@
     "fruit": "Fwi",
     "fruitDesc": "Anregistre sèvis pa manm parèl",
     "notching": "Antay",
-    "notchingDesc": "Anregistre sesyon etid Ruhi"
+    "notchingDesc": "Anregistre sesyon etid Ruhi",
+    "tending": "Swen",
+    "watering": "Wouze"
   },
   "toasts": {
     "plotUpdated": "{{name}} te mete ajou",
@@ -288,5 +290,19 @@
     "successDesc": "Nouvo non an ap parèt pou tout jedinik yo apre pwochen senkronizasyon yo.",
     "errorOffline": "Ou dwe konekte pou chanje non yon jaden.",
     "errorGeneral": "Enposib chanje non jaden an. Tanpri eseye ankò."
+  },
+  "plotActivityLog": {
+    "title": "Jounal aktivite parèl",
+    "justNow": "Kounye a",
+    "minutesAgo": "{{count}} min de sa",
+    "hoursAgo": "{{count}}l de sa",
+    "daysAgo": "{{count}}j de sa",
+    "summary": "Rezime",
+    "additionalInfo": "Nòt adisyonèl",
+    "cancel": "Anile",
+    "save": "Sove",
+    "saving": "Ap sove...",
+    "delete": "Efase",
+    "deleteConfirm": "Efase aktivite parèl sa a? Ou pa ka defèt sa."
   }
 }

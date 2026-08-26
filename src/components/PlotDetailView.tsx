@@ -9,10 +9,11 @@ import { BulkActivityModal } from './BulkActivityModal';
 import { BulkNotchingModal } from './BulkNotchingModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
-import { DatabaseService, type PlotWithMembers, type Plant } from '../lib/database';
+import { DatabaseService, type PlotWithMembers, type Plant, type PlotActivity } from '../lib/database';
 import { parseAgeInfoFromPlant, resolveEffectiveAge } from '../lib/harvestService';
 import { uploadService } from '../lib/uploadService';
 import { useToast } from '../hooks/useToast';
+import { PlotActivityLogCard } from './PlotActivityLogCard';
 
 export const PlotDetailView: React.FC = () => {
   const { plotId } = useParams<{ plotId: string }>();
@@ -31,6 +32,7 @@ export const PlotDetailView: React.FC = () => {
   });
   const [bulkNotchingModal, setBulkNotchingModal] = useState(false);
   const [lastPlotNotching, setLastPlotNotching] = useState<{ book: string; end_unit: number; end_section: number } | undefined>(undefined);
+  const [plotActivities, setPlotActivities] = useState<PlotActivity[]>([]);
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     onConfirm: () => void;
@@ -69,6 +71,8 @@ export const PlotDetailView: React.FC = () => {
 
       setPlot(plotData);
       setAllPlants(allPlantsData);
+      const activities = await DatabaseService.getPlotActivities(plotId);
+      setPlotActivities(activities);
     } catch (err) {
       console.error('Failed to load plot data:', err);
       navigate('/plots');
@@ -154,12 +158,30 @@ export const PlotDetailView: React.FC = () => {
     });
   };
 
-  const handleBulkActivitySubmit = async (activityData: any, selectedPlantIds: string[]) => {
+  const handleBulkActivitySubmit = async (activityData: any, selectedPlantIds: string[], images: string[] = []) => {
     if (!plot) return;
 
     try {
       const timestamp = activityData.datetime || Date.now();
       await DatabaseService.logBulkActivity(bulkActivityModal.type, activityData, selectedPlantIds, timestamp);
+
+      const summary = activityData.summary || activityData.topic || activityData.source || activityData.description || activityData.progress_description || '';
+      await DatabaseService.addPlotActivity({
+        plot_id: plot.id,
+        activity_type: bulkActivityModal.type,
+        datetime: timestamp,
+        summary,
+        additional_info: activityData.additional_info || '',
+        image_ids: JSON.stringify(images.map((_, i) => i)),
+      });
+
+      for (let i = 0; i < images.length; i++) {
+        localStorage.setItem(`plot_activity_image_${plot.id}_${Date.now()}_${i}`, JSON.stringify({ dataUrl: images[i], timestamp: Date.now() }));
+      }
+
+      const activities = await DatabaseService.getPlotActivities(plot.id);
+      setPlotActivities(activities);
+
       success(t('toasts.activityLoggedTitle'), t('toasts.activityLogged', { type: bulkActivityModal.type, count: selectedPlantIds.length }));
     } catch (err) {
       console.error('Failed to log bulk activity:', err);
@@ -405,6 +427,19 @@ export const PlotDetailView: React.FC = () => {
 
               </div>
             </div>
+          )}
+
+          {/* Plot Activity Log */}
+          {plot.members.length > 0 && (
+            <PlotActivityLogCard
+              activities={plotActivities}
+              gardenId={null}
+              plotId={plot.id}
+              onActivityUpdated={async () => {
+                const activities = await DatabaseService.getPlotActivities(plot.id);
+                setPlotActivities(activities);
+              }}
+            />
           )}
         </div>
       </main>

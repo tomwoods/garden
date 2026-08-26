@@ -13,7 +13,7 @@ interface AdditionalInfoMenuProps {
   hasImages?: boolean;
   hasAge?: boolean;
   onClose?: () => void;
-  mode?: 'datetime' | 'location' | 'all';
+  mode?: 'datetime' | 'location' | 'all' | 'plotActivity';
 }
 
 export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
@@ -75,7 +75,7 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
 
   return (
     <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[180px] z-10" ref={menuRef}>
-      {mode === 'datetime' && (
+      {(mode === 'datetime' || mode === 'plotActivity') && (
         <button
           type="button"
           onClick={handleDateTimeClick}
@@ -83,6 +83,16 @@ export const AdditionalInfoMenu: React.FC<AdditionalInfoMenuProps> = ({
         >
           <Calendar className="w-4 h-4" />
           {t('additionalInfo.setDateTime')}
+        </button>
+      )}
+      {mode === 'plotActivity' && (
+        <button
+          type="button"
+          onClick={handleImageClick}
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+        >
+          <Camera className="w-4 h-4" />
+          {t('additionalInfo.addImage')}
         </button>
       )}
       {(mode === 'location' || mode === 'all') && (

@@ -35,7 +35,9 @@
     "fruit": "Fruit",
     "fruitDesc": "Log service by plot members",
     "notching": "Notching",
-    "notchingDesc": "Log Ruhi study session"
+    "notchingDesc": "Log Ruhi study session",
+    "tending": "Tending",
+    "watering": "Watering"
   },
   "toasts": {
     "plotUpdated": "{{name}} has been updated",
@@ -288,5 +290,19 @@
     "successDesc": "The new name will appear for all gardeners after their next sync.",
     "errorOffline": "You must be online to rename a garden.",
     "errorGeneral": "Could not rename the garden. Please try again."
+  },
+  "plotActivityLog": {
+    "title": "Plot activity log",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} min ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "summary": "Summary",
+    "additionalInfo": "Additional notes",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this plot activity? This cannot be undone."
   }
 }

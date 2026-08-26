@@ -2,7 +2,7 @@ import alasql from 'alasql';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   Plant, Tending, Watering, Sunlight, Fruit, Pruning,
-  Companion, ScheduledEvent, Plot, PlotMembership, Bud, Notching, Capability
+  Companion, ScheduledEvent, Plot, PlotMembership, Bud, Notching, Capability, PlotActivity
 } from './database';
 
 // ─── Shared-garden-specific types ────────────────────────────────────────────
@@ -52,6 +52,7 @@ export interface SharedGardenSnapshot {
   buds: Bud[];
   notchings: Notching[];
   capabilities: Capability[];
+  plot_activities: PlotActivity[];
   members: GardenMember[];
   change_log: GardenChangeLogEntry[];
   snapshot_at: number;
@@ -264,6 +265,12 @@ export class SharedGardenDatabase {
         created_at NUMBER NOT NULL, updated_at NUMBER NOT NULL,
         authored_by_uuid STRING, authored_by_display_name STRING
       `],
+      ['plot_activities', `
+        id STRING PRIMARY KEY, plot_id STRING NOT NULL, activity_type STRING NOT NULL,
+        datetime NUMBER NOT NULL, updated_at NUMBER NOT NULL, summary STRING,
+        additional_info STRING, image_ids STRING,
+        authored_by_uuid STRING, authored_by_display_name STRING
+      `],
       ['garden_members', `
         id STRING PRIMARY KEY, user_uuid STRING NOT NULL, display_name STRING NOT NULL,
         joined_at NUMBER NOT NULL, added_by_uuid STRING NOT NULL, updated_at NUMBER NOT NULL
@@ -421,7 +428,8 @@ export class SharedGardenDatabase {
     const tables = [
       'plants','tendings','waterings','sunlight','fruits','prunings',
       'companions','scheduled_events','plots','plot_memberships',
-      'buds','notchings','capabilities','garden_members','garden_change_log','garden_tombstones',
+      'buds','notchings','capabilities','plot_activities',
+      'garden_members','garden_change_log','garden_tombstones',
     ];
     for (const table of tables) {
       try { alasql(`DELETE FROM ${name}.${table}`); } catch { /* table may not exist */ }
@@ -982,6 +990,42 @@ export class SharedGardenDatabase {
     return this.run<PlotMembership[]>(gardenId, 'SELECT * FROM plot_memberships', []);
   }
 
+  // ─── Plot Activities ───────────────────────────────────────────────────────
+
+  static addPlotActivity(
+    gardenId: string,
+    activity: Omit<PlotActivity, 'id' | 'updated_at'>,
+    authorUuid: string,
+    authorDisplayName: string
+  ): PlotActivity {
+    const now = Date.now();
+    const rec: PlotActivity & { authored_by_uuid: string; authored_by_display_name: string } = {
+      id: uuidv4(),
+      updated_at: now,
+      ...activity,
+      authored_by_uuid: authorUuid,
+      authored_by_display_name: authorDisplayName,
+    };
+    this._addActivity(gardenId, 'plot_activities', rec as unknown as Record<string, unknown>, authorUuid, authorDisplayName, 'add_plot_activity', activity.plot_id);
+    return rec;
+  }
+
+  static getPlotActivities(gardenId: string, plotId: string): PlotActivity[] {
+    return this.run<PlotActivity[]>(gardenId, 'SELECT * FROM plot_activities WHERE plot_id = ? ORDER BY datetime DESC', [plotId]);
+  }
+
+  static updatePlotActivity(gardenId: string, id: string, updates: Partial<Omit<PlotActivity, 'id' | 'plot_id' | 'datetime' | 'updated_at'>>, actorUuid: string, actorDisplayName: string): void {
+    const now = Date.now();
+    const fields = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    const values = Object.values(updates);
+    this.run(gardenId, `UPDATE plot_activities SET ${fields}, updated_at = ? WHERE id = ?`, [...values, now, id]);
+    this.logChange(gardenId, actorUuid, actorDisplayName, 'edit_plot_activity', 'plot_activities', id, id);
+  }
+
+  static deletePlotActivity(gardenId: string, id: string, actorUuid: string, actorDisplayName: string): void {
+    this._deleteActivity(gardenId, 'plot_activities', id, actorUuid, actorDisplayName, 'delete_plot_activity', id);
+  }
+
   // ─── Full snapshot ────────────────────────────────────────────────────────
 
   static getFullSnapshot(gardenId: string): SharedGardenSnapshot {
@@ -999,6 +1043,7 @@ export class SharedGardenDatabase {
       buds: this.run<Bud[]>(gardenId, 'SELECT * FROM buds', []),
       notchings: this.run<Notching[]>(gardenId, 'SELECT * FROM notchings', []),
       capabilities: this.run<Capability[]>(gardenId, 'SELECT * FROM capabilities', []),
+      plot_activities: this.run<PlotActivity[]>(gardenId, 'SELECT * FROM plot_activities', []),
       members: this.getMembers(gardenId),
       change_log: this.run<GardenChangeLogEntry[]>(gardenId, 'SELECT * FROM garden_change_log ORDER BY occurred_at DESC', []),
       snapshot_at: Date.now(),
@@ -1012,7 +1057,7 @@ export class SharedGardenDatabase {
     const tables = [
       'plants','tendings','waterings','sunlight','fruits','prunings',
       'companions','scheduled_events','plots','plot_memberships',
-      'buds','notchings','capabilities',
+      'buds','notchings','capabilities','plot_activities',
       'garden_members'
     ];
 
@@ -1169,6 +1214,7 @@ export class SharedGardenDatabase {
       ['buds', snapshot.buds as unknown as Array<Record<string, unknown>>],
       ['notchings', snapshot.notchings as unknown as Array<Record<string, unknown>>],
       ['capabilities', snapshot.capabilities as unknown as Array<Record<string, unknown>>],
+      ['plot_activities', snapshot.plot_activities as unknown as Array<Record<string, unknown>>],
       ['garden_members', snapshot.members as unknown as Array<Record<string, unknown>>],
       ['garden_change_log', snapshot.change_log as unknown as Array<Record<string, unknown>>],
     ];

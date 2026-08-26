@@ -12,8 +12,10 @@ import { BulkNotchingModal } from './BulkNotchingModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ToastContainer } from './ToastContainer';
 import { useToast } from '../hooks/useToast';
-import type { Plot, Plant, Tending, Watering, Sunlight, Fruit, Notching } from '../lib/database';
+import type { Plot, Plant, Tending, Watering, Sunlight, Fruit, Notching, PlotActivity } from '../lib/database';
 import { parseAgeInfoFromPlant, resolveEffectiveAge } from '../lib/harvestService';
+import { PlotActivityLogCard } from './PlotActivityLogCard';
+import { uploadPlotActivityImage } from '../lib/plotActivityImageSync';
 
 function getUser() {
   try {
@@ -40,6 +42,7 @@ export const SharedPlotDetailView: React.FC = () => {
   }>({ isOpen: false, type: 'tending' });
   const [showNotchingModal, setShowNotchingModal] = useState(false);
   const [lastNotching, setLastNotching] = useState<{ book: string; end_unit: number; end_section: number } | undefined>(undefined);
+  const [plotActivities, setPlotActivities] = useState<PlotActivity[]>([]);
 
   const { t } = useTranslation('garden_shared');
   const ref_ = gardenId ? getSharedGardenRef(gardenId) : null;
@@ -62,6 +65,7 @@ export const SharedPlotDetailView: React.FC = () => {
       setPlot(plotData);
       setMembers(SharedGardenDatabase.getPlotMembers(gardenId, plotId));
       setAllPlants(SharedGardenDatabase.getAllPlants(gardenId));
+      setPlotActivities(SharedGardenDatabase.getPlotActivities(gardenId, plotId));
     } catch (err) {
       console.error('Failed to load plot:', err);
       navigate(`/shared-garden/${gardenId}/plots`);
@@ -134,7 +138,7 @@ export const SharedPlotDetailView: React.FC = () => {
     setBulkActivityModal({ isOpen: true, type });
   };
 
-  const handleBulkActivitySubmit = async (activityData: any, selectedPlantIds: string[]) => {
+  const handleBulkActivitySubmit = async (activityData: any, selectedPlantIds: string[], images: string[] = []) => {
     if (!gardenId || !plot || !user) return;
     try {
       const now = activityData.datetime || Date.now();
@@ -166,8 +170,21 @@ export const SharedPlotDetailView: React.FC = () => {
         }
       }
 
+      const summary = activityData.summary || activityData.topic || activityData.source || activityData.description || activityData.progress_description || '';
+      const plotActivity = SharedGardenDatabase.addPlotActivity(gardenId,
+        { plot_id: plot.id, activity_type: type, datetime: now, summary, additional_info: activityData.additional_info || '', image_ids: JSON.stringify(images.map((_, i) => i)) },
+        actor, name
+      );
+
+      if (images.length > 0 && ref_) {
+        for (let i = 0; i < images.length; i++) {
+          uploadPlotActivityImage(ref_, plotActivity.id, i, images[i], { userId: user.userId, signingPrivateKey: user.signature_private_key }).catch(() => {});
+        }
+      }
+
       SharedGardenDatabase.logPlotBulkActivity(gardenId, actor, name, type, plot.id, plot.name);
       syncSharedGarden(gardenId, user).catch(() => {});
+      setPlotActivities(SharedGardenDatabase.getPlotActivities(gardenId, plot.id));
       success('Activity logged', `${type} logged for ${selectedPlantIds.length} plants`);
     } catch (err) {
       console.error('Failed to log bulk activity:', err);
@@ -404,6 +421,18 @@ export const SharedPlotDetailView: React.FC = () => {
 
             </div>
           </div>
+        )}
+
+        {/* Plot Activity Log */}
+        {members.length > 0 && (
+          <PlotActivityLogCard
+            activities={plotActivities}
+            gardenId={gardenId}
+            plotId={plot.id}
+            onActivityUpdated={() => {
+              if (gardenId) setPlotActivities(SharedGardenDatabase.getPlotActivities(gardenId, plot.id));
+            }}
+          />
         )}
       </div>
 
