@@ -391,7 +391,7 @@ export const SharedPlotDetailView: React.FC = () => {
                 onClick={handleOpenNotching}
                 className="flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
               >
-                <span className="text-xl">📖</span>
+                <span className="text-xl">🌿</span>
                 <div className="text-left">
                   <p className="text-sm font-medium">{t('plotActivities.notching')}</p>
                   <p className="text-xs opacity-70">{t('plotActivities.notchingDesc')}</p>
