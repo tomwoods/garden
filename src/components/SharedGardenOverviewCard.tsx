@@ -121,6 +121,13 @@ export const SharedGardenOverviewCard: React.FC<SharedGardenOverviewCardProps> =
               {t('overview.plantsCount', { count: plants.length })}
             </p>
           </div>
+          <button
+            onClick={onShowAllPlants}
+            className="flex items-center gap-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-colors flex-shrink-0"
+          >
+            {t('overview.showAllPlants')}
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -184,19 +191,10 @@ export const SharedGardenOverviewCard: React.FC<SharedGardenOverviewCardProps> =
         </div>
       </div>
 
-      {/* Members + show all button */}
-      <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Users className="w-4 h-4" />
-          <span>{t('overview.membersCount', { count: memberCount })}</span>
-        </div>
-        <button
-          onClick={onShowAllPlants}
-          className="flex items-center gap-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-colors"
-        >
-          {t('overview.showAllPlants')}
-          <ChevronRight className="w-4 h-4" />
-        </button>
+      {/* Members */}
+      <div className="px-5 py-4 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-500">
+        <Users className="w-4 h-4" />
+        <span>{t('overview.membersCount', { count: memberCount })}</span>
       </div>
     </div>
   );
