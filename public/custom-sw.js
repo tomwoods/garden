@@ -137,6 +137,14 @@ async function getAllNotifications() {
 
 // ─── Plant schedule store (persists across SW restarts) ───────────────────────
 
+function isTranslationKey(str) {
+  return typeof str === 'string' && /^[a-z][a-zA-Z0-9_]*$/.test(str) && !str.includes(' ');
+}
+
+const FALLBACK_GARDEN_OVERDUE_TITLE = 'Your garden needs attention';
+const FALLBACK_GARDEN_OVERDUE_BODY = '{{count}} plants are waiting to be tended';
+const FALLBACK_OVERDUE_TITLE = 'Time to tend your garden';
+
 async function savePlantSchedules(plants, gardenOverdueTitle, gardenOverdueBody) {
   const db = await openNotificationDB();
   const tx = db.transaction([PLANT_SCHEDULE_STORE], 'readwrite');
@@ -144,7 +152,10 @@ async function savePlantSchedules(plants, gardenOverdueTitle, gardenOverdueBody)
   for (const plant of plants) {
     store.put({ plantId: plant.id, name: plant.name, nextScheduledCare: plant.next_scheduled_care });
   }
-  if (gardenOverdueTitle && gardenOverdueBody) {
+  if (
+    gardenOverdueTitle && gardenOverdueBody &&
+    !isTranslationKey(gardenOverdueTitle) && !isTranslationKey(gardenOverdueBody)
+  ) {
     store.put({
       plantId: '__garden_overdue_templates__',
       gardenOverdueTitle,
@@ -377,8 +388,12 @@ async function checkMissedCare() {
       const overduePlants = getOverduePlants(schedules, now);
       if (overduePlants.length >= 2) {
         const templates = await getGardenOverdueTemplates();
-        const title = templates?.gardenOverdueTitle || 'Your garden needs attention';
-        const bodyTemplate = templates?.gardenOverdueBody || '{{count}} plants are waiting to be tended';
+        const title = (templates?.gardenOverdueTitle && !isTranslationKey(templates.gardenOverdueTitle))
+          ? templates.gardenOverdueTitle
+          : FALLBACK_GARDEN_OVERDUE_TITLE;
+        const bodyTemplate = (templates?.gardenOverdueBody && !isTranslationKey(templates.gardenOverdueBody))
+          ? templates.gardenOverdueBody
+          : FALLBACK_GARDEN_OVERDUE_BODY;
         const body = bodyTemplate.replace('{{count}}', overduePlants.length);
 
         await self.registration.showNotification(
@@ -394,8 +409,8 @@ async function checkMissedCare() {
           : `${plant.name} is waiting to be tended — ${daysOverdue} days overdue.`;
 
         await self.registration.showNotification(
-          'Time to tend your garden',
-          buildNotificationOptions(plant.plantId, 'Time to tend your garden', body, `plant-overdue-${plant.plantId}`)
+          FALLBACK_OVERDUE_TITLE,
+          buildNotificationOptions(plant.plantId, FALLBACK_OVERDUE_TITLE, body, `plant-overdue-${plant.plantId}`)
         );
       }
       return;
@@ -448,10 +463,18 @@ self.addEventListener('message', async (event) => {
         );
 
         const now = Date.now();
-        const overdueTitle    = payload.overdueTitle    || 'Time to tend your garden';
-        const overdueTemplate = payload.overdueTemplate || null;
-        const gardenOverdueTitle = payload.gardenOverdueTitle || 'Your garden needs attention';
-        const gardenOverdueBody = payload.gardenOverdueBody || '{{count}} plants are waiting to be tended';
+        const overdueTitle    = (payload.overdueTitle && !isTranslationKey(payload.overdueTitle))
+          ? payload.overdueTitle
+          : FALLBACK_OVERDUE_TITLE;
+        const overdueTemplate = (payload.overdueTemplate && !isTranslationKey(payload.overdueTemplate))
+          ? payload.overdueTemplate
+          : null;
+        const gardenOverdueTitle = (payload.gardenOverdueTitle && !isTranslationKey(payload.gardenOverdueTitle))
+          ? payload.gardenOverdueTitle
+          : FALLBACK_GARDEN_OVERDUE_TITLE;
+        const gardenOverdueBody = (payload.gardenOverdueBody && !isTranslationKey(payload.gardenOverdueBody))
+          ? payload.gardenOverdueBody
+          : FALLBACK_GARDEN_OVERDUE_BODY;
 
         const overduePlants = [];
         for (const plant of payload.plants) {

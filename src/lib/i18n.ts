@@ -27,7 +27,7 @@ export function applyDayjsLocale(lang: string) {
   dayjs.locale(dayjsLocale);
 }
 
-i18n
+export const i18nReady = i18n
   .use(HttpBackend)
   .use(LanguageDetector)
   .use(initReactI18next)

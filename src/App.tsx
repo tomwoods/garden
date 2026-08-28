@@ -35,7 +35,7 @@ import { parseVCardFile } from './lib/vCardParser';
 import type { ParsedContact } from './lib/vCardParser';
 import { Leaf } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import i18n from './lib/i18n';
+import i18n, { i18nReady } from './lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
@@ -117,18 +117,11 @@ function App() {
         }
 
         if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.ready.then(async (registration) => {
-            try {
-              if ('periodicSync' in registration) {
-                await (registration as any).periodicSync.register('check-plant-care', {
-                  minInterval: 4 * 60 * 60 * 1000
-                });
-              }
-            } catch (_) {
-              // periodic sync not supported
-            }
+          await i18nReady;
 
+          const sendSchedules = async () => {
             try {
+              const registration = await navigator.serviceWorker.ready;
               const plants = await DatabaseService.getAllPlants();
               registration.active?.postMessage({
                 type: 'SYNC_PLANT_SCHEDULES',
@@ -141,7 +134,23 @@ function App() {
             } catch (_) {
               // non-critical
             }
-          });
+          };
+
+          const registration = await navigator.serviceWorker.ready;
+
+          try {
+            if ('periodicSync' in registration) {
+              await (registration as any).periodicSync.register('check-plant-care', {
+                minInterval: 4 * 60 * 60 * 1000
+              });
+            }
+          } catch (_) {
+            // periodic sync not supported
+          }
+
+          await sendSchedules();
+
+          i18n.on('languageChanged', sendSchedules);
 
           navigator.serviceWorker.addEventListener('message', async (event) => {
             if (event.data.type === 'REQUEST_PLANT_DATA') {
