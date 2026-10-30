@@ -750,11 +750,31 @@ export async function restoreSharedGardenFromKeyFile(
   }
 
   const gardenObj = await decryptGardenObject(remote.encryptedData, gardenPrivateKey);
+  const confirmedGardenName = gardenObj.garden_name ?? gardenName;
 
   SharedGardenDatabase.applySnapshot(gardenId, gardenObj.snapshot);
   SharedGardenDatabase.applyDeltas(gardenId, gardenObj.deltas);
 
-  // Ensure we are present as a member with the stored display name
+  // Update ref before deep sync so it can find the key and use the correct lastSyncTs
+  const restoreRef: SharedGardenRef = {
+    gardenId,
+    sharedGardenId,
+    gardenName: confirmedGardenName,
+    myDisplayName,
+    myUuid,
+    gardenPublicKeyBase64: gardenPublicKey,
+    lastSyncTs: Date.now(),
+  };
+  addSharedGardenRef(restoreRef);
+
+  // Deep sync pulls the complete latest state from the server, ensuring all
+  // gardeners are present. The initial snapshot may have been compacted by a
+  // gardener whose local member list was incomplete — the deep sync re-fetches
+  // and re-applies the full snapshot + all outstanding deltas from the server.
+  await deepSyncSharedGarden(restoreRef, user);
+
+  // Add self as a member AFTER the deep sync so the new membership is collected
+  // as a local delta and pushed to other gardeners on the sync below.
   SharedGardenDatabase.upsertMember(gardenId, {
     id: uuidv4(),
     user_uuid: myUuid,
@@ -763,18 +783,10 @@ export async function restoreSharedGardenFromKeyFile(
     added_by_uuid: myUuid,
   });
 
-  // Update ref with fresh sync timestamp and confirmed garden name
-  addSharedGardenRef({
-    gardenId,
-    sharedGardenId,
-    gardenName: gardenObj.garden_name ?? gardenName,
-    myDisplayName,
-    myUuid,
-    gardenPublicKeyBase64: gardenPublicKey,
-    lastSyncTs: Date.now(),
-  });
+  // Push the new membership to the server so other gardeners see it
+  await syncSharedGarden(restoreRef, user);
 
-  return { gardenId, gardenName: gardenObj.garden_name ?? gardenName };
+  return { gardenId, gardenName: confirmedGardenName };
 }
 
 // ─── Create a new garden from a restored snapshot ──────────────────────────────
