@@ -306,5 +306,19 @@
     "saving": "Saving...",
     "delete": "Delete",
     "deleteConfirm": "Delete this plot activity? This cannot be undone."
+  },
+  "plotExport": {
+    "exportList": "Export list of plants",
+    "shareList": "Share list",
+    "memberCount_one": "{{count}} member",
+    "memberCount_other": "{{count}} members",
+    "ageLabel": "Age",
+    "phoneLabel": "Phone",
+    "descriptionLabel": "Description",
+    "adult": "Adult",
+    "noPlants": "No plants in this plot yet.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "share": "Share"
   }
 }

@@ -306,5 +306,19 @@
     "saving": "Guardando...",
     "delete": "Eliminar",
     "deleteConfirm": "¿Eliminar esta actividad de parcela? Esta acción no se puede deshacer."
+  },
+  "plotExport": {
+    "exportList": "Exportar lista de plantas",
+    "shareList": "Compartir lista",
+    "memberCount_one": "{{count}} miembro",
+    "memberCount_other": "{{count}} miembros",
+    "ageLabel": "Edad",
+    "phoneLabel": "Teléfono",
+    "descriptionLabel": "Descripción",
+    "adult": "Adulto",
+    "noPlants": "Aún no hay plantas en esta parcela.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "share": "Compartir"
   }
 }

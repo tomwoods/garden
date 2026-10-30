@@ -306,5 +306,19 @@
     "saving": "Enregistrement...",
     "delete": "Supprimer",
     "deleteConfirm": "Supprimer cette activité de parcelle ? Cette action est irréversible."
+  },
+  "plotExport": {
+    "exportList": "Exporter la liste des plantes",
+    "shareList": "Partager la liste",
+    "memberCount_one": "{{count}} membre",
+    "memberCount_other": "{{count}} membres",
+    "ageLabel": "Âge",
+    "phoneLabel": "Téléphone",
+    "descriptionLabel": "Description",
+    "adult": "Adulte",
+    "noPlants": "Aucune plante dans cette parcelle pour l'instant.",
+    "copy": "Copier",
+    "copied": "Copié",
+    "share": "Partager"
   }
 }

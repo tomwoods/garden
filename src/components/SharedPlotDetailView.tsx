@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Users, Trash2, CreditCard as Edit, Plus } from 'lucide-react';
+import { ArrowLeft, Users, Trash2, CreditCard as Edit, Plus, Settings as Gear, List, Share2 } from 'lucide-react';
 import { SharedGardenDatabase, getSharedGardenRef } from '../lib/sharedGardenDatabase';
 import { syncSharedGarden } from '../lib/sharedGardenSyncService';
 import { AddEditPlotModal } from './AddEditPlotModal';
@@ -15,6 +15,7 @@ import { useToast } from '../hooks/useToast';
 import type { Plot, Plant, Tending, Watering, Sunlight, Fruit, Notching, PlotActivity } from '../lib/database';
 import { parseAgeInfoFromPlant, resolveEffectiveAge } from '../lib/harvestService';
 import { PlotActivityLogCard } from './PlotActivityLogCard';
+import { PlotExportListView } from './PlotExportListView';
 import { uploadPlotActivityImage } from '../lib/plotActivityImageSync';
 
 function getUser() {
@@ -36,6 +37,8 @@ export const SharedPlotDetailView: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showGearMenu, setShowGearMenu] = useState(false);
+  const [showExportList, setShowExportList] = useState(false);
   const [bulkActivityModal, setBulkActivityModal] = useState<{
     isOpen: boolean;
     type: 'tending' | 'watering' | 'sunlight' | 'fruit';
@@ -275,13 +278,42 @@ export const SharedPlotDetailView: React.FC = () => {
             </div>
           </div>
           {!isDisconnected && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 relative">
               <button
                 onClick={() => setShowEditModal(true)}
                 className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
               >
                 <Edit className="w-4 h-4" />
               </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowGearMenu(s => !s)}
+                  className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  <Gear className="w-4 h-4" />
+                </button>
+                {showGearMenu && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowGearMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 min-w-[200px]">
+                      <button
+                        onClick={() => { setShowGearMenu(false); setShowExportList(true); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <List className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">{t('plotExport.exportList')}</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowGearMenu(false); setShowExportList(true); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <Share2 className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">{t('plotExport.shareList')}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="p-2 text-gray-400 hover:text-red-500 transition-colors"
@@ -495,6 +527,14 @@ export const SharedPlotDetailView: React.FC = () => {
         cancelText={t('keepPlot')}
         type="danger"
       />
+
+      {showExportList && (
+        <PlotExportListView
+          plotName={plot.name}
+          plants={members}
+          onClose={() => setShowExportList(false)}
+        />
+      )}
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>

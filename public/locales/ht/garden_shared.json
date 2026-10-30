@@ -306,5 +306,19 @@
     "saving": "Ap sove...",
     "delete": "Efase",
     "deleteConfirm": "Efase aktivite parèl sa a? Ou pa ka defèt sa."
+  },
+  "plotExport": {
+    "exportList": "Ekspòte lis plant yo",
+    "shareList": "Pataje lis la",
+    "memberCount_one": "{{count}} manb",
+    "memberCount_other": "{{count}} manb",
+    "ageLabel": "Laj",
+    "phoneLabel": "Telefòn",
+    "descriptionLabel": "Deskripsyon",
+    "adult": "Granmoun",
+    "noPlants": "Pa gen plant nan parèl sa a poko.",
+    "copy": "Kopi",
+    "copied": "Kopi",
+    "share": "Pataje"
   }
 }
