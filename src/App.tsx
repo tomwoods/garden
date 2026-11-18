@@ -116,69 +116,67 @@ function App() {
           console.log('No existing garden found');
         }
 
-        if ('serviceWorker' in navigator) {
-          await i18nReady;
-
-          const sendSchedules = async () => {
-            try {
-              const registration = await navigator.serviceWorker.ready;
-              const plants = await DatabaseService.getAllPlants();
-              registration.active?.postMessage({
-                type: 'SYNC_PLANT_SCHEDULES',
-                payload: {
-                  plants,
-                  gardenOverdueTitle: i18n.t('swGardenOverdueTitle', { ns: 'notifications' }),
-                  gardenOverdueBody: i18n.t('swGardenOverdueBody_other', { ns: 'notifications', count: '{{count}}' }),
-                }
-              });
-            } catch (_) {
-              // non-critical
-            }
-          };
-
-          const registration = await navigator.serviceWorker.ready;
-
-          try {
-            if ('periodicSync' in registration) {
-              await (registration as any).periodicSync.register('check-plant-care', {
-                minInterval: 4 * 60 * 60 * 1000
-              });
-            }
-          } catch (_) {
-            // periodic sync not supported
-          }
-
-          await sendSchedules();
-
-          i18n.on('languageChanged', sendSchedules);
-
-          navigator.serviceWorker.addEventListener('message', async (event) => {
-            if (event.data.type === 'REQUEST_PLANT_DATA') {
-              const plants = await DatabaseService.getAllPlants();
-              const sw = await navigator.serviceWorker.ready;
-              sw.active?.postMessage({
-                type: 'PLANTS_DATA',
-                payload: {
-                  plants,
-                  overdueTitle: i18n.t('swGardenTime', { ns: 'notifications' }),
-                  overdueTemplate: i18n.t('swOverdue_other', { ns: 'notifications', name: '{{name}}', days: '{{days}}' }),
-                  gardenOverdueTitle: i18n.t('swGardenOverdueTitle', { ns: 'notifications' }),
-                  gardenOverdueBody: i18n.t('swGardenOverdueBody_other', { ns: 'notifications', count: '{{count}}' }),
-                }
-              });
-            }
-          });
-
-          window.addEventListener('plant-care-updated', async (event: any) => {
-            const { plantId, nextCareTimestamp, plantName } = event.detail;
-            await NotificationService.scheduleNotification(plantId, plantName, nextCareTimestamp);
-            const plants = await DatabaseService.getAllPlants();
-            await NotificationService.syncPlantSchedules(plants);
-          });
-        }
-
         setIsLoading(false);
         console.log('Garden app ready!');
+
+        if ('serviceWorker' in navigator) {
+          i18nReady.then(() => {
+            const sendSchedules = async () => {
+              try {
+                const registration = await navigator.serviceWorker.ready;
+                const plants = await DatabaseService.getAllPlants();
+                registration.active?.postMessage({
+                  type: 'SYNC_PLANT_SCHEDULES',
+                  payload: {
+                    plants,
+                    gardenOverdueTitle: i18n.t('swGardenOverdueTitle', { ns: 'notifications' }),
+                    gardenOverdueBody: i18n.t('swGardenOverdueBody_other', { ns: 'notifications', count: '{{count}}' }),
+                  }
+                });
+              } catch (_) {
+              }
+            };
+
+            navigator.serviceWorker.ready.then((registration) => {
+              try {
+                if ('periodicSync' in registration) {
+                  (registration as any).periodicSync.register('check-plant-care', {
+                    minInterval: 4 * 60 * 60 * 1000
+                  }).catch(() => {});
+                }
+              } catch (_) {
+              }
+
+              sendSchedules();
+            }).catch(() => {});
+
+            i18n.on('languageChanged', sendSchedules);
+
+            navigator.serviceWorker.addEventListener('message', async (event) => {
+              if (event.data.type === 'REQUEST_PLANT_DATA') {
+                const plants = await DatabaseService.getAllPlants();
+                const sw = await navigator.serviceWorker.ready;
+                sw.active?.postMessage({
+                  type: 'PLANTS_DATA',
+                  payload: {
+                    plants,
+                    overdueTitle: i18n.t('swGardenTime', { ns: 'notifications' }),
+                    overdueTemplate: i18n.t('swOverdue_other', { ns: 'notifications', name: '{{name}}', days: '{{days}}' }),
+                    gardenOverdueTitle: i18n.t('swGardenOverdueTitle', { ns: 'notifications' }),
+                    gardenOverdueBody: i18n.t('swGardenOverdueBody_other', { ns: 'notifications', count: '{{count}}' }),
+                  }
+                });
+              }
+            });
+
+            window.addEventListener('plant-care-updated', async (event: any) => {
+              const { plantId, nextCareTimestamp, plantName } = event.detail;
+              await NotificationService.scheduleNotification(plantId, plantName, nextCareTimestamp);
+              const plants = await DatabaseService.getAllPlants();
+              await NotificationService.syncPlantSchedules(plants);
+            });
+          });
+        }
       } catch (err) {
         console.error('Failed to initialize app:', err);
         setIsLoading(false);
